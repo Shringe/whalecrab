@@ -49,6 +49,28 @@ impl Board {
             is_whites_turn: true,
         }
     }
+
+    pub fn occupied_white_bitboard(&self) -> u64 {
+        self.white_pawn_bitboard
+            | self.white_knight_bitboard
+            | self.white_bishop_bitboard
+            | self.white_rook_bitboard
+            | self.white_queen_bitboard
+            | self.white_king_bitboard
+    }
+
+    pub fn occupied_black_bitboard(&self) -> u64 {
+        self.black_pawn_bitboard
+            | self.black_knight_bitboard
+            | self.black_bishop_bitboard
+            | self.black_rook_bitboard
+            | self.black_queen_bitboard
+            | self.black_king_bitboard
+    }
+
+    pub fn occupied_bitboard(&self) -> u64 {
+        self.occupied_white_bitboard() | self.occupied_black_bitboard()
+    }
 }
 
 pub fn render_bitboard(bitboard: u64) -> String {
