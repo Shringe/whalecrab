@@ -1,25 +1,24 @@
-use crate::board;
+use crate::board::Board;
+use crate::square::Square;
 
 pub struct WhitePawn {
-    pub board: board::Board,
-    pub position: u64,
+    pub board: Board,
+    pub position: Square,
 }
 
 impl WhitePawn {
-    pub fn psuedo_legal_moves(&self) -> u64 {
-        let empty: u64 = 0;
-        let mut moves: Vec<u64> = vec![empty];
+    pub fn psuedo_legal_moves(&self) -> Vec<Square> {
+        let mut moves: Vec<Square> = Vec::new();
 
-        let up_one = self.position >> 8;
-        let up_two = self.position >> 16;
-        // if self.board.can_make_move(up_one) {
-        //     moves.push(up_one);
-        // }
-        // if self.board.can_make_move(up_two) {
-        //     moves.push(up_two);
-        // }
+        let one_up = self.position.up();
 
-        // if get_bit_at(self.board, up_one) {}
-        (self.position >> 8) | (self.position >> 16)
+        if let Some(mv) = one_up {
+            moves.push(mv);
+        }
+
+        // moves.push(self.position.up());
+        // moves.push(self.position.up().up());
+
+        moves
     }
 }
