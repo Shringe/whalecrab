@@ -1,7 +1,8 @@
-use crabfish::file::File;
 use crabfish::rank::Rank;
 use crabfish::square::Square;
+use crabfish::{board::Board, file::File};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use ratatui::widgets::Paragraph;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
@@ -13,14 +14,18 @@ use std::io::Result;
 
 #[derive(Debug)]
 struct App {
-    current_square: Square,
+    highlighted_square: Square,
+    selected_square: Option<Square>,
+    board: Board,
     exit: bool,
 }
 
 impl App {
     pub fn new() -> Self {
         Self {
-            current_square: Square::A1,
+            highlighted_square: Square::A1,
+            selected_square: None,
+            board: Board::new(),
             exit: false,
         }
     }
@@ -58,27 +63,38 @@ impl App {
             }
 
             KeyCode::Left => {
-                let new = self.current_square.left();
+                let new = self.highlighted_square.left();
                 if new.is_some() {
-                    self.current_square = new.unwrap();
+                    self.highlighted_square = new.unwrap();
                 }
             }
             KeyCode::Down => {
-                let new = self.current_square.down();
+                let new = self.highlighted_square.down();
                 if new.is_some() {
-                    self.current_square = new.unwrap();
+                    self.highlighted_square = new.unwrap();
                 }
             }
             KeyCode::Up => {
-                let new = self.current_square.up();
+                let new = self.highlighted_square.up();
                 if new.is_some() {
-                    self.current_square = new.unwrap();
+                    self.highlighted_square = new.unwrap();
                 }
             }
             KeyCode::Right => {
-                let new = self.current_square.right();
+                let new = self.highlighted_square.right();
                 if new.is_some() {
-                    self.current_square = new.unwrap();
+                    self.highlighted_square = new.unwrap();
+                }
+            }
+
+            KeyCode::Esc => self.selected_square = None,
+            KeyCode::Enter => {
+                let new = Some(self.highlighted_square.clone());
+
+                if self.selected_square.is_some() {
+                    // self.move_to()
+                } else {
+                    self.selected_square = new;
                 }
             }
             _ => {}
@@ -92,8 +108,51 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let main_layout =
+            Layout::horizontal([Constraint::Percentage(25), Constraint::Percentage(75)])
+                .split(area);
+
+        let debug_area = main_layout[0];
+        let grid_area = main_layout[1];
+
+        // Debug info
+        let mut debug_text = String::new();
+        debug_text.push_str(&format!(
+            "Screen area:
+    width: {}
+    height: {}
+",
+            area.width, area.height,
+        ));
+
+        debug_text.push_str(&format!(
+            "
+Highlighted square:
+    rank: {:?}
+    file: {:?}
+",
+            self.highlighted_square.get_rank(),
+            self.highlighted_square.get_file(),
+        ));
+
+        if self.selected_square.is_some() {
+            debug_text.push_str(&format!(
+                "
+Selected square:
+    rank: {:?}
+    file: {:?}",
+                self.selected_square.clone().unwrap().get_rank(),
+                self.selected_square.clone().unwrap().get_file(),
+            ));
+        }
+
+        Paragraph::new(debug_text)
+            .block(Block::bordered())
+            .fg(Color::Green)
+            .render(debug_area, buf);
+
         // Outer layout: vertical for 8 ranks
-        let ranks = Layout::vertical([Constraint::Ratio(1, 8); 8]).split(area);
+        let ranks = Layout::vertical([Constraint::Ratio(1, 8); 8]).split(grid_area);
 
         for (r, rank_area) in ranks.iter().rev().enumerate() {
             // Inner layout: horizontal for 8 files within each rank
@@ -103,11 +162,15 @@ impl Widget for &App {
             for (f, file_area) in files.iter().enumerate() {
                 // Determine color based on even or odd
                 let is_white = (r + f) % 2 == 1;
-                let color = if is_white {
-                    Color::White
+                let background;
+                let foreground;
+                if is_white {
+                    background = Color::White;
+                    foreground = Color::DarkGray;
                 } else {
-                    Color::DarkGray
-                };
+                    background = Color::DarkGray;
+                    foreground = Color::White;
+                }
 
                 // Get square index
                 let file = File::from_index(f);
@@ -115,10 +178,14 @@ impl Widget for &App {
 
                 // Highlight selected square
                 let square;
-                if square_index == self.current_square {
-                    square = Block::bordered().bg(color);
+                if self.selected_square.is_some()
+                    && self.selected_square.clone().unwrap() == square_index
+                {
+                    square = Block::bordered().bg(background).fg(Color::Green);
+                } else if square_index == self.highlighted_square {
+                    square = Block::bordered().bg(background).fg(foreground);
                 } else {
-                    square = Block::default().bg(color);
+                    square = Block::default().bg(background).fg(foreground);
                 }
 
                 square.render(*file_area, buf);

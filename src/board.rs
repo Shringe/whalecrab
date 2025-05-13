@@ -1,18 +1,20 @@
+use crate::bitboard::BitBoard;
+
 #[derive(Debug)]
 pub struct Board {
-    pub white_pawn_bitboard: u64,
-    pub white_knight_bitboard: u64,
-    pub white_bishop_bitboard: u64,
-    pub white_rook_bitboard: u64,
-    pub white_queen_bitboard: u64,
-    pub white_king_bitboard: u64,
+    pub white_pawn_bitboard: BitBoard,
+    pub white_knight_bitboard: BitBoard,
+    pub white_bishop_bitboard: BitBoard,
+    pub white_rook_bitboard: BitBoard,
+    pub white_queen_bitboard: BitBoard,
+    pub white_king_bitboard: BitBoard,
 
-    pub black_pawn_bitboard: u64,
-    pub black_knight_bitboard: u64,
-    pub black_bishop_bitboard: u64,
-    pub black_rook_bitboard: u64,
-    pub black_queen_bitboard: u64,
-    pub black_king_bitboard: u64,
+    pub black_pawn_bitboard: BitBoard,
+    pub black_knight_bitboard: BitBoard,
+    pub black_bishop_bitboard: BitBoard,
+    pub black_rook_bitboard: BitBoard,
+    pub black_queen_bitboard: BitBoard,
+    pub black_king_bitboard: BitBoard,
 
     pub is_whites_turn: bool,
 }
@@ -20,37 +22,25 @@ pub struct Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            white_pawn_bitboard:
-                0b00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
-            white_knight_bitboard:
-                0b01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            white_bishop_bitboard:
-                0b00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            white_rook_bitboard:
-                0b10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            white_queen_bitboard:
-                0b00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            white_king_bitboard:
-                0b00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
+            white_pawn_bitboard: BitBoard::INITIAL_WHITE_PAWN,
+            white_knight_bitboard: BitBoard::INITIAL_WHITE_KNIGHT,
+            white_bishop_bitboard: BitBoard::INITIAL_WHITE_BISHOP,
+            white_rook_bitboard: BitBoard::INITIAL_WHITE_ROOK,
+            white_queen_bitboard: BitBoard::INITIAL_WHITE_QUEEN,
+            white_king_bitboard: BitBoard::INITIAL_WHITE_KING,
 
-            black_pawn_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000,
-            black_knight_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010,
-            black_bishop_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100,
-            black_rook_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001,
-            black_queen_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000,
-            black_king_bitboard:
-                0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000,
+            black_pawn_bitboard: BitBoard::INITIAL_BLACK_PAWN,
+            black_knight_bitboard: BitBoard::INITIAL_BLACK_KNIGHT,
+            black_bishop_bitboard: BitBoard::INITIAL_BLACK_BISHOP,
+            black_rook_bitboard: BitBoard::INITIAL_BLACK_ROOK,
+            black_queen_bitboard: BitBoard::INITIAL_BLACK_QUEEN,
+            black_king_bitboard: BitBoard::INITIAL_BLACK_KING,
 
             is_whites_turn: true,
         }
     }
 
-    pub fn occupied_white_bitboard(&self) -> u64 {
+    pub fn occupied_white_bitboard(&self) -> BitBoard {
         self.white_pawn_bitboard
             | self.white_knight_bitboard
             | self.white_bishop_bitboard
@@ -59,7 +49,7 @@ impl Board {
             | self.white_king_bitboard
     }
 
-    pub fn occupied_black_bitboard(&self) -> u64 {
+    pub fn occupied_black_bitboard(&self) -> BitBoard {
         self.black_pawn_bitboard
             | self.black_knight_bitboard
             | self.black_bishop_bitboard
@@ -68,26 +58,13 @@ impl Board {
             | self.black_king_bitboard
     }
 
-    pub fn occupied_bitboard(&self) -> u64 {
+    pub fn occupied_bitboard(&self) -> BitBoard {
         self.occupied_white_bitboard() | self.occupied_black_bitboard()
     }
 }
 
-pub fn render_bitboard(bitboard: u64) -> String {
-    let binary = format!("{:064b}", bitboard);
-    let mut lines = Vec::<String>::new();
-
-    for rank in (0..8).rev() {
-        let start = rank * 8;
-        let end = start + 8;
-        let line = binary[start..end]
-            .chars()
-            .map(|c| format!("{} ", c))
-            .collect::<String>();
-
-        // println!("{} {}", rank + 1, line.trim_end());
-        lines.push(line);
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
     }
-
-    lines.join("\n")
 }

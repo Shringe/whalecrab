@@ -2,7 +2,7 @@
 use crate::file::File;
 use crate::rank::Rank;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Square(u8);
 
 impl Square {
@@ -73,6 +73,10 @@ impl Square {
 
     pub fn new(sq: u8) -> Square {
         Square(sq & 63)
+    }
+
+    pub fn to_int(&self) -> u8 {
+        self.0
     }
 
     pub fn get_rank(&self) -> Rank {
