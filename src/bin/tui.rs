@@ -108,9 +108,12 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let main_layout =
-            Layout::horizontal([Constraint::Percentage(25), Constraint::Percentage(75)])
-                .split(area);
+        let height = area.height * 2;
+        let main_layout = if area.width < height {
+            Layout::vertical([Constraint::Min(10), Constraint::Percentage(75)]).split(area)
+        } else {
+            Layout::horizontal([Constraint::Min(20), Constraint::Percentage(75)]).split(area)
+        };
 
         let debug_area = main_layout[0];
         let grid_area = main_layout[1];
@@ -152,11 +155,12 @@ Selected square:
             .render(debug_area, buf);
 
         // Outer layout: vertical for 8 ranks
-        let ranks = Layout::vertical([Constraint::Ratio(1, 8); 8]).split(grid_area);
+        let ranks = Layout::vertical([Constraint::Max(grid_area.height / 8); 8]).split(grid_area);
 
         for (r, rank_area) in ranks.iter().rev().enumerate() {
             // Inner layout: horizontal for 8 files within each rank
-            let files = Layout::horizontal([Constraint::Ratio(1, 8); 8]).split(*rank_area);
+            let files =
+                Layout::horizontal([Constraint::Max(grid_area.width / 8); 8]).split(*rank_area);
             let rank = Rank::from_index(r);
 
             for (f, file_area) in files.iter().enumerate() {
