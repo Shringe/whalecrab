@@ -1,7 +1,9 @@
+use crabfish::board::Piece;
 use crabfish::rank::Rank;
 use crabfish::square::Square;
 use crabfish::{board::Board, file::File};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use ratatui::layout::Alignment;
 use ratatui::widgets::Paragraph;
 use ratatui::{
     buffer::Buffer,
@@ -11,6 +13,13 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 use std::io::Result;
+
+pub const ASCII_PAWN: &str = " ()\n )(\n/__\\";
+pub const ASCII_KNIGHT: &str = "/')\n U\n[_]";
+pub const ASCII_BISHOP: &str = " ()\n )(\n )(\n/__\\";
+pub const ASCII_ROOK: &str = " II\n )(\n )(\n/__\\";
+pub const ASCII_QUEEN: &str = ".\n ()\n )(\n )(\n/__\\";
+pub const ASCII_KING: &str = " +\n ()\n )(\n )(\n/__\\";
 
 struct App {
     highlighted_square: Square,
@@ -179,19 +188,41 @@ Selected square:
                 let file = File::from_index(f);
                 let square_index = Square::make_square(rank, file);
 
+                // Get ascii art
+                let ascii = match self.board.determine_piece(square_index.clone()) {
+                    Some(piece) => match piece {
+                        Piece::Pawn => ASCII_PAWN,
+                        Piece::Knight => ASCII_KNIGHT,
+                        Piece::Bishop => ASCII_BISHOP,
+                        Piece::Rook => ASCII_ROOK,
+                        Piece::Queen => ASCII_QUEEN,
+                        Piece::King => ASCII_KING,
+                    },
+                    None => "",
+                };
+
                 // Highlight selected square
-                let square;
                 if self.selected_square.is_some()
                     && self.selected_square.clone().unwrap() == square_index
                 {
-                    square = Block::bordered().bg(background).fg(Color::Green);
+                    Paragraph::new(ascii)
+                        .bg(background)
+                        .fg(Color::Green)
+                        .block(Block::bordered())
+                        .render(*file_area, buf);
                 } else if square_index == self.highlighted_square {
-                    square = Block::bordered().bg(background).fg(foreground);
+                    Paragraph::new(ascii)
+                        .bg(background)
+                        .fg(foreground)
+                        .block(Block::bordered())
+                        .render(*file_area, buf);
                 } else {
-                    square = Block::default().bg(background).fg(foreground);
+                    // square = Block::default().bg(background).fg(foreground)
+                    Paragraph::new(ascii)
+                        .bg(background)
+                        .fg(foreground)
+                        .render(*file_area, buf);
                 }
-
-                square.render(*file_area, buf);
             }
         }
     }

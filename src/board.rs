@@ -134,10 +134,12 @@ mod tests {
         let white = Square::C2;
         let empty = Square::G4;
         let black = Square::B8;
+        let queen = Square::D1;
 
         assert_eq!(board.determine_color(white), Some(Color::White));
         assert_eq!(board.determine_color(empty), None);
         assert_eq!(board.determine_color(black), Some(Color::Black));
+        assert_eq!(board.determine_color(queen), Some(Color::White));
     }
 
     #[test]
@@ -147,9 +149,11 @@ mod tests {
         let pawn = Square::C2;
         let empty = Square::G4;
         let knight = Square::B8;
+        let queen = Square::D8;
 
         assert_eq!(board.determine_piece(pawn), Some(Piece::Pawn));
         assert_eq!(board.determine_piece(empty), None);
         assert_eq!(board.determine_piece(knight), Some(Piece::Knight));
+        assert_eq!(board.determine_piece(queen), Some(Piece::Queen));
     }
 }
