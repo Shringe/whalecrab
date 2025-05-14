@@ -94,7 +94,7 @@ impl Board {
 
     /// Determines type of standing piece
     pub fn determine_piece(&self, sq: Square) -> Option<Piece> {
-        let pos = BitBoard::from_square(sq.clone());
+        let pos = BitBoard::from_square(sq);
         if pos & self.occupied_bitboard() == EMPTY {
             return None;
         }
