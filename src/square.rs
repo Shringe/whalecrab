@@ -1,8 +1,9 @@
+use crate::board::Color;
 // https://github.com/jordanbray/chess/blob/main/src/square.rs
 use crate::file::File;
 use crate::rank::Rank;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Square(u8);
 
 impl Square {
@@ -123,6 +124,13 @@ impl Square {
                 self.get_rank(),
                 self.get_file().right(),
             ))
+        }
+    }
+
+    pub fn forward(&self, color: &Color) -> Option<Square> {
+        match color {
+            Color::White => self.up(),
+            Color::Black => self.down(),
         }
     }
 }
