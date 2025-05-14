@@ -7,34 +7,10 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, M
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
-///
-/// ```
-/// use chess::{BitBoard, Square};
-///
-/// let bb = BitBoard(7); // lower-left 3 squares
-///
-/// let mut count = 0;
-///
-/// // Iterate over each square in the bitboard
-/// for _ in bb {
-///     count += 1;
-/// }
-///
-/// assert_eq!(count, 3);
-/// ```
-///
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
 pub struct BitBoard(pub u64);
 
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.
-///
-/// ```
-///     use chess::EMPTY;
-///
-///     assert_eq!(EMPTY.count(), 0);
-///
-///     assert_eq!((!EMPTY).count(), 64);
-/// ```
 pub const EMPTY: BitBoard = BitBoard(0);
 
 // Impl BitAnd
@@ -270,30 +246,30 @@ impl fmt::Display for BitBoard {
 }
 
 impl BitBoard {
-    pub const INITIAL_WHITE_PAWN: BitBoard =
+    pub const INITIAL_BLACK_PAWN: BitBoard =
         BitBoard(0b00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_WHITE_KNIGHT: BitBoard =
+    pub const INITIAL_BLACK_KNIGHT: BitBoard =
         BitBoard(0b01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_WHITE_BISHOP: BitBoard =
+    pub const INITIAL_BLACK_BISHOP: BitBoard =
         BitBoard(0b00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_WHITE_ROOK: BitBoard =
+    pub const INITIAL_BLACK_ROOK: BitBoard =
         BitBoard(0b10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_WHITE_QUEEN: BitBoard =
+    pub const INITIAL_BLACK_QUEEN: BitBoard =
         BitBoard(0b00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_WHITE_KING: BitBoard =
+    pub const INITIAL_BLACK_KING: BitBoard =
         BitBoard(0b00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
 
-    pub const INITIAL_BLACK_PAWN: BitBoard =
+    pub const INITIAL_WHITE_PAWN: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000);
-    pub const INITIAL_BLACK_KNIGHT: BitBoard =
+    pub const INITIAL_WHITE_KNIGHT: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010);
-    pub const INITIAL_BLACK_BISHOP: BitBoard =
+    pub const INITIAL_WHITE_BISHOP: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100);
-    pub const INITIAL_BLACK_ROOK: BitBoard =
+    pub const INITIAL_WHITE_ROOK: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001);
-    pub const INITIAL_BLACK_QUEEN: BitBoard =
+    pub const INITIAL_WHITE_QUEEN: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000);
-    pub const INITIAL_BLACK_KING: BitBoard =
+    pub const INITIAL_WHITE_KING: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000);
 
     /// Construct a new bitboard from a u64

@@ -12,7 +12,6 @@ use ratatui::{
 };
 use std::io::Result;
 
-#[derive(Debug)]
 struct App {
     highlighted_square: Square,
     selected_square: Option<Square>,
@@ -203,6 +202,5 @@ fn main() -> Result<()> {
     let mut terminal = ratatui::init();
     let result = app.run(&mut terminal);
     ratatui::restore();
-    println!("{:#?}", app);
     result
 }

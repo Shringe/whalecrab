@@ -1,6 +1,4 @@
-use crabfish::board::render_bitboard;
 use crabfish::board::Board;
-use crabfish::pieces::white_pawn;
 use crabfish::pieces::white_pawn::WhitePawn;
 use crabfish::square::Square;
 
