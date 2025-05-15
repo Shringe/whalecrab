@@ -56,8 +56,10 @@ impl Move {
     }
 }
 
-/// Generates all legal moves for a single pawn
-/// Capturing NOT yet generated
+/// Generates all psuedo legal moves for a single pawn
+/// En_Passant not considered
+/// Promotion not considered
+/// King safety not considered
 pub fn generate_psuedo_legal_pawn_targets(board: &Board, sq: Square) -> Vec<Square> {
     let mut targets = Vec::new();
 
@@ -177,6 +179,31 @@ mod tests {
         assert!(
             !moves.contains(&invalid_black_move),
             "Invalid black move deemed valid."
+        );
+    }
+
+    #[test]
+    fn white_pawn_sees_black_target() {
+        let mut board = Board::default();
+        let looking_for = Move(Square::H4, Square::G5);
+        for m in [&Move(Square::H2, Square::H4), &Move(Square::G7, Square::G5)] {
+            board = m.make(&board);
+        }
+
+        assert_eq!(board.turn, Color::White);
+        assert!(
+            looking_for.1.in_bitboard(&board.black_pawn_bitboard),
+            "Black pawn not in position"
+        );
+        assert!(
+            looking_for.0.in_bitboard(&board.white_pawn_bitboard),
+            "White pawn not in position"
+        );
+        let moves = generate_psuedo_legal_pawn_targets(&board, looking_for.0);
+        assert!(
+            moves.contains(&looking_for.1),
+            "White pawn can't see target. Available moves: {:?}",
+            moves
         );
     }
 
