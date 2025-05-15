@@ -19,6 +19,7 @@
           buildInputs = [
             rust-bin.beta.latest.default
             scc
+            git
             fish
           ];
 
