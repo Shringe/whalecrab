@@ -57,24 +57,31 @@ impl Move {
 }
 
 /// Generates all legal moves for a single pawn
+/// Capturing NOT yet generated
 pub fn generate_psuedo_legal_pawn_targets(board: &Board, sq: Square) -> Vec<Square> {
     let mut targets = Vec::new();
 
-    let color = &board.turn;
+    let color = board
+        .determine_color(sq)
+        .expect("Couldn't determine piece color!");
+    let enemy_color = &color.opponent();
+
     let initial = match color {
         Color::White => BitBoard::INITIAL_WHITE_PAWN,
         Color::Black => BitBoard::INITIAL_BLACK_PAWN,
     };
 
-    if let Some(once) = sq.forward(color) {
+    // Advances
+    if let Some(once) = sq.forward(&color) {
         if board.determine_piece(once).is_some() {
             return targets;
         }
 
         targets.push(once);
 
-        if BitBoard::from_square(sq) & initial != EMPTY {
-            let twice = once.forward(color).unwrap();
+        // If on initial rank
+        if sq.in_bitboard(&initial) {
+            let twice = once.forward(&color).unwrap();
             if board.determine_piece(twice).is_some() {
                 return targets;
             }
@@ -83,10 +90,27 @@ pub fn generate_psuedo_legal_pawn_targets(board: &Board, sq: Square) -> Vec<Squa
         }
     }
 
+    // Captures
+    if let Some(left) = sq.fleft(&color) {
+        if let Some(target) = board.determine_color(left) {
+            if target == *enemy_color {
+                targets.push(left);
+            }
+        }
+    }
+
+    if let Some(right) = sq.fright(&color) {
+        if let Some(target) = board.determine_color(right) {
+            if target == *enemy_color {
+                targets.push(right);
+            }
+        }
+    }
+
     targets
 }
 
-/// Capturing NOT yet generated
+/// Generates all moves for all pawn
 pub fn generate_all_psuedo_legal_pawn_moves(board: &Board) -> Vec<Move> {
     let mut moves = Vec::new();
 
@@ -153,6 +177,85 @@ mod tests {
         assert!(
             !moves.contains(&invalid_black_move),
             "Invalid black move deemed valid."
+        );
+    }
+
+    #[test]
+    fn black_pawn_sees_white_target() {
+        let mut board = Board::default();
+        let looking_for = Move(Square::D5, Square::C4);
+        for m in [
+            &Move(Square::C2, Square::C4),
+            &Move(Square::D7, Square::D5),
+            &Move(Square::H2, Square::H3),
+        ] {
+            board = m.make(&board);
+        }
+
+        assert_eq!(board.turn, Color::Black);
+        assert!(
+            looking_for.1.in_bitboard(&board.white_pawn_bitboard),
+            "White pawn not in position"
+        );
+        assert!(
+            looking_for.0.in_bitboard(&board.black_pawn_bitboard),
+            "Black pawn not in position"
+        );
+        let moves = generate_psuedo_legal_pawn_targets(&board, looking_for.0);
+        assert!(
+            moves.contains(&looking_for.1),
+            "Black pawn can't see target. Availabe moves: {:?}",
+            moves
+        );
+    }
+
+    #[test]
+    fn white_pawn_captures_black_pawn() {
+        let mut board = Board::default();
+        let capture = Move(Square::B4, Square::C5);
+        let white_pawns_before = board.white_pawn_bitboard.popcnt();
+        let black_pawns_before = board.black_pawn_bitboard.popcnt();
+
+        for m in [
+            &Move(Square::B2, Square::B4),
+            &Move(Square::C7, Square::C5),
+            &capture,
+        ] {
+            board = m.make(&board);
+        }
+
+        let white_pawns_after = board.white_pawn_bitboard.popcnt();
+        let black_pawns_after = board.black_pawn_bitboard.popcnt();
+
+        assert!(
+            !Square::B2.in_bitboard(&board.white_pawn_bitboard),
+            "White never moved"
+        );
+        assert!(
+            !capture.0.in_bitboard(&board.white_pawn_bitboard),
+            "White moved but failed to capture"
+        );
+        assert!(
+            !capture.1.in_bitboard(&board.black_pawn_bitboard),
+            "The black pawn is still standing"
+        );
+        assert!(
+            capture.1.in_bitboard(&board.white_pawn_bitboard),
+            "White isn't in the correct posistion"
+        );
+
+        assert_ne!(
+            black_pawns_before, black_pawns_after,
+            "The number of black pawns didn't change"
+        );
+        assert_eq!(
+            black_pawns_before - 1,
+            black_pawns_after,
+            "The number of black pawns didn't decrease by one"
+        );
+        assert_eq!(
+            white_pawns_before, white_pawns_after,
+            "The number of white pawns changed"
         );
     }
 
