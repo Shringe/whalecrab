@@ -101,6 +101,50 @@ impl Square {
         Square((rank.to_index() as u8) << 3 ^ (file.to_index() as u8))
     }
 
+    pub fn uleft(&self) -> Option<Square> {
+        if self.get_rank() == Rank::Eighth || self.get_file() == File::A {
+            None
+        } else {
+            Some(Square::make_square(
+                self.get_rank().up(),
+                self.get_file().left(),
+            ))
+        }
+    }
+
+    pub fn uright(&self) -> Option<Square> {
+        if self.get_rank() == Rank::Eighth || self.get_file() == File::H {
+            None
+        } else {
+            Some(Square::make_square(
+                self.get_rank().up(),
+                self.get_file().right(),
+            ))
+        }
+    }
+
+    pub fn dleft(&self) -> Option<Square> {
+        if self.get_rank() == Rank::First || self.get_file() == File::A {
+            None
+        } else {
+            Some(Square::make_square(
+                self.get_rank().down(),
+                self.get_file().left(),
+            ))
+        }
+    }
+
+    pub fn dright(&self) -> Option<Square> {
+        if self.get_rank() == Rank::First || self.get_file() == File::H {
+            None
+        } else {
+            Some(Square::make_square(
+                self.get_rank().down(),
+                self.get_file().right(),
+            ))
+        }
+    }
+
     pub fn up(&self) -> Option<Square> {
         if self.get_rank() == Rank::Eighth {
             None
@@ -143,6 +187,22 @@ impl Square {
         }
     }
 
+    /// forward left
+    pub fn fleft(&self, color: &Color) -> Option<Square> {
+        match color {
+            Color::White => self.uleft(),
+            Color::Black => self.dleft(),
+        }
+    }
+
+    /// forward right
+    pub fn fright(&self, color: &Color) -> Option<Square> {
+        match color {
+            Color::White => self.uright(),
+            Color::Black => self.dright(),
+        }
+    }
+
     /// Consumes the square and determines if it is on it the given bitboard
     pub fn in_bitboard(&self, bb: &BitBoard) -> bool {
         bb.has_square(&BitBoard::from_square(*self))
@@ -167,5 +227,17 @@ mod tests {
         assert!(first.in_bitboard(&occupied));
         assert!(second.in_bitboard(&occupied));
         assert!(!empty.in_bitboard(&occupied));
+    }
+
+    #[test]
+    fn uright_equals_up_right() {
+        let sq = Square::E4;
+        assert_eq!(sq.up().unwrap().right(), sq.uright());
+    }
+
+    #[test]
+    fn dleft_eqauls_down_left() {
+        let sq = Square::F7;
+        assert_eq!(sq.down().unwrap().left(), sq.dleft());
     }
 }
