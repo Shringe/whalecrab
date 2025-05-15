@@ -3,10 +3,19 @@ use crate::{
     square::Square,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Color {
     White,
     Black,
+}
+
+impl Color {
+    pub fn opponent(&self) -> Color {
+        match &self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +28,7 @@ pub enum Piece {
     King,
 }
 
+#[derive(Clone)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -34,7 +44,7 @@ pub struct Board {
     pub black_queen_bitboard: BitBoard,
     pub black_king_bitboard: BitBoard,
 
-    pub is_whites_turn: bool,
+    pub turn: Color,
 }
 
 impl Board {
@@ -54,7 +64,49 @@ impl Board {
             black_queen_bitboard: BitBoard::INITIAL_BLACK_QUEEN,
             black_king_bitboard: BitBoard::INITIAL_BLACK_KING,
 
-            is_whites_turn: true,
+            turn: Color::White,
+        }
+    }
+
+    pub fn set_occupied_bitboard(&mut self, piece: &Piece, color: &Color, new: BitBoard) {
+        match color {
+            Color::White => match piece {
+                Piece::Pawn => self.white_pawn_bitboard = new,
+                Piece::Knight => self.white_knight_bitboard = new,
+                Piece::Bishop => self.white_bishop_bitboard = new,
+                Piece::Rook => self.white_rook_bitboard = new,
+                Piece::Queen => self.white_queen_bitboard = new,
+                Piece::King => self.white_king_bitboard = new,
+            },
+            Color::Black => match piece {
+                Piece::Pawn => self.black_pawn_bitboard = new,
+                Piece::Knight => self.black_knight_bitboard = new,
+                Piece::Bishop => self.black_bishop_bitboard = new,
+                Piece::Rook => self.black_rook_bitboard = new,
+                Piece::Queen => self.black_queen_bitboard = new,
+                Piece::King => self.black_king_bitboard = new,
+            },
+        }
+    }
+
+    pub fn get_occupied_bitboard(&self, piece: &Piece, color: &Color) -> BitBoard {
+        match color {
+            Color::White => match piece {
+                Piece::Pawn => self.white_pawn_bitboard,
+                Piece::Knight => self.white_knight_bitboard,
+                Piece::Bishop => self.white_bishop_bitboard,
+                Piece::Rook => self.white_rook_bitboard,
+                Piece::Queen => self.white_queen_bitboard,
+                Piece::King => self.white_king_bitboard,
+            },
+            Color::Black => match piece {
+                Piece::Pawn => self.black_pawn_bitboard,
+                Piece::Knight => self.black_knight_bitboard,
+                Piece::Bishop => self.black_bishop_bitboard,
+                Piece::Rook => self.black_rook_bitboard,
+                Piece::Queen => self.black_queen_bitboard,
+                Piece::King => self.black_king_bitboard,
+            },
         }
     }
 
@@ -155,5 +207,24 @@ mod tests {
         assert_eq!(board.determine_piece(empty), None);
         assert_eq!(board.determine_piece(knight), Some(Piece::Knight));
         assert_eq!(board.determine_piece(queen), Some(Piece::Queen));
+    }
+
+    #[test]
+    fn get_occupied_bitboards() {
+        let board = Board::default();
+
+        let white_pawns = board.get_occupied_bitboard(&Piece::Pawn, &Color::White);
+        assert_eq!(white_pawns, board.white_pawn_bitboard);
+        assert!(BitBoard::from_square(Square::A2) & white_pawns != EMPTY);
+        assert!(BitBoard::from_square(Square::H2) & white_pawns != EMPTY);
+        assert!(BitBoard::from_square(Square::A3) & white_pawns == EMPTY);
+        assert!(BitBoard::from_square(Square::E4) & white_pawns == EMPTY);
+
+        let black_rooks = board.get_occupied_bitboard(&Piece::Rook, &Color::Black);
+        assert_eq!(black_rooks, board.black_rook_bitboard);
+        assert!(BitBoard::from_square(Square::A8) & black_rooks != EMPTY);
+        assert!(BitBoard::from_square(Square::H8) & black_rooks != EMPTY);
+        assert!(BitBoard::from_square(Square::B7) & black_rooks == EMPTY);
+        assert!(BitBoard::from_square(Square::E5) & black_rooks == EMPTY);
     }
 }

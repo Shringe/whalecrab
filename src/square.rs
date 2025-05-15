@@ -1,3 +1,6 @@
+use std::fmt::{self, Display};
+
+use crate::bitboard::BitBoard;
 use crate::board::Color;
 // https://github.com/jordanbray/chess/blob/main/src/square.rs
 use crate::file::File;
@@ -5,6 +8,12 @@ use crate::rank::Rank;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Square(u8);
+
+impl Display for Square {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}{:?}", self.get_rank(), self.get_file())
+    }
+}
 
 impl Square {
     pub const A1: Square = Square(0);
@@ -132,5 +141,31 @@ impl Square {
             Color::White => self.up(),
             Color::Black => self.down(),
         }
+    }
+
+    /// Consumes the square and determines if it is on it the given bitboard
+    pub fn in_bitboard(&self, bb: &BitBoard) -> bool {
+        bb.has_square(&BitBoard::from_square(*self))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::board::Board;
+
+    use super::*;
+
+    #[test]
+    fn in_bitboards() {
+        let board = Board::default();
+        let occupied = board.occupied_bitboard();
+
+        let first = Square::C7;
+        let second = Square::H1;
+        let empty = Square::G3;
+
+        assert!(first.in_bitboard(&occupied));
+        assert!(second.in_bitboard(&occupied));
+        assert!(!empty.in_bitboard(&occupied));
     }
 }

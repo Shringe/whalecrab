@@ -302,6 +302,12 @@ impl BitBoard {
         Square::new(self.0.trailing_zeros() as u8)
     }
 
+    /// Check if a square's index is on in the bitboard
+    /// The BitBoard should only have a single square on
+    pub fn has_square(&self, sqbb: &BitBoard) -> bool {
+        self & sqbb != EMPTY
+    }
+
     /// Count the number of `Squares` set in this `BitBoard`
     #[inline]
     pub fn popcnt(&self) -> u32 {
@@ -331,8 +337,29 @@ impl Iterator for BitBoard {
             None
         } else {
             let result = self.to_square();
-            *self ^= BitBoard::from_square(result.clone());
+            *self ^= BitBoard::from_square(result);
             Some(result)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::board::Board;
+
+    use super::*;
+
+    #[test]
+    fn has_squares() {
+        let board = Board::default();
+        let occupied = board.occupied_bitboard();
+
+        let first = BitBoard::from_square(Square::C7);
+        let second = BitBoard::from_square(Square::H1);
+        let empty = BitBoard::from_square(Square::G3);
+
+        assert!(occupied.has_square(&first));
+        assert!(occupied.has_square(&second));
+        assert!(!occupied.has_square(&empty));
     }
 }
