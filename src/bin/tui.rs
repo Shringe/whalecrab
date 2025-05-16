@@ -1,7 +1,9 @@
 use crabfish::board::{self, Piece};
-use crabfish::movegen::{generate_psuedo_legal_pawn_targets, Move};
+use crabfish::movegen::movegen::generate_psuedo_legal_pawn_targets;
+use crabfish::movegen::moves::Move;
 use crabfish::rank::Rank;
 use crabfish::square::Square;
+use crabfish::test_utils::format_pretty_list;
 use crabfish::{board::Board, file::File};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::widgets::Paragraph;
@@ -193,8 +195,12 @@ impl App {
 
                 if self.selected_square.is_some() {
                     if self.potential_targets.contains(&self.highlighted_square) {
-                        self.board = Move(self.selected_square.unwrap(), self.highlighted_square)
-                            .make(&self.board);
+                        self.board = Move::new(
+                            self.selected_square.unwrap(),
+                            self.highlighted_square,
+                            &self.board,
+                        )
+                        .make(&self.board);
                     }
 
                     self.unselect();
@@ -258,24 +264,27 @@ impl Widget for &App {
         ));
 
         debug_text.push_str(&format!(
-            "
-Highlighted square:
-    rank: {:?}
-    file: {:?}
-",
-            self.highlighted_square.get_rank(),
-            self.highlighted_square.get_file(),
+            "Highlighted square: {}\n",
+            self.highlighted_square
         ));
 
-        if self.selected_square.is_some() {
-            debug_text.push_str(&format!(
-                "
-Selected square:
-    rank: {:?}
-    file: {:?}",
-                self.selected_square.unwrap().get_rank(),
-                self.selected_square.unwrap().get_file(),
-            ));
+        if let Some(sq) = self.selected_square {
+            if let Some(piece) = self.board.determine_piece(sq) {
+                debug_text.push_str(&format!(
+                    "
+Selected Square info:
+    square: {}
+    type: {:?}
+    color: {:?}
+    targets: 
+{}
+",
+                    sq,
+                    piece,
+                    self.board.determine_color(sq).unwrap(),
+                    format_pretty_list(&self.potential_targets)
+                ));
+            }
         }
 
         Paragraph::new(debug_text)
