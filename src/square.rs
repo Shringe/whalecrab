@@ -11,7 +11,7 @@ pub struct Square(u8);
 
 impl Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.get_rank(), self.get_file())
+        write!(f, "{:?}{}", self.get_file(), self.get_rank())
     }
 }
 
@@ -180,6 +180,13 @@ impl Square {
         }
     }
 
+    pub fn backward(&self, color: &Color) -> Option<Square> {
+        match color {
+            Color::White => self.down(),
+            Color::Black => self.up(),
+        }
+    }
+
     pub fn forward(&self, color: &Color) -> Option<Square> {
         match color {
             Color::White => self.up(),
@@ -239,5 +246,13 @@ mod tests {
     fn dleft_eqauls_down_left() {
         let sq = Square::F7;
         assert_eq!(sq.down().unwrap().left(), sq.dleft());
+    }
+
+    #[test]
+    fn display_format() {
+        let a6 = Square::A6;
+        let g3 = Square::G3;
+        assert_eq!("A6", format!("{}", a6));
+        assert_eq!("G3", format!("{}", g3));
     }
 }

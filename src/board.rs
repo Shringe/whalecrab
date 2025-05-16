@@ -44,6 +44,8 @@ pub struct Board {
     pub black_queen_bitboard: BitBoard,
     pub black_king_bitboard: BitBoard,
 
+    pub en_passant_target: Option<Square>,
+
     pub turn: Color,
 }
 
@@ -63,6 +65,8 @@ impl Board {
             black_rook_bitboard: BitBoard::INITIAL_BLACK_ROOK,
             black_queen_bitboard: BitBoard::INITIAL_BLACK_QUEEN,
             black_king_bitboard: BitBoard::INITIAL_BLACK_KING,
+
+            en_passant_target: None,
 
             turn: Color::White,
         }
@@ -166,6 +170,12 @@ impl Board {
         } else {
             panic!("Can't determine piece type of square {:?}!", sq);
         }
+    }
+
+    /// Switches the players' turn and removes en_passant_target
+    pub fn next_turn(&mut self) {
+        self.turn = self.turn.opponent();
+        self.en_passant_target = None;
     }
 }
 

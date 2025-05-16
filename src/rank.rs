@@ -1,3 +1,5 @@
+use std::fmt::{self};
+
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 #[repr(u8)]
@@ -10,6 +12,12 @@ pub enum Rank {
     Sixth = 5,
     Seventh = 6,
     Eighth = 7,
+}
+
+impl fmt::Display for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_index() + 1)
+    }
 }
 
 /// How many ranks are there?
