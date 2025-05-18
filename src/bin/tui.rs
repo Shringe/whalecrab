@@ -1,5 +1,7 @@
 use crabfish::board::{self, Piece};
-use crabfish::movegen::movegen::generate_psuedo_legal_pawn_targets;
+use crabfish::movegen::movegen::{
+    generate_psuedo_legal_knight_targets, generate_psuedo_legal_pawn_targets,
+};
 use crabfish::movegen::moves::Move;
 use crabfish::rank::Rank;
 use crabfish::square::Square;
@@ -214,7 +216,10 @@ impl App {
                                     self.potential_targets =
                                         generate_psuedo_legal_pawn_targets(&self.board, new);
                                 }
-                                Piece::Knight => todo!(),
+                                Piece::Knight => {
+                                    self.potential_targets =
+                                        generate_psuedo_legal_knight_targets(&self.board, new);
+                                }
                                 Piece::Bishop => todo!(),
                                 Piece::Rook => todo!(),
                                 Piece::Queen => todo!(),

@@ -37,7 +37,7 @@ impl Move {
             from,
             to,
             special: if let Some(target) = board.en_passant_target {
-                if to == target {
+                if to == target && board.determine_piece(from) == Some(Piece::Pawn) {
                     Some(SpecialMove::CaptureEnPassant)
                 } else {
                     None
