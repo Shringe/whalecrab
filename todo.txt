@@ -8,5 +8,6 @@
 Still needed:
 Piece promotion
 King safety checks
+King movement
 Castling
 Game Results (checkmate, stalemate, etc.)
