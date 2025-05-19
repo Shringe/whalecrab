@@ -1,6 +1,7 @@
 use crabfish::board::{self, PieceType};
 use crabfish::movegen::moves::Move;
 use crabfish::movegen::pieces::bishop::Bishop;
+use crabfish::movegen::pieces::king::King;
 use crabfish::movegen::pieces::knight::Knight;
 use crabfish::movegen::pieces::pawn::Pawn;
 use crabfish::movegen::pieces::piece::Piece;
@@ -235,7 +236,10 @@ impl App {
                                     self.potential_targets =
                                         Queen(new).psuedo_legal_targets(&self.board)
                                 }
-                                PieceType::King => todo!(),
+                                PieceType::King => {
+                                    self.potential_targets =
+                                        King(new).psuedo_legal_targets(&self.board)
+                                }
                             }
                         }
                     }
