@@ -2,12 +2,12 @@ use std::fmt;
 
 use crate::{
     bitboard::BitBoard,
-    board::{Board, Piece},
+    board::{Board, PieceType},
     square::Square,
 };
 
 /// Provides information of what to remove from the game after a piece gets captured
-pub struct Capture(Piece, Square);
+pub struct Capture(PieceType, Square);
 
 #[derive(PartialEq, Debug)]
 pub enum SpecialMove {
@@ -37,12 +37,12 @@ impl Move {
             from,
             to,
             special: if let Some(target) = board.en_passant_target {
-                if to == target && board.determine_piece(from) == Some(Piece::Pawn) {
+                if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
                     Some(SpecialMove::CaptureEnPassant)
                 } else {
                     None
                 }
-            } else if board.determine_piece(from) == Some(Piece::Pawn) {
+            } else if board.determine_piece(from) == Some(PieceType::Pawn) {
                 let color = board.determine_color(from).unwrap();
                 if let Some(once) = from.forward(&color) {
                     if let Some(twice) = once.forward(&color) {
