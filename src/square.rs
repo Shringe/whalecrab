@@ -1,10 +1,20 @@
 use std::fmt::{self, Display};
 
 use crate::bitboard::BitBoard;
-use crate::board::Color;
-// https://github.com/jordanbray/chess/blob/main/src/square.rs
+use crate::board::{Board, Color};
 use crate::file::File;
 use crate::rank::Rank;
+
+pub enum Direction {
+    North,
+    South,
+    East,
+    West,
+    NorthEast,
+    NorthWest,
+    SouthEast,
+    SouthWest,
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Square(u8);
@@ -213,6 +223,44 @@ impl Square {
     /// Consumes the square and determines if it is on it the given bitboard
     pub fn in_bitboard(&self, bb: &BitBoard) -> bool {
         bb.has_square(&BitBoard::from_square(*self))
+    }
+
+    /// Moves one square in a direction. Useful for ray pieces.
+    pub fn walk(&self, direction: &Direction) -> Option<Square> {
+        match direction {
+            Direction::North => self.up(),
+            Direction::South => self.down(),
+            Direction::East => self.right(),
+            Direction::West => self.left(),
+            Direction::NorthEast => self.uright(),
+            Direction::NorthWest => self.uleft(),
+            Direction::SouthEast => self.dright(),
+            Direction::SouthWest => self.dleft(),
+        }
+    }
+
+    /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
+    /// or it ends right on an enemy piece. Used for ray pieces in move generation.
+    pub fn ray(&self, direction: &Direction, board: &Board) -> Vec<Square> {
+        let mut squares = Vec::new();
+        let enemy = board.turn.opponent();
+
+        let mut current = *self;
+
+        while let Some(forward) = current.walk(direction) {
+            if let Some(color) = board.determine_color(forward) {
+                if color == enemy {
+                    squares.push(forward);
+                }
+                break;
+            } else {
+                squares.push(forward);
+            }
+
+            current = forward;
+        }
+
+        squares
     }
 }
 

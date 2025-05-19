@@ -19,7 +19,7 @@ impl Color {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Piece {
+pub enum PieceType {
     Pawn,
     Knight,
     Bishop,
@@ -72,44 +72,44 @@ impl Board {
         }
     }
 
-    pub fn set_occupied_bitboard(&mut self, piece: &Piece, color: &Color, new: BitBoard) {
+    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &Color, new: BitBoard) {
         match color {
             Color::White => match piece {
-                Piece::Pawn => self.white_pawn_bitboard = new,
-                Piece::Knight => self.white_knight_bitboard = new,
-                Piece::Bishop => self.white_bishop_bitboard = new,
-                Piece::Rook => self.white_rook_bitboard = new,
-                Piece::Queen => self.white_queen_bitboard = new,
-                Piece::King => self.white_king_bitboard = new,
+                PieceType::Pawn => self.white_pawn_bitboard = new,
+                PieceType::Knight => self.white_knight_bitboard = new,
+                PieceType::Bishop => self.white_bishop_bitboard = new,
+                PieceType::Rook => self.white_rook_bitboard = new,
+                PieceType::Queen => self.white_queen_bitboard = new,
+                PieceType::King => self.white_king_bitboard = new,
             },
             Color::Black => match piece {
-                Piece::Pawn => self.black_pawn_bitboard = new,
-                Piece::Knight => self.black_knight_bitboard = new,
-                Piece::Bishop => self.black_bishop_bitboard = new,
-                Piece::Rook => self.black_rook_bitboard = new,
-                Piece::Queen => self.black_queen_bitboard = new,
-                Piece::King => self.black_king_bitboard = new,
+                PieceType::Pawn => self.black_pawn_bitboard = new,
+                PieceType::Knight => self.black_knight_bitboard = new,
+                PieceType::Bishop => self.black_bishop_bitboard = new,
+                PieceType::Rook => self.black_rook_bitboard = new,
+                PieceType::Queen => self.black_queen_bitboard = new,
+                PieceType::King => self.black_king_bitboard = new,
             },
         }
     }
 
-    pub fn get_occupied_bitboard(&self, piece: &Piece, color: &Color) -> BitBoard {
+    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &Color) -> BitBoard {
         match color {
             Color::White => match piece {
-                Piece::Pawn => self.white_pawn_bitboard,
-                Piece::Knight => self.white_knight_bitboard,
-                Piece::Bishop => self.white_bishop_bitboard,
-                Piece::Rook => self.white_rook_bitboard,
-                Piece::Queen => self.white_queen_bitboard,
-                Piece::King => self.white_king_bitboard,
+                PieceType::Pawn => self.white_pawn_bitboard,
+                PieceType::Knight => self.white_knight_bitboard,
+                PieceType::Bishop => self.white_bishop_bitboard,
+                PieceType::Rook => self.white_rook_bitboard,
+                PieceType::Queen => self.white_queen_bitboard,
+                PieceType::King => self.white_king_bitboard,
             },
             Color::Black => match piece {
-                Piece::Pawn => self.black_pawn_bitboard,
-                Piece::Knight => self.black_knight_bitboard,
-                Piece::Bishop => self.black_bishop_bitboard,
-                Piece::Rook => self.black_rook_bitboard,
-                Piece::Queen => self.black_queen_bitboard,
-                Piece::King => self.black_king_bitboard,
+                PieceType::Pawn => self.black_pawn_bitboard,
+                PieceType::Knight => self.black_knight_bitboard,
+                PieceType::Bishop => self.black_bishop_bitboard,
+                PieceType::Rook => self.black_rook_bitboard,
+                PieceType::Queen => self.black_queen_bitboard,
+                PieceType::King => self.black_king_bitboard,
             },
         }
     }
@@ -149,24 +149,24 @@ impl Board {
     }
 
     /// Determines type of standing piece
-    pub fn determine_piece(&self, sq: Square) -> Option<Piece> {
+    pub fn determine_piece(&self, sq: Square) -> Option<PieceType> {
         let pos = BitBoard::from_square(sq);
         if pos & self.occupied_bitboard() == EMPTY {
             return None;
         }
 
         if pos & (self.white_pawn_bitboard | self.black_pawn_bitboard) != EMPTY {
-            Some(Piece::Pawn)
+            Some(PieceType::Pawn)
         } else if pos & (self.white_knight_bitboard | self.black_knight_bitboard) != EMPTY {
-            Some(Piece::Knight)
+            Some(PieceType::Knight)
         } else if pos & (self.white_bishop_bitboard | self.black_bishop_bitboard) != EMPTY {
-            Some(Piece::Bishop)
+            Some(PieceType::Bishop)
         } else if pos & (self.white_rook_bitboard | self.black_rook_bitboard) != EMPTY {
-            Some(Piece::Rook)
+            Some(PieceType::Rook)
         } else if pos & (self.white_queen_bitboard | self.black_queen_bitboard) != EMPTY {
-            Some(Piece::Queen)
+            Some(PieceType::Queen)
         } else if pos & (self.white_king_bitboard | self.black_king_bitboard) != EMPTY {
-            Some(Piece::King)
+            Some(PieceType::King)
         } else {
             panic!("Can't determine piece type of square {:?}!", sq);
         }
@@ -213,24 +213,24 @@ mod tests {
         let knight = Square::B8;
         let queen = Square::D8;
 
-        assert_eq!(board.determine_piece(pawn), Some(Piece::Pawn));
+        assert_eq!(board.determine_piece(pawn), Some(PieceType::Pawn));
         assert_eq!(board.determine_piece(empty), None);
-        assert_eq!(board.determine_piece(knight), Some(Piece::Knight));
-        assert_eq!(board.determine_piece(queen), Some(Piece::Queen));
+        assert_eq!(board.determine_piece(knight), Some(PieceType::Knight));
+        assert_eq!(board.determine_piece(queen), Some(PieceType::Queen));
     }
 
     #[test]
     fn get_occupied_bitboards() {
         let board = Board::default();
 
-        let white_pawns = board.get_occupied_bitboard(&Piece::Pawn, &Color::White);
+        let white_pawns = board.get_occupied_bitboard(&PieceType::Pawn, &Color::White);
         assert_eq!(white_pawns, board.white_pawn_bitboard);
         assert!(BitBoard::from_square(Square::A2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::H2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::A3) & white_pawns == EMPTY);
         assert!(BitBoard::from_square(Square::E4) & white_pawns == EMPTY);
 
-        let black_rooks = board.get_occupied_bitboard(&Piece::Rook, &Color::Black);
+        let black_rooks = board.get_occupied_bitboard(&PieceType::Rook, &Color::Black);
         assert_eq!(black_rooks, board.black_rook_bitboard);
         assert!(BitBoard::from_square(Square::A8) & black_rooks != EMPTY);
         assert!(BitBoard::from_square(Square::H8) & black_rooks != EMPTY);

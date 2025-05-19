@@ -1,8 +1,12 @@
-use crabfish::board::{self, Piece};
+use crabfish::board::{self, PieceType};
 use crabfish::movegen::movegen::{
     generate_psuedo_legal_knight_targets, generate_psuedo_legal_pawn_targets,
 };
 use crabfish::movegen::moves::Move;
+use crabfish::movegen::pieces::bishop::Bishop;
+use crabfish::movegen::pieces::piece::Piece;
+use crabfish::movegen::pieces::queen::Queen;
+use crabfish::movegen::pieces::rook::Rook;
 use crabfish::rank::Rank;
 use crabfish::square::Square;
 use crabfish::test_utils::format_pretty_list;
@@ -79,23 +83,23 @@ impl Ascii {
         }
     }
 
-    pub fn get(&self, piece: &board::Piece, color: &board::Color) -> &String {
+    pub fn get(&self, piece: &board::PieceType, color: &board::Color) -> &String {
         match color {
             board::Color::White => match piece {
-                board::Piece::Pawn => &self.white_pawn,
-                board::Piece::Knight => &self.white_knight,
-                board::Piece::Bishop => &self.white_bishop,
-                board::Piece::Rook => &self.white_rook,
-                board::Piece::Queen => &self.white_queen,
-                board::Piece::King => &self.white_king,
+                board::PieceType::Pawn => &self.white_pawn,
+                board::PieceType::Knight => &self.white_knight,
+                board::PieceType::Bishop => &self.white_bishop,
+                board::PieceType::Rook => &self.white_rook,
+                board::PieceType::Queen => &self.white_queen,
+                board::PieceType::King => &self.white_king,
             },
             board::Color::Black => match piece {
-                board::Piece::Pawn => &self.black_pawn,
-                board::Piece::Knight => &self.black_knight,
-                board::Piece::Bishop => &self.black_bishop,
-                board::Piece::Rook => &self.black_rook,
-                board::Piece::Queen => &self.black_queen,
-                board::Piece::King => &self.black_king,
+                board::PieceType::Pawn => &self.black_pawn,
+                board::PieceType::Knight => &self.black_knight,
+                board::PieceType::Bishop => &self.black_bishop,
+                board::PieceType::Rook => &self.black_rook,
+                board::PieceType::Queen => &self.black_queen,
+                board::PieceType::King => &self.black_king,
             },
         }
     }
@@ -212,18 +216,27 @@ impl App {
                     if let Some(piece) = self.board.determine_piece(new) {
                         if self.board.turn == self.board.determine_color(new).unwrap() {
                             match piece {
-                                Piece::Pawn => {
+                                PieceType::Pawn => {
                                     self.potential_targets =
                                         generate_psuedo_legal_pawn_targets(&self.board, new);
                                 }
-                                Piece::Knight => {
+                                PieceType::Knight => {
                                     self.potential_targets =
                                         generate_psuedo_legal_knight_targets(&self.board, new);
                                 }
-                                Piece::Bishop => todo!(),
-                                Piece::Rook => todo!(),
-                                Piece::Queen => todo!(),
-                                Piece::King => todo!(),
+                                PieceType::Bishop => {
+                                    self.potential_targets =
+                                        Bishop(new).psuedo_legal_targets(&self.board)
+                                }
+                                PieceType::Rook => {
+                                    self.potential_targets =
+                                        Rook(new).psuedo_legal_targets(&self.board)
+                                }
+                                PieceType::Queen => {
+                                    self.potential_targets =
+                                        Queen(new).psuedo_legal_targets(&self.board)
+                                }
+                                PieceType::King => todo!(),
                             }
                         }
                     }
