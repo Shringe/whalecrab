@@ -1,0 +1,196 @@
+use crate::{board::Board, movegen::moves::Move, square::Square};
+
+use super::piece::Piece;
+
+pub struct Knight(pub Square);
+
+impl Piece for Knight {
+    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let rank = self.0.get_rank();
+        let file = self.0.get_file();
+
+        let friendly = Some(board.turn.clone());
+
+        if rank.to_index() < 5 {
+            let north = Square::make_square(rank.up().up(), file);
+            for t in [north.left(), north.right()].into_iter().flatten() {
+                if board.determine_color(t) == friendly {
+                    continue;
+                }
+
+                moves.push(Move {
+                    from: self.0,
+                    to: t,
+                    special: None,
+                });
+            }
+        }
+
+        if rank.to_index() > 1 {
+            let south = Square::make_square(rank.down().down(), file);
+            for t in [south.left(), south.right()].into_iter().flatten() {
+                if board.determine_color(t) == friendly {
+                    continue;
+                }
+
+                moves.push(Move {
+                    from: self.0,
+                    to: t,
+                    special: None,
+                });
+            }
+        }
+
+        if file.to_index() < 5 {
+            let east = Square::make_square(rank, file.right().right());
+            for t in [east.up(), east.down()].into_iter().flatten() {
+                if board.determine_color(t) == friendly {
+                    continue;
+                }
+
+                moves.push(Move {
+                    from: self.0,
+                    to: t,
+                    special: None,
+                });
+            }
+        }
+
+        if file.to_index() > 1 {
+            let west = Square::make_square(rank, file.left().left());
+            for t in [west.up(), west.down()].into_iter().flatten() {
+                if board.determine_color(t) == friendly {
+                    continue;
+                }
+
+                moves.push(Move {
+                    from: self.0,
+                    to: t,
+                    special: None,
+                });
+            }
+        }
+
+        moves
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{board::Color, movegen::moves::SpecialMove, test_utils::format_pretty_list};
+
+    use super::*;
+
+    #[test]
+    fn knight_cant_capture_en_passant() {
+        let mut board = Board::default();
+        let avoid = Move {
+            from: Square::E5,
+            to: Square::C6,
+            special: Some(SpecialMove::CaptureEnPassant),
+        };
+        for m in [
+            Move {
+                from: Square::G1,
+                to: Square::F3,
+                special: None,
+            },
+            Move {
+                from: Square::A7,
+                to: Square::A5,
+                special: None,
+            },
+            Move {
+                from: Square::F3,
+                to: Square::E5,
+                special: None,
+            },
+            Move {
+                from: Square::C7,
+                to: Square::C5,
+                special: Some(SpecialMove::CreateEnPassant),
+            },
+        ] {
+            board = m.make(&board);
+        }
+
+        let moves = Knight(avoid.from).psuedo_legal_moves(&board);
+        assert!(!moves.contains(&avoid));
+    }
+
+    #[test]
+    fn white_knight_captures_black_pawn() {
+        let mut board = Board::default();
+        let capture = Move {
+            from: Square::F5,
+            to: Square::E7,
+            special: None,
+        };
+
+        for m in [
+            Move {
+                from: Square::G1,
+                to: Square::F3,
+                special: None,
+            },
+            Move {
+                from: Square::A7,
+                to: Square::A6,
+                special: None,
+            },
+            Move {
+                from: Square::F3,
+                to: Square::D4,
+                special: None,
+            },
+            Move {
+                from: Square::A6,
+                to: Square::A5,
+                special: None,
+            },
+            Move {
+                from: Square::D4,
+                to: Square::F5,
+                special: None,
+            },
+            Move {
+                from: Square::A5,
+                to: Square::A4,
+                special: None,
+            },
+        ] {
+            if board.turn == Color::White {
+                let moves = Knight(m.from).psuedo_legal_moves(&board);
+                assert!(
+                    moves.contains(&m),
+                    "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
+                    m,
+                    format_pretty_list(&moves)
+                )
+            }
+            board = m.make(&board);
+        }
+
+        let moves = Knight(capture.from).psuedo_legal_moves(&board);
+
+        assert!(
+            moves.contains(&capture),
+            "Knight did not generate expected capture move. Availabe: {}",
+            format_pretty_list(&moves)
+        );
+
+        let knight_before = board.white_knight_bitboard.popcnt();
+        let pawns_before = board.black_pawn_bitboard.popcnt();
+        let board = capture.make(&board);
+        let knight_after = board.white_knight_bitboard.popcnt();
+        let pawns_after = board.black_pawn_bitboard.popcnt();
+
+        assert_eq!(knight_before, knight_after, "We lost the knight!");
+        assert_eq!(
+            pawns_before - 1,
+            pawns_after,
+            "The pawn is still standing knight!"
+        );
+    }
+}

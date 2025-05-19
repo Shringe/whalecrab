@@ -1,9 +1,8 @@
 use crabfish::board::{self, PieceType};
-use crabfish::movegen::movegen::{
-    generate_psuedo_legal_knight_targets, generate_psuedo_legal_pawn_targets,
-};
 use crabfish::movegen::moves::Move;
 use crabfish::movegen::pieces::bishop::Bishop;
+use crabfish::movegen::pieces::knight::Knight;
+use crabfish::movegen::pieces::pawn::Pawn;
 use crabfish::movegen::pieces::piece::Piece;
 use crabfish::movegen::pieces::queen::Queen;
 use crabfish::movegen::pieces::rook::Rook;
@@ -218,11 +217,11 @@ impl App {
                             match piece {
                                 PieceType::Pawn => {
                                     self.potential_targets =
-                                        generate_psuedo_legal_pawn_targets(&self.board, new);
+                                        Pawn(new).psuedo_legal_targets(&self.board)
                                 }
                                 PieceType::Knight => {
                                     self.potential_targets =
-                                        generate_psuedo_legal_knight_targets(&self.board, new);
+                                        Knight(new).psuedo_legal_targets(&self.board)
                                 }
                                 PieceType::Bishop => {
                                     self.potential_targets =

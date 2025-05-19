@@ -4,3 +4,9 @@
 4. Implement checks and checkmate
 5. Implement extra rules
 
+
+Still needed:
+Piece promotion
+King safety checks
+Castling
+Game Results (checkmate, stalemate, etc.)
