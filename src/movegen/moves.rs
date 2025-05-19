@@ -130,7 +130,8 @@ impl Move {
 mod tests {
     use super::*;
     use crate::board::Color;
-    use crate::movegen::movegen::generate_psuedo_legal_pawn_moves;
+    use crate::movegen::pieces::pawn::Pawn;
+    use crate::movegen::pieces::piece::Piece;
     use crate::test_utils::*;
 
     #[test]
@@ -279,7 +280,7 @@ mod tests {
             "Black pawn not in position"
         );
 
-        let moves = generate_psuedo_legal_pawn_moves(&board, capture.from);
+        let moves = Pawn(capture.from).psuedo_legal_moves(&board);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",
