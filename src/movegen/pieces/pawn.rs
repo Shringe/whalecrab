@@ -1,7 +1,7 @@
 use crate::{
     bitboard::BitBoard,
     board::{Board, Color, PieceType},
-    movegen::moves::{Move, SpecialMove},
+    movegen::moves::{Move, MoveType},
     rank::Rank,
     square::Square,
 };
@@ -36,13 +36,13 @@ impl Piece for Pawn {
                     moves.push(Move {
                         from: self.0,
                         to: once,
-                        special: Some(SpecialMove::Promotion(PieceType::Queen)),
+                        variant: MoveType::Promotion(PieceType::Queen),
                     });
                 } else {
                     moves.push(Move {
                         from: self.0,
                         to: once,
-                        special: None,
+                        variant: MoveType::Normal,
                     });
                 }
             }
@@ -54,7 +54,7 @@ impl Piece for Pawn {
                     moves.push(Move {
                         from: self.0,
                         to: twice,
-                        special: Some(SpecialMove::CreateEnPassant),
+                        variant: MoveType::CreateEnPassant,
                     });
                 }
             }
@@ -72,13 +72,13 @@ impl Piece for Pawn {
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
-                            special: Some(SpecialMove::Promotion(PieceType::Queen)),
+                            variant: MoveType::Promotion(PieceType::Queen),
                         });
                     } else {
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
-                            special: None,
+                            variant: MoveType::Normal,
                         });
                     }
                 }
@@ -87,7 +87,7 @@ impl Piece for Pawn {
                     moves.push(Move {
                         from: self.0,
                         to: target,
-                        special: Some(SpecialMove::CaptureEnPassant),
+                        variant: MoveType::CaptureEnPassant,
                     });
                 }
             }
@@ -109,18 +109,18 @@ mod tests {
         let looking_for = Move {
             from: Square::H4,
             to: Square::G5,
-            special: None,
+            variant: MoveType::Normal,
         };
         for m in [
             Move {
                 from: Square::H2,
                 to: Square::H4,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
-                special: None,
+                variant: MoveType::Normal,
             },
         ] {
             board = m.make(&board);
@@ -149,24 +149,24 @@ mod tests {
         let looking_for = Move {
             from: Square::D5,
             to: Square::C4,
-            special: None,
+            variant: MoveType::Normal,
         };
 
         for m in [
             Move {
                 from: Square::C2,
                 to: Square::C4,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::D7,
                 to: Square::D5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::H2,
                 to: Square::H3,
-                special: None,
+                variant: MoveType::Normal,
             },
         ] {
             board = m.make(&board);
@@ -195,49 +195,49 @@ mod tests {
         let looking_for = Move {
             from: Square::G7,
             to: Square::H8,
-            special: Some(SpecialMove::Promotion(PieceType::Queen)),
+            variant: MoveType::Promotion(PieceType::Queen),
         };
 
         for m in [
             Move {
                 from: Square::H2,
                 to: Square::H4,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::H4,
                 to: Square::G5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::H7,
                 to: Square::H6,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::G5,
                 to: Square::H6,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::F8,
                 to: Square::G7,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::H6,
                 to: Square::G7,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::E7,
                 to: Square::E5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
         ] {
             board = m.make(&board);

@@ -1,6 +1,6 @@
 use crate::{
     board::Board,
-    movegen::moves::Move,
+    movegen::moves::{Move, MoveType},
     square::{Direction, Square},
 };
 
@@ -22,7 +22,7 @@ impl Piece for Bishop {
                 moves.push(Move {
                     from: self.0,
                     to: sq,
-                    special: None,
+                    variant: MoveType::Normal,
                 });
             }
         }
