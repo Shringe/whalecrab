@@ -13,6 +13,7 @@ pub struct Capture(PieceType, Square);
 pub enum SpecialMove {
     CreateEnPassant,
     CaptureEnPassant,
+    Promotion(PieceType),
 }
 
 #[derive(PartialEq, Debug)]
