@@ -10,7 +10,8 @@ use crate::{
 pub struct Capture(PieceType, Square);
 
 #[derive(PartialEq, Debug)]
-pub enum SpecialMove {
+pub enum MoveType {
+    Normal, // Includes regular captures
     CreateEnPassant,
     CaptureEnPassant,
     Promotion(PieceType),
@@ -20,46 +21,45 @@ pub enum SpecialMove {
 pub struct Move {
     pub from: Square,
     pub to: Square,
-
-    pub special: Option<SpecialMove>,
+    pub variant: MoveType,
 }
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}, {:?}", self.from, self.to, self.special)
+        write!(f, "{} -> {}, {:?}", self.from, self.to, self.variant)
     }
 }
 
 impl Move {
-    /// Infers the type of special move. This is likely already known during move generation, and in that
+    /// Infers the type of variant move. This is likely already known during move generation, and in that
     /// case it is recommended to skip using this contructor.
     pub fn new(from: Square, to: Square, board: &Board) -> Self {
         Self {
             from,
             to,
-            special: if let Some(target) = board.en_passant_target {
+            variant: if let Some(target) = board.en_passant_target {
                 if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
-                    Some(SpecialMove::CaptureEnPassant)
+                    MoveType::CaptureEnPassant
                 } else {
-                    None
+                    MoveType::Normal
                 }
             } else if board.determine_piece(from) == Some(PieceType::Pawn) {
                 let color = board.determine_color(from).unwrap();
                 if let Some(once) = from.forward(&color) {
                     if let Some(twice) = once.forward(&color) {
                         if to == twice {
-                            Some(SpecialMove::CreateEnPassant)
+                            MoveType::CreateEnPassant
                         } else {
-                            None
+                            MoveType::Normal
                         }
                     } else {
-                        None
+                        MoveType::Normal
                     }
                 } else {
-                    None
+                    MoveType::Normal
                 }
             } else {
-                None
+                MoveType::Normal
             },
         }
     }
@@ -102,10 +102,8 @@ impl Move {
 
         // Set en passant rules and switch turn
         new.next_turn();
-        if let Some(special) = &self.special {
-            if *special == SpecialMove::CreateEnPassant {
-                new.en_passant_target = self.to.backward(&color);
-            }
+        if self.variant == MoveType::CreateEnPassant {
+            new.en_passant_target = self.to.backward(&color);
         }
 
         new
@@ -113,7 +111,7 @@ impl Move {
 
     /// Gets the square and piece type of the captured piece
     fn get_capture(&self, board: &Board) -> Option<Capture> {
-        let target = if self.special == Some(SpecialMove::CaptureEnPassant) {
+        let target = if self.variant == MoveType::CaptureEnPassant {
             self.to
                 .backward(&board.turn)
                 .expect("Invalid en passant square")
@@ -142,17 +140,17 @@ mod tests {
         let pawn = Move {
             from: Square::C2,
             to: Square::C3,
-            special: None,
+            variant: MoveType::Normal,
         };
         let knight = Move {
             from: Square::G8,
             to: Square::F6,
-            special: None,
+            variant: MoveType::Normal,
         };
         let king = Move {
             from: Square::E1,
             to: Square::E2,
-            special: None,
+            variant: MoveType::Normal,
         };
 
         let after_pawn = pawn.make(&original);
@@ -181,7 +179,7 @@ mod tests {
         let capture = Move {
             from: Square::B4,
             to: Square::C5,
-            special: None,
+            variant: MoveType::Normal,
         };
         let white_pawns_before = board.white_pawn_bitboard.popcnt();
         let black_pawns_before = board.black_pawn_bitboard.popcnt();
@@ -190,12 +188,12 @@ mod tests {
             &Move {
                 from: Square::B2,
                 to: Square::B4,
-                special: None,
+                variant: MoveType::Normal,
             },
             &Move {
                 from: Square::C7,
                 to: Square::C5,
-                special: None,
+                variant: MoveType::Normal,
             },
             &capture,
         ] {
@@ -243,33 +241,33 @@ mod tests {
         let capture = Move {
             from: Square::B4,
             to: Square::C3,
-            special: Some(SpecialMove::CaptureEnPassant),
+            variant: MoveType::CaptureEnPassant,
         };
         for m in [
             Move {
                 from: Square::D2,
                 to: Square::D3,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::B7,
                 to: Square::B5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::D3,
                 to: Square::D4,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::B5,
                 to: Square::B4,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::C2,
                 to: Square::C4,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
         ] {
             board = m.make(&board);

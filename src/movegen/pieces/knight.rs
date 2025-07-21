@@ -1,4 +1,8 @@
-use crate::{board::Board, movegen::moves::Move, square::Square};
+use crate::{
+    board::Board,
+    movegen::moves::{Move, MoveType},
+    square::Square,
+};
 
 use super::piece::Piece;
 
@@ -22,7 +26,7 @@ impl Piece for Knight {
                 moves.push(Move {
                     from: self.0,
                     to: t,
-                    special: None,
+                    variant: MoveType::Normal,
                 });
             }
         }
@@ -37,7 +41,7 @@ impl Piece for Knight {
                 moves.push(Move {
                     from: self.0,
                     to: t,
-                    special: None,
+                    variant: MoveType::Normal,
                 });
             }
         }
@@ -52,7 +56,7 @@ impl Piece for Knight {
                 moves.push(Move {
                     from: self.0,
                     to: t,
-                    special: None,
+                    variant: MoveType::Normal,
                 });
             }
         }
@@ -67,7 +71,7 @@ impl Piece for Knight {
                 moves.push(Move {
                     from: self.0,
                     to: t,
-                    special: None,
+                    variant: MoveType::Normal,
                 });
             }
         }
@@ -78,7 +82,7 @@ impl Piece for Knight {
 
 #[cfg(test)]
 mod tests {
-    use crate::{board::Color, movegen::moves::SpecialMove, test_utils::format_pretty_list};
+    use crate::{board::Color, test_utils::format_pretty_list};
 
     use super::*;
 
@@ -88,28 +92,28 @@ mod tests {
         let avoid = Move {
             from: Square::E5,
             to: Square::C6,
-            special: Some(SpecialMove::CaptureEnPassant),
+            variant: MoveType::CaptureEnPassant,
         };
         for m in [
             Move {
                 from: Square::G1,
                 to: Square::F3,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::A7,
                 to: Square::A5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::F3,
                 to: Square::E5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::C7,
                 to: Square::C5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
         ] {
             board = m.make(&board);
@@ -125,39 +129,39 @@ mod tests {
         let capture = Move {
             from: Square::F5,
             to: Square::E7,
-            special: None,
+            variant: MoveType::Normal,
         };
 
         for m in [
             Move {
                 from: Square::G1,
                 to: Square::F3,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::A7,
                 to: Square::A6,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::F3,
                 to: Square::D4,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::A6,
                 to: Square::A5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::D4,
                 to: Square::F5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::A5,
                 to: Square::A4,
-                special: None,
+                variant: MoveType::Normal,
             },
         ] {
             if board.turn == Color::White {

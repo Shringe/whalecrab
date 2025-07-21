@@ -27,7 +27,7 @@ pub fn generate_all_psuedo_legal_pawn_moves(board: &Board) -> Vec<Move> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{movegen::moves::SpecialMove, square::Square, test_utils::*};
+    use crate::{movegen::moves::MoveType, square::Square, test_utils::*};
 
     #[test]
     fn psuedo_legal_pawn_moves() {
@@ -38,7 +38,7 @@ mod tests {
         let expected_move = Move {
             from: Square::C2,
             to: Square::C3,
-            special: None,
+            variant: MoveType::Normal,
         };
         assert!(
             moves.contains(&expected_move),
@@ -49,7 +49,7 @@ mod tests {
         let not_expected_move = Move {
             from: Square::G2,
             to: Square::G5,
-            special: None,
+            variant: MoveType::Normal,
         };
         assert!(
             !moves.contains(&not_expected_move),
@@ -63,7 +63,7 @@ mod tests {
         let double_push = Move {
             from: Square::H7,
             to: Square::H5,
-            special: Some(SpecialMove::CreateEnPassant),
+            variant: MoveType::CreateEnPassant,
         };
         assert!(
             moves.contains(&double_push),
@@ -74,7 +74,7 @@ mod tests {
         let single_push = Move {
             from: Square::E7,
             to: Square::E6,
-            special: None,
+            variant: MoveType::Normal,
         };
         assert!(
             moves.contains(&single_push),
@@ -85,7 +85,7 @@ mod tests {
         let invalid_black_move = Move {
             from: Square::A7,
             to: Square::A4,
-            special: None,
+            variant: MoveType::Normal,
         };
         assert!(
             !moves.contains(&invalid_black_move),
@@ -99,28 +99,28 @@ mod tests {
         let looking_for = Move {
             from: Square::D5,
             to: Square::C6,
-            special: Some(SpecialMove::CaptureEnPassant),
+            variant: MoveType::CaptureEnPassant,
         };
         for m in [
             Move {
                 from: Square::D2,
                 to: Square::D4,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::E7,
                 to: Square::E5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
             Move {
                 from: Square::D4,
                 to: Square::D5,
-                special: None,
+                variant: MoveType::Normal,
             },
             Move {
                 from: Square::C7,
                 to: Square::C5,
-                special: Some(SpecialMove::CreateEnPassant),
+                variant: MoveType::CreateEnPassant,
             },
         ] {
             board = m.make(&board);
