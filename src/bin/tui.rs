@@ -43,12 +43,12 @@ pub struct Ascii {
 impl Default for Ascii {
     fn default() -> Self {
         Self::new(
-            " () \n )( \n/__\\",
-            "/')\n U \n[_]",
-            " () \n )( \n )( \n/__\\",
-            " II \n )( \n )( \n/__\\",
-            " . \n () \n )( \n )( \n/__\\",
-            " + \n () \n )( \n )( \n/__\\",
+            " () P\n )( \n/__\\\nPawn",
+            "/')N\n U \n[_]\nKnight",
+            " () B\n )( \n )( \n/__\\\nBishop",
+            " II R\n )( \n )( \n/__\\\nRook",
+            " .  Q\n () \n )( \n )( \n/__\\\nQueen",
+            " +  K\n () \n )( \n )( \n/__\\\nKing",
             "\\^/ \n-*-\n/ \\",
         )
     }
@@ -107,8 +107,8 @@ impl Ascii {
     pub fn for_black(white: String) -> String {
         let mut lines: Vec<String> = white.lines().map(|line| line.to_string()).collect();
         lines.reverse();
-        if let Some(first_line) = lines.first_mut() {
-            *first_line = first_line.chars().rev().collect();
+        if let Some(second_line) = lines.get_mut(1) {
+            *second_line = second_line.chars().rev().collect();
         }
 
         lines.join("\n")
