@@ -2,7 +2,6 @@ use crate::{
     bitboard::BitBoard,
     board::{Board, Color, PieceType},
     movegen::moves::{Move, MoveType},
-    rank::Rank,
     square::Square,
 };
 
@@ -23,10 +22,12 @@ impl Piece for Pawn {
             .expect("Couldn't determine piece color!");
         let enemy_color = &color.opponent();
 
-        let (initial, final_rank) = match color {
-            Color::White => (BitBoard::INITIAL_WHITE_PAWN, Rank::Eighth),
-            Color::Black => (BitBoard::INITIAL_BLACK_PAWN, Rank::First),
+        let initial = match color {
+            Color::White => BitBoard::INITIAL_WHITE_PAWN,
+            Color::Black => BitBoard::INITIAL_BLACK_PAWN,
         };
+
+        let final_rank = color.final_rank();
 
         // Advances
         if let Some(once) = self.0.forward(&color) {

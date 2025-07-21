@@ -1,5 +1,6 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
+    rank::Rank,
     square::Square,
 };
 
@@ -16,9 +17,16 @@ impl Color {
             Color::Black => Color::White,
         }
     }
+
+    pub fn final_rank(&self) -> Rank {
+        match &self {
+            Color::White => Rank::Eighth,
+            Color::Black => Rank::First,
+        }
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PieceType {
     Pawn,
     Knight,
