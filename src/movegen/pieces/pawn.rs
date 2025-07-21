@@ -12,7 +12,7 @@ pub struct Pawn(pub Square);
 impl Piece for Pawn {
     /// Generates all psuedo legal moves for a single pawn
     /// En_Passant is considered
-    /// Promotion not considered
+    /// Promotion is considered (only for queen)
     /// King safety not considered
     fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
