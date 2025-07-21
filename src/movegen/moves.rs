@@ -52,6 +52,8 @@ impl Move {
                         } else {
                             MoveType::Normal
                         }
+                    } else if once.get_rank() == color.final_rank() {
+                        MoveType::Promotion(PieceType::Queen)
                     } else {
                         MoveType::Normal
                     }
@@ -74,19 +76,33 @@ impl Move {
             )
         });
 
-        let piece = board.determine_piece(self.from).unwrap_or_else(|| {
-            panic!("Tried to make move {}, but there is no piece to move", self)
-        });
+        let (initial_piece, target_piece) = match &self.variant {
+            MoveType::Promotion(promotion_piece) => (PieceType::Pawn, promotion_piece.clone()),
+            _ => {
+                let piece = board.determine_piece(self.from).unwrap_or_else(|| {
+                    panic!("Tried to make move {}, but there is no piece to move", self)
+                });
+
+                (piece.clone(), piece.clone())
+            }
+        };
 
         let initial = BitBoard::from_square(self.from);
         let target = BitBoard::from_square(self.to);
         let mut new = board.clone();
 
-        // Move the piece
+        // Remove the piece from its original square
         new.set_occupied_bitboard(
-            &piece,
+            &initial_piece,
             &color,
-            target | (initial ^ board.get_occupied_bitboard(&piece, &color)),
+            new.get_occupied_bitboard(&initial_piece, &color) ^ initial,
+        );
+
+        // Add the (possibly different) piece to the target square
+        new.set_occupied_bitboard(
+            &target_piece,
+            &color,
+            new.get_occupied_bitboard(&target_piece, &color) | target,
         );
 
         // Capture any potential piece on the target square
@@ -132,6 +148,94 @@ mod tests {
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::Piece;
     use crate::test_utils::*;
+
+    #[test]
+    fn white_pawn_promotes_to_queen() {
+        let mut board = Board::default();
+        let looking_for = Move {
+            from: Square::G7,
+            to: Square::H8,
+            variant: MoveType::Promotion(PieceType::Queen),
+        };
+
+        for m in [
+            Move {
+                from: Square::H2,
+                to: Square::H4,
+                variant: MoveType::CreateEnPassant,
+            },
+            Move {
+                from: Square::G7,
+                to: Square::G5,
+                variant: MoveType::CreateEnPassant,
+            },
+            Move {
+                from: Square::H4,
+                to: Square::G5,
+                variant: MoveType::Normal,
+            },
+            Move {
+                from: Square::H7,
+                to: Square::H6,
+                variant: MoveType::Normal,
+            },
+            Move {
+                from: Square::G5,
+                to: Square::H6,
+                variant: MoveType::Normal,
+            },
+            Move {
+                from: Square::F8,
+                to: Square::G7,
+                variant: MoveType::Normal,
+            },
+            Move {
+                from: Square::H6,
+                to: Square::G7,
+                variant: MoveType::Normal,
+            },
+            Move {
+                from: Square::E7,
+                to: Square::E5,
+                variant: MoveType::CreateEnPassant,
+            },
+        ] {
+            board = m.make(&board);
+        }
+
+        assert_eq!(board.turn, Color::White);
+        assert!(
+            looking_for.from.in_bitboard(&board.white_pawn_bitboard),
+            "White pawn not in position"
+        );
+        assert!(
+            looking_for.to.in_bitboard(&board.black_rook_bitboard),
+            "Black rook not in position"
+        );
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        assert!(
+            moves.contains(&looking_for),
+            "White pawn can't see target. Available moves: {:?}",
+            moves
+        );
+
+        let after = looking_for.make(&board);
+
+        assert_eq!(after.turn, Color::Black);
+        assert!(
+            Square::H8.in_bitboard(&after.white_queen_bitboard),
+            "Expected white queen at H8 after promotion"
+        );
+        assert!(
+            !Square::H8.in_bitboard(&after.white_pawn_bitboard),
+            "H8 incorrectly contains a white pawn after promotion"
+        );
+        assert!(
+            !looking_for.from.in_bitboard(&after.white_pawn_bitboard),
+            "Original white pawn still present at {} after promotion",
+            looking_for.from
+        );
+    }
 
     #[test]
     fn make_moves() {
