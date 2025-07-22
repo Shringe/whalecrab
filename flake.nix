@@ -1,31 +1,29 @@
 {
   inputs = {
-    nixpkgs.url      = "github:NixOS/nixpkgs/release-24.11";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    nixpkgs.url = "github:nixos/nixpkgs/release-25.05";
     flake-utils.url  = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
-          inherit system overlays;
+          inherit system;
         };
-      in
-      with pkgs;
-      {
-        devShells.default = mkShell {
-          buildInputs = [
-            rust-bin.beta.latest.default
-            scc
-            git
-            fish
-          ];
+      in {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "whalecrab";
+          version = "0.4.0";
 
-          shellHook = ''
-            exec fish
-          '';
+          cargoLock.lockFile = ./Cargo.lock;
+          src = pkgs.lib.cleanSource self;
+        };
+
+        devshells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            git
+            cargo
+          ];
         };
       }
     );
