@@ -38,6 +38,36 @@ pub enum PieceType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct CastlingRights {
+    pub white_queenside: bool,
+    pub white_kingside: bool,
+    pub black_queenside: bool,
+    pub black_kingside: bool,
+}
+
+impl CastlingRights {
+    pub fn empty() -> Self {
+        Self {
+            white_queenside: false,
+            white_kingside: false,
+            black_queenside: false,
+            black_kingside: false,
+        }
+    }
+}
+
+impl Default for CastlingRights {
+    fn default() -> Self {
+        Self {
+            white_queenside: true,
+            white_kingside: true,
+            black_queenside: true,
+            black_kingside: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -54,33 +84,12 @@ pub struct Board {
     pub black_king_bitboard: BitBoard,
 
     pub en_passant_target: Option<Square>,
-
     pub turn: Color,
+
+    pub castling_rights: CastlingRights,
 }
 
 impl Board {
-    pub fn new() -> Self {
-        Self {
-            white_pawn_bitboard: BitBoard::INITIAL_WHITE_PAWN,
-            white_knight_bitboard: BitBoard::INITIAL_WHITE_KNIGHT,
-            white_bishop_bitboard: BitBoard::INITIAL_WHITE_BISHOP,
-            white_rook_bitboard: BitBoard::INITIAL_WHITE_ROOK,
-            white_queen_bitboard: BitBoard::INITIAL_WHITE_QUEEN,
-            white_king_bitboard: BitBoard::INITIAL_WHITE_KING,
-
-            black_pawn_bitboard: BitBoard::INITIAL_BLACK_PAWN,
-            black_knight_bitboard: BitBoard::INITIAL_BLACK_KNIGHT,
-            black_bishop_bitboard: BitBoard::INITIAL_BLACK_BISHOP,
-            black_rook_bitboard: BitBoard::INITIAL_BLACK_ROOK,
-            black_queen_bitboard: BitBoard::INITIAL_BLACK_QUEEN,
-            black_king_bitboard: BitBoard::INITIAL_BLACK_KING,
-
-            en_passant_target: None,
-
-            turn: Color::White,
-        }
-    }
-
     pub fn empty() -> Self {
         Self {
             white_pawn_bitboard: EMPTY,
@@ -98,8 +107,9 @@ impl Board {
             black_king_bitboard: EMPTY,
 
             en_passant_target: None,
-
             turn: Color::White,
+
+            castling_rights: CastlingRights::empty(),
         }
     }
 
@@ -286,7 +296,26 @@ impl Board {
 
 impl Default for Board {
     fn default() -> Self {
-        Self::new()
+        Self {
+            white_pawn_bitboard: BitBoard::INITIAL_WHITE_PAWN,
+            white_knight_bitboard: BitBoard::INITIAL_WHITE_KNIGHT,
+            white_bishop_bitboard: BitBoard::INITIAL_WHITE_BISHOP,
+            white_rook_bitboard: BitBoard::INITIAL_WHITE_ROOK,
+            white_queen_bitboard: BitBoard::INITIAL_WHITE_QUEEN,
+            white_king_bitboard: BitBoard::INITIAL_WHITE_KING,
+
+            black_pawn_bitboard: BitBoard::INITIAL_BLACK_PAWN,
+            black_knight_bitboard: BitBoard::INITIAL_BLACK_KNIGHT,
+            black_bishop_bitboard: BitBoard::INITIAL_BLACK_BISHOP,
+            black_rook_bitboard: BitBoard::INITIAL_BLACK_ROOK,
+            black_queen_bitboard: BitBoard::INITIAL_BLACK_QUEEN,
+            black_king_bitboard: BitBoard::INITIAL_BLACK_KING,
+
+            en_passant_target: None,
+            turn: Color::White,
+
+            castling_rights: CastlingRights::default(),
+        }
     }
 }
 
