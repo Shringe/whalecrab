@@ -45,6 +45,22 @@ impl File {
         }
     }
 
+    /// Converts a char into the correct file if possible
+    #[inline]
+    pub fn from_char(c: char) -> Option<File> {
+        match c {
+            'a' => Some(File::A),
+            'b' => Some(File::B),
+            'c' => Some(File::C),
+            'd' => Some(File::D),
+            'e' => Some(File::E),
+            'f' => Some(File::F),
+            'g' => Some(File::G),
+            'h' => Some(File::H),
+            _ => None,
+        }
+    }
+
     /// Go one file to the left.  If impossible, wrap around.
     #[inline]
     pub fn left(&self) -> File {

@@ -108,17 +108,19 @@ impl Board {
     /// - [x] Piece Placement
     /// - [x] Active Color
     /// - [ ] Castling Rights
-    /// - [ ] En Passant Target
+    /// - [x] En Passant Target
     /// - [ ] Halfmove Clock
     /// - [ ] Fullmove Number
     pub fn from_fen(fen: &str) -> Option<Self> {
+        // Example Fen:
         // r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3
         let mut split_fen = fen.split(' ');
         let body_fen = split_fen.next()?;
         let turn_fen = split_fen.next()?;
+        let _castling_fen = split_fen.next()?;
+        let en_passant_fen = split_fen.next()?;
 
         let rows = body_fen.split('/');
-
         let mut new = Board::empty();
 
         for (rank, row) in rows.rev().enumerate() {
@@ -153,6 +155,17 @@ impl Board {
                     file += c.to_digit(10)? as usize;
                 }
             }
+        }
+
+        if en_passant_fen != "-" {
+            let mut chars_fen = en_passant_fen.chars();
+            let file_fen = chars_fen.next()?;
+            let rank_fen = chars_fen.next()?;
+
+            new.en_passant_target = Some(Square::make_square(
+                Rank::from_index(rank_fen.to_digit(10)? as usize - 1),
+                File::from_char(file_fen)?,
+            ));
         }
 
         new.turn = if turn_fen == "b" {
@@ -279,21 +292,40 @@ impl Default for Board {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::movegen::moves::Move;
 
-    use super::*;
-
-    #[test]
-    fn starting_fen() {
-        let board = Board::default();
-        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        let fen_board = Board::from_fen(fen).unwrap();
-
+    fn compare_to_fen(board: &Board, fen: &str) {
+        let fen_board = &Board::from_fen(fen).unwrap();
         assert_eq!(
             board, fen_board,
             "board:\n{:#?}\n\nfen_board:\n{:#?}",
             board, fen_board
         );
+    }
+
+    #[test]
+    fn en_passant_fen() {
+        let mut board = Board::default();
+
+        for m in [
+            Move::new(Square::E2, Square::E4, &board),
+            Move::new(Square::D7, Square::D5, &board),
+            Move::new(Square::E4, Square::E5, &board),
+            Move::new(Square::F7, Square::F5, &board),
+        ] {
+            board = m.make(&board);
+        }
+
+        let fen = "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3";
+        compare_to_fen(&board, fen);
+    }
+
+    #[test]
+    fn starting_fen() {
+        let board = Board::default();
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        compare_to_fen(&board, fen);
     }
 
     #[test]
@@ -311,12 +343,7 @@ mod tests {
         }
 
         let fen = "r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3";
-        let fen_board = Board::from_fen(fen).unwrap();
-        assert_eq!(
-            board, fen_board,
-            "board:\n{:#?}\n\nfen_board:\n{:#?}",
-            board, fen_board
-        );
+        compare_to_fen(&board, fen);
     }
 
     #[test]
