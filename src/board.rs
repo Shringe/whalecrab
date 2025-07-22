@@ -1,5 +1,6 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
+    file::File,
     rank::Rank,
     square::Square,
 };
@@ -36,7 +37,7 @@ pub enum PieceType {
     King,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -78,6 +79,89 @@ impl Board {
 
             turn: Color::White,
         }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            white_pawn_bitboard: EMPTY,
+            white_knight_bitboard: EMPTY,
+            white_bishop_bitboard: EMPTY,
+            white_rook_bitboard: EMPTY,
+            white_queen_bitboard: EMPTY,
+            white_king_bitboard: EMPTY,
+
+            black_pawn_bitboard: EMPTY,
+            black_knight_bitboard: EMPTY,
+            black_bishop_bitboard: EMPTY,
+            black_rook_bitboard: EMPTY,
+            black_queen_bitboard: EMPTY,
+            black_king_bitboard: EMPTY,
+
+            en_passant_target: None,
+
+            turn: Color::White,
+        }
+    }
+
+    /// Takes a fen string, parses and converts it into a board position.
+    /// Currently takes into account the following:
+    /// - [x] Piece Placement
+    /// - [x] Active Color
+    /// - [ ] Castling Rights
+    /// - [ ] En Passant Target
+    /// - [ ] Halfmove Clock
+    /// - [ ] Fullmove Number
+    pub fn from_fen(fen: &str) -> Option<Self> {
+        // r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3
+        let mut split_fen = fen.split(' ');
+        let body_fen = split_fen.next()?;
+        let turn_fen = split_fen.next()?;
+
+        let rows = body_fen.split('/');
+
+        let mut new = Board::empty();
+
+        for (rank, row) in rows.rev().enumerate() {
+            let mut file = 0;
+            for c in row.chars() {
+                let sq = BitBoard::set(Rank::from_index(rank), File::from_index(file));
+                let colored_piece = match c {
+                    'p' => Some((PieceType::Pawn, Color::Black)),
+                    'n' => Some((PieceType::Knight, Color::Black)),
+                    'b' => Some((PieceType::Bishop, Color::Black)),
+                    'r' => Some((PieceType::Rook, Color::Black)),
+                    'q' => Some((PieceType::Queen, Color::Black)),
+                    'k' => Some((PieceType::King, Color::Black)),
+                    'P' => Some((PieceType::Pawn, Color::White)),
+                    'N' => Some((PieceType::Knight, Color::White)),
+                    'B' => Some((PieceType::Bishop, Color::White)),
+                    'R' => Some((PieceType::Rook, Color::White)),
+                    'Q' => Some((PieceType::Queen, Color::White)),
+                    'K' => Some((PieceType::King, Color::White)),
+                    _ => None,
+                };
+
+                if let Some((piece, color)) = colored_piece {
+                    new.set_occupied_bitboard(
+                        &piece,
+                        &color,
+                        new.get_occupied_bitboard(&piece, &color) | sq,
+                    );
+
+                    file += 1;
+                } else {
+                    file += c.to_digit(10)? as usize;
+                }
+            }
+        }
+
+        new.turn = if turn_fen == "b" {
+            Color::Black
+        } else {
+            Color::White
+        };
+
+        Some(new)
     }
 
     pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &Color, new: BitBoard) {
@@ -195,7 +279,45 @@ impl Default for Board {
 
 #[cfg(test)]
 mod tests {
+    use crate::movegen::moves::Move;
+
     use super::*;
+
+    #[test]
+    fn starting_fen() {
+        let board = Board::default();
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let fen_board = Board::from_fen(fen).unwrap();
+
+        assert_eq!(
+            board, fen_board,
+            "board:\n{:#?}\n\nfen_board:\n{:#?}",
+            board, fen_board
+        );
+    }
+
+    #[test]
+    fn complex_fen() {
+        let mut board = Board::default();
+
+        for m in [
+            Move::new(Square::E2, Square::E4, &board),
+            Move::new(Square::D7, Square::D5, &board),
+            Move::new(Square::E4, Square::D5, &board),
+            Move::new(Square::B8, Square::C6, &board),
+            Move::new(Square::F1, Square::B5, &board),
+        ] {
+            board = m.make(&board);
+        }
+
+        let fen = "r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3";
+        let fen_board = Board::from_fen(fen).unwrap();
+        assert_eq!(
+            board, fen_board,
+            "board:\n{:#?}\n\nfen_board:\n{:#?}",
+            board, fen_board
+        );
+    }
 
     #[test]
     fn determine_colors() {
