@@ -117,7 +117,7 @@ impl Board {
     /// Currently takes into account the following:
     /// - [x] Piece Placement
     /// - [x] Active Color
-    /// - [ ] Castling Rights
+    /// - [x] Castling Rights
     /// - [x] En Passant Target
     /// - [ ] Halfmove Clock
     /// - [ ] Fullmove Number
@@ -127,7 +127,7 @@ impl Board {
         let mut split_fen = fen.split(' ');
         let body_fen = split_fen.next()?;
         let turn_fen = split_fen.next()?;
-        let _castling_fen = split_fen.next()?;
+        let castling_fen = split_fen.next()?;
         let en_passant_fen = split_fen.next()?;
 
         let rows = body_fen.split('/');
@@ -167,6 +167,21 @@ impl Board {
             }
         }
 
+        new.turn = if turn_fen == "b" {
+            Color::Black
+        } else {
+            Color::White
+        };
+
+        if castling_fen != "-" {
+            new.castling_rights = CastlingRights {
+                white_queenside: castling_fen.contains('Q'),
+                white_kingside: castling_fen.contains('K'),
+                black_queenside: castling_fen.contains('q'),
+                black_kingside: castling_fen.contains('k'),
+            }
+        }
+
         if en_passant_fen != "-" {
             let mut chars_fen = en_passant_fen.chars();
             let file_fen = chars_fen.next()?;
@@ -177,12 +192,6 @@ impl Board {
                 File::from_char(file_fen)?,
             ));
         }
-
-        new.turn = if turn_fen == "b" {
-            Color::Black
-        } else {
-            Color::White
-        };
 
         Some(new)
     }
