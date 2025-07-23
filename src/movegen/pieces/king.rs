@@ -7,7 +7,7 @@ use super::piece::Piece;
 pub struct King(pub Square);
 
 impl Piece for King {
-    /// King safety not considered. Castling not yet implemented.
+    /// King safety not considered.
     fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let enemy = board.turn.opponent();
