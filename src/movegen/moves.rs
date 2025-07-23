@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     bitboard::BitBoard,
-    board::{Board, PieceType},
+    board::{Board, Color, PieceType},
     square::Square,
 };
 
@@ -15,6 +15,8 @@ pub enum MoveType {
     CreateEnPassant,
     CaptureEnPassant,
     Promotion(PieceType),
+    CastleQueenside,
+    CastleKingside,
 }
 
 #[derive(PartialEq, Debug)]
@@ -37,32 +39,40 @@ impl Move {
         Self {
             from,
             to,
-            variant: if let Some(target) = board.en_passant_target {
-                if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
-                    MoveType::CaptureEnPassant
-                } else {
-                    MoveType::Normal
-                }
-            } else if board.determine_piece(from) == Some(PieceType::Pawn) {
-                let color = board.determine_color(from).unwrap();
-                if let Some(once) = from.forward(&color) {
-                    if let Some(twice) = once.forward(&color) {
-                        if to == twice {
-                            MoveType::CreateEnPassant
+            variant: match (&board.turn, from, to) {
+                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => MoveType::CastleQueenside,
+                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => MoveType::CastleKingside,
+                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => MoveType::CastleQueenside,
+                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => MoveType::CastleKingside,
+                _ => {
+                    if let Some(target) = board.en_passant_target {
+                        if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
+                            MoveType::CaptureEnPassant
                         } else {
                             MoveType::Normal
                         }
-                    } else if once.get_rank() == color.final_rank() {
-                        MoveType::Promotion(PieceType::Queen)
+                    } else if board.determine_piece(from) == Some(PieceType::Pawn) {
+                        let color = board.determine_color(from).unwrap();
+                        if let Some(once) = from.forward(&color) {
+                            if let Some(twice) = once.forward(&color) {
+                                if to == twice {
+                                    MoveType::CreateEnPassant
+                                } else {
+                                    MoveType::Normal
+                                }
+                            } else if once.get_rank() == color.final_rank() {
+                                MoveType::Promotion(PieceType::Queen)
+                            } else {
+                                MoveType::Normal
+                            }
+                        } else {
+                            MoveType::Normal
+                        }
                     } else {
                         MoveType::Normal
                     }
-                } else {
-                    MoveType::Normal
                 }
-            } else {
-                MoveType::Normal
-            },
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::{
-    board::Board,
+    board::{Board, Color},
     movegen::moves::{Move, MoveType},
-    square::{Direction, Square},
+    square::{Square, ALL_DIRECTIONS},
 };
 
 use super::piece::Piece;
@@ -14,16 +14,7 @@ impl Piece for King {
         let mut moves = Vec::new();
         let enemy = board.turn.opponent();
 
-        for d in [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::SouthEast,
-            Direction::SouthWest,
-        ] {
+        for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
                 if let Some(piece) = board.determine_color(sq) {
                     if piece == enemy {
@@ -50,8 +41,38 @@ impl Piece for King {
 #[cfg(test)]
 mod tests {
     use crate::{board::PieceType, test_utils::format_pretty_list};
-
     use super::*;
+
+    /// Asserts that moves contains m
+    fn should_contain(moves: &Vec<Move>, m: &Move) {
+        assert!(
+            moves.contains(m),
+            "The valid move {} was not generated! Available {}",
+            m,
+            format_pretty_list(moves)
+        );
+    }
+
+    /// Asserts that moves doesn't contain m
+    fn shouldnt_contain(moves: &Vec<Move>, m: &Move) {
+        assert!(
+            !moves.contains(m),
+            "The invalid move {} was generated! Available {}",
+            m,
+            format_pretty_list(moves)
+        );
+    }
+
+    #[test]
+    fn white_castling_kingside() {
+        let board = Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6").unwrap();
+        let castle_kingside = Move::new(Square::E1, Square::G1, &board);
+        let castle_queenside = Move::new(Square::E1, Square::C1, &board);
+
+        let moves = King(castle_kingside.from).psuedo_legal_moves(&board);
+        should_contain(&moves, &castle_kingside);
+        shouldnt_contain(&moves, &castle_queenside);
+    }
 
     #[test]
     fn double_bongcloud() {
@@ -67,12 +88,7 @@ mod tests {
         ] {
             if board.determine_piece(m.from) == Some(PieceType::King) {
                 let moves = King(m.from).psuedo_legal_moves(&board);
-                assert!(
-                    moves.contains(&m),
-                    "The move {} not be found naturally! Available {}",
-                    m,
-                    format_pretty_list(&moves)
-                );
+                should_contain(&moves, &m);
             }
             board = m.make(&board);
         }

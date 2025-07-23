@@ -16,6 +16,18 @@ pub enum Direction {
     SouthWest,
 }
 
+/// Enumerate all directions
+pub const ALL_DIRECTIONS: [Direction; 8] = [
+    Direction::North,
+    Direction::South,
+    Direction::East,
+    Direction::West,
+    Direction::NorthEast,
+    Direction::NorthWest,
+    Direction::SouthEast,
+    Direction::SouthWest,
+];
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Square(u8);
 

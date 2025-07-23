@@ -1,6 +1,8 @@
 use std::any::type_name;
 use std::fmt::Display;
 
+use crate::board::Board;
+
 /// Formats the items in the vector neatly with their native display methods
 pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
     let mut lines = Vec::new();
@@ -20,9 +22,19 @@ pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
     lines.join("\n")
 }
 
+/// Compares and actual board to one generated from a fen
+pub fn compare_to_fen(board: &Board, fen: &str) {
+    let fen_board = &Board::from_fen(fen).unwrap();
+    assert_eq!(
+        board, fen_board,
+        "board:\n{:#?}\n\nfen_board:\n{:#?}",
+        board, fen_board
+    );
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::square::Square;
+    use crate::{board::STARTING_FEN, square::Square};
 
     use super::*;
 
@@ -55,5 +67,10 @@ mod tests {
             format_pretty_list(&empty),
             "crabfish::square::Square list [];"
         );
+    }
+
+    #[test]
+    fn compare_to_fen() {
+        super::compare_to_fen(&Board::default(), STARTING_FEN);
     }
 }
