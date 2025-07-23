@@ -5,6 +5,8 @@ use crate::{
     square::Square,
 };
 
+pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Color {
     White,
@@ -331,16 +333,7 @@ impl Default for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::movegen::moves::Move;
-
-    fn compare_to_fen(board: &Board, fen: &str) {
-        let fen_board = &Board::from_fen(fen).unwrap();
-        assert_eq!(
-            board, fen_board,
-            "board:\n{:#?}\n\nfen_board:\n{:#?}",
-            board, fen_board
-        );
-    }
+    use crate::{movegen::moves::Move, test_utils::compare_to_fen};
 
     #[test]
     fn en_passant_fen() {
@@ -362,8 +355,7 @@ mod tests {
     #[test]
     fn starting_fen() {
         let board = Board::default();
-        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        compare_to_fen(&board, fen);
+        compare_to_fen(&board, STARTING_FEN);
     }
 
     #[test]
