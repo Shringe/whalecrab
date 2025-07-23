@@ -112,6 +112,17 @@ mod tests {
     }
 
     #[test]
+    fn black_castling_queenside() {
+        let board = Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6").unwrap();
+        let castle_kingside = Move::new(Square::E8, Square::G8, &board);
+        let castle_queenside = Move::new(Square::E8, Square::C8, &board);
+
+        let moves = King(castle_queenside.from).psuedo_legal_moves(&board);
+        should_contain(&moves, &castle_queenside);
+        shouldnt_contain(&moves, &castle_kingside);
+    }
+
+    #[test]
     fn double_bongcloud() {
         let mut board = Board::default();
 
