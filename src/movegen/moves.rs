@@ -6,30 +6,6 @@ use crate::{
     square::Square,
 };
 
-// pub const WHITE_CASTLES_QUEENSIDE: Move = Move {
-//     from: Square::E1,
-//     to: Square::C1,  // Fixed: queenside goes to C1, not G1
-//     variant: MoveType::CastleQueenside,
-// };
-//
-// pub const WHITE_CASTLES_KINGSIDE: Move = Move {
-//     from: Square::E1,
-//     to: Square::G1,
-//     variant: MoveType::CastleKingside,
-// };
-//
-// pub const BLACK_CASTLES_QUEENSIDE: Move = Move {
-//     from: Square::E8,
-//     to: Square::C8,
-//     variant: MoveType::CastleQueenside,
-// };
-//
-// pub const BLACK_CASTLES_KINGSIDE: Move = Move {
-//     from: Square::E8,
-//     to: Square::G8,
-//     variant: MoveType::CastleKingside,
-// };
-
 /// Provides information of what to remove from the game after a piece gets captured
 pub struct Capture(PieceType, Square);
 
@@ -179,9 +155,39 @@ impl Move {
 mod tests {
     use super::*;
     use crate::board::Color;
+    use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
+    use crate::movegen::pieces::king::King;
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::Piece;
-    use crate::test_utils::*;
+    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
+
+    #[test]
+    fn white_king_castles_queenside() {
+        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/R3K1NR w KQkq - 6 7";
+        let fen_after = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
+        let to_play = &WHITE_CASTLES_QUEENSIDE;
+        let mut board = Board::from_fen(fen_before).unwrap();
+
+        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        should_generate(&moves, to_play);
+
+        board = to_play.make(&board);
+        compare_to_fen(&board, fen_after);
+    }
+
+    #[test]
+    fn black_king_castles_kingside() {
+        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
+        let fen_after = "rn3rk1/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR w - - 8 8";
+        let to_play = &BLACK_CASTLES_KINGSIDE;
+        let mut board = Board::from_fen(fen_before).unwrap();
+
+        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        should_generate(&moves, to_play);
+
+        board = to_play.make(&board);
+        compare_to_fen(&board, fen_after);
+    }
 
     #[test]
     fn white_pawn_promotes_to_queen() {

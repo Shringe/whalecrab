@@ -1,5 +1,5 @@
 use crate::{
-    bitboard::EMPTY, board::{Board, Color}, castling::{BLACK_TRAVERSES_CASTLING_KINGSIDE, BLACK_TRAVERSES_CASTLING_QUEENSIDE, WHITE_TRAVERSES_CASTLING_KINGSIDE, WHITE_TRAVERSES_CASTLING_QUEENSIDE}, movegen::moves::{Move, MoveType}, square::{Square, ALL_DIRECTIONS}
+    bitboard::EMPTY, board::{Board, Color}, castling::{BLACK_CASTLES_KINGSIDE, BLACK_CASTLES_QUEENSIDE, BLACK_TRAVERSES_CASTLING_KINGSIDE, BLACK_TRAVERSES_CASTLING_QUEENSIDE, WHITE_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE, WHITE_TRAVERSES_CASTLING_KINGSIDE, WHITE_TRAVERSES_CASTLING_QUEENSIDE}, movegen::moves::{Move, MoveType}, square::{Square, ALL_DIRECTIONS}
 };
 
 use super::piece::Piece;
@@ -36,37 +36,21 @@ impl Piece for King {
         match board.turn {
             Color::White => {
                 if board.castling_rights.white_queenside && occupied & WHITE_TRAVERSES_CASTLING_QUEENSIDE == EMPTY {
-                    moves.push(Move {
-                        from: Square::E1,
-                        to: Square::C1,
-                        variant: MoveType::CastleQueenside,
-                    })
+                    moves.push(WHITE_CASTLES_QUEENSIDE);
                 }
 
                 if board.castling_rights.white_kingside && occupied & WHITE_TRAVERSES_CASTLING_KINGSIDE == EMPTY {
-                    moves.push(Move {
-                        from: Square::E1,
-                        to: Square::G1,
-                        variant: MoveType::CastleKingside,
-                    })
+                    moves.push(WHITE_CASTLES_KINGSIDE);
                 }
             },
 
             Color::Black => {
                 if board.castling_rights.black_queenside && occupied & BLACK_TRAVERSES_CASTLING_QUEENSIDE == EMPTY {
-                    moves.push(Move {
-                        from: Square::E8,
-                        to: Square::C8,
-                        variant: MoveType::CastleQueenside,
-                    })
+                    moves.push(BLACK_CASTLES_QUEENSIDE);
                 }
 
                 if board.castling_rights.black_kingside && occupied & BLACK_TRAVERSES_CASTLING_KINGSIDE == EMPTY {
-                    moves.push(Move {
-                        from: Square::E8,
-                        to: Square::G8,
-                        variant: MoveType::CastleKingside,
-                    })
+                    moves.push(BLACK_CASTLES_KINGSIDE);
                 }
             },
         }
@@ -77,49 +61,23 @@ impl Piece for King {
 
 #[cfg(test)]
 mod tests {
-    use crate::{board::PieceType, test_utils::format_pretty_list};
+    use crate::{board::PieceType, test_utils::{should_generate, shouldnt_generate}};
     use super::*;
 
-    /// Asserts that moves contains m
-    fn should_contain(moves: &Vec<Move>, m: &Move) {
-        assert!(
-            moves.contains(m),
-            "The valid move {} was not generated! Available {}",
-            m,
-            format_pretty_list(moves)
-        );
-    }
-
-    /// Asserts that moves doesn't contain m
-    fn shouldnt_contain(moves: &Vec<Move>, m: &Move) {
-        assert!(
-            !moves.contains(m),
-            "The invalid move {} was generated! Available {}",
-            m,
-            format_pretty_list(moves)
-        );
-    }
-
     #[test]
-    fn white_castling_kingside() {
+    fn white_sees_castling_kingside() {
         let board = Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6").unwrap();
-        let castle_kingside = Move::new(Square::E1, Square::G1, &board);
-        let castle_queenside = Move::new(Square::E1, Square::C1, &board);
-
-        let moves = King(castle_kingside.from).psuedo_legal_moves(&board);
-        should_contain(&moves, &castle_kingside);
-        shouldnt_contain(&moves, &castle_queenside);
+        let moves = King(WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&board);
+        should_generate(&moves, &WHITE_CASTLES_KINGSIDE);
+        shouldnt_generate(&moves, &WHITE_CASTLES_QUEENSIDE);
     }
 
     #[test]
-    fn black_castling_queenside() {
+    fn black_sees_castling_queenside() {
         let board = Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6").unwrap();
-        let castle_kingside = Move::new(Square::E8, Square::G8, &board);
-        let castle_queenside = Move::new(Square::E8, Square::C8, &board);
-
-        let moves = King(castle_queenside.from).psuedo_legal_moves(&board);
-        should_contain(&moves, &castle_queenside);
-        shouldnt_contain(&moves, &castle_kingside);
+        let moves = King(BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&board);
+        should_generate(&moves, &BLACK_CASTLES_QUEENSIDE);
+        shouldnt_generate(&moves, &BLACK_CASTLES_KINGSIDE);
     }
 
     #[test]
@@ -136,7 +94,7 @@ mod tests {
         ] {
             if board.determine_piece(m.from) == Some(PieceType::King) {
                 let moves = King(m.from).psuedo_legal_moves(&board);
-                should_contain(&moves, &m);
+                should_generate(&moves, &m);
             }
             board = m.make(&board);
         }
