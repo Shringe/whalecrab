@@ -2,6 +2,7 @@ use std::any::type_name;
 use std::fmt::Display;
 
 use crate::board::Board;
+use crate::movegen::moves::Move;
 
 /// Formats the items in the vector neatly with their native display methods
 pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
@@ -29,6 +30,26 @@ pub fn compare_to_fen(board: &Board, fen: &str) {
         board, fen_board,
         "board:\n{:#?}\n\nfen_board:\n{:#?}",
         board, fen_board
+    );
+}
+
+/// Asserts that moves contains m
+pub fn should_generate(moves: &Vec<Move>, m: &Move) {
+    assert!(
+        moves.contains(m),
+        "The valid move {} was not generated! Available {}",
+        m,
+        format_pretty_list(moves)
+    );
+}
+
+/// Asserts that moves doesn't contain m
+pub fn shouldnt_generate(moves: &Vec<Move>, m: &Move) {
+    assert!(
+        !moves.contains(m),
+        "The invalid move {} was generated! Available {}",
+        m,
+        format_pretty_list(moves)
     );
 }
 
