@@ -1,7 +1,5 @@
 use crate::{
-    board::{Board, Color},
-    movegen::moves::{Move, MoveType},
-    square::{Square, ALL_DIRECTIONS},
+    bitboard::EMPTY, board::{Board, Color}, castling::{BLACK_TRAVERSES_CASTLING_KINGSIDE, BLACK_TRAVERSES_CASTLING_QUEENSIDE, WHITE_TRAVERSES_CASTLING_KINGSIDE, WHITE_TRAVERSES_CASTLING_QUEENSIDE}, movegen::moves::{Move, MoveType}, square::{Square, ALL_DIRECTIONS}
 };
 
 use super::piece::Piece;
@@ -32,6 +30,45 @@ impl Piece for King {
                     })
                 }
             }
+        }
+
+        let occupied = board.occupied_bitboard();
+        match board.turn {
+            Color::White => {
+                if board.castling_rights.white_queenside && occupied & WHITE_TRAVERSES_CASTLING_QUEENSIDE == EMPTY {
+                    moves.push(Move {
+                        from: Square::E1,
+                        to: Square::C1,
+                        variant: MoveType::CastleQueenside,
+                    })
+                }
+
+                if board.castling_rights.white_kingside && occupied & WHITE_TRAVERSES_CASTLING_KINGSIDE == EMPTY {
+                    moves.push(Move {
+                        from: Square::E1,
+                        to: Square::G1,
+                        variant: MoveType::CastleKingside,
+                    })
+                }
+            },
+
+            Color::Black => {
+                if board.castling_rights.black_queenside && occupied & BLACK_TRAVERSES_CASTLING_QUEENSIDE == EMPTY {
+                    moves.push(Move {
+                        from: Square::E8,
+                        to: Square::C8,
+                        variant: MoveType::CastleQueenside,
+                    })
+                }
+
+                if board.castling_rights.black_kingside && occupied & BLACK_TRAVERSES_CASTLING_KINGSIDE == EMPTY {
+                    moves.push(Move {
+                        from: Square::E8,
+                        to: Square::G8,
+                        variant: MoveType::CastleKingside,
+                    })
+                }
+            },
         }
 
         moves

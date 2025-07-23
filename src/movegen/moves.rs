@@ -6,6 +6,30 @@ use crate::{
     square::Square,
 };
 
+// pub const WHITE_CASTLES_QUEENSIDE: Move = Move {
+//     from: Square::E1,
+//     to: Square::C1,  // Fixed: queenside goes to C1, not G1
+//     variant: MoveType::CastleQueenside,
+// };
+//
+// pub const WHITE_CASTLES_KINGSIDE: Move = Move {
+//     from: Square::E1,
+//     to: Square::G1,
+//     variant: MoveType::CastleKingside,
+// };
+//
+// pub const BLACK_CASTLES_QUEENSIDE: Move = Move {
+//     from: Square::E8,
+//     to: Square::C8,
+//     variant: MoveType::CastleQueenside,
+// };
+//
+// pub const BLACK_CASTLES_KINGSIDE: Move = Move {
+//     from: Square::E8,
+//     to: Square::G8,
+//     variant: MoveType::CastleKingside,
+// };
+
 /// Provides information of what to remove from the game after a piece gets captured
 pub struct Capture(PieceType, Square);
 

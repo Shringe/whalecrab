@@ -1,8 +1,5 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY},
-    file::File,
-    rank::Rank,
-    square::Square,
+    bitboard::{BitBoard, EMPTY}, castling::CastlingRights, file::File, rank::Rank, square::Square
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -37,36 +34,6 @@ pub enum PieceType {
     Rook,
     Queen,
     King,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct CastlingRights {
-    pub white_queenside: bool,
-    pub white_kingside: bool,
-    pub black_queenside: bool,
-    pub black_kingside: bool,
-}
-
-impl CastlingRights {
-    pub fn empty() -> Self {
-        Self {
-            white_queenside: false,
-            white_kingside: false,
-            black_queenside: false,
-            black_kingside: false,
-        }
-    }
-}
-
-impl Default for CastlingRights {
-    fn default() -> Self {
-        Self {
-            white_queenside: true,
-            white_kingside: true,
-            black_queenside: true,
-            black_kingside: true,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
