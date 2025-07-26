@@ -17,6 +17,8 @@
       in {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           inherit name version;
+          pname = "tui";
+
           cargoLock.lockFile = ./Cargo.lock;
           src = self;
         };
