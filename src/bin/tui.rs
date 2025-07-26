@@ -1,3 +1,14 @@
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use ratatui::widgets::Paragraph;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Stylize},
+    widgets::{Block, Widget},
+    DefaultTerminal, Frame,
+};
+use std::io::Result;
+use std::str::FromStr;
 use whalecrab::board::{self, PieceType};
 use whalecrab::movegen::moves::Move;
 use whalecrab::movegen::pieces::bishop::Bishop;
@@ -11,16 +22,6 @@ use whalecrab::rank::Rank;
 use whalecrab::square::Square;
 use whalecrab::test_utils::format_pretty_list;
 use whalecrab::{board::Board, file::File};
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use ratatui::widgets::Paragraph;
-use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Stylize},
-    widgets::{Block, Widget},
-    DefaultTerminal, Frame,
-};
-use std::io::Result;
 
 pub struct Ascii {
     white_pawn: String,
@@ -185,10 +186,11 @@ impl Textbox {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Focus {
     Board,
     Fen,
+    Command,
 }
 
 struct App {
@@ -200,6 +202,7 @@ struct App {
 
     focus: Focus,
     fen: Textbox,
+    command: Textbox,
     exit: bool,
 }
 
@@ -214,6 +217,7 @@ impl App {
 
             focus: Focus::Board,
             fen: Textbox::new(),
+            command: Textbox::new(),
             exit: false,
         }
     }
@@ -245,6 +249,7 @@ impl App {
         match self.focus {
             Focus::Board => self.handle_board_key_event(key_event),
             Focus::Fen => self.handle_fen_key_event(key_event),
+            Focus::Command => self.handle_command_key_event(key_event),
         }
     }
 
@@ -258,6 +263,7 @@ impl App {
             }
 
             KeyCode::Char('m') => self.focus = Focus::Fen,
+            KeyCode::Char(':') => self.focus = Focus::Command,
 
             KeyCode::Left => {
                 if let Some(new) = self.highlighted_square.left() {
@@ -294,6 +300,8 @@ impl App {
                             &self.board,
                         )
                         .make(&self.board);
+
+                        self.fen.input = self.board.to_fen();
                     }
 
                     self.unselect();
@@ -360,6 +368,32 @@ impl App {
         }
     }
 
+    fn handle_command_key_event(&mut self, key_event: event::KeyEvent) {
+        if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+            match key_event.code {
+                KeyCode::Char('c') => self.exit(),
+                KeyCode::Char('g') => self.command.input.clear(),
+                _ => {}
+            }
+        } else {
+            match key_event.code {
+                KeyCode::Esc => self.focus = Focus::Board,
+                KeyCode::Left => self.command.move_cursor_left(),
+                KeyCode::Right => self.command.move_cursor_right(),
+                KeyCode::Char(c) => self.command.enter_char(c),
+                KeyCode::Backspace => self.command.delete_char(),
+                KeyCode::Enter => {
+                    if let Ok(sq) = Square::from_str(&self.command.input) {
+                        self.highlighted_square = sq;
+                        self.focus = Focus::Board;
+                        self.command.input.clear();
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     fn select(&mut self, sq: Square) {
         self.selected_square = Some(sq);
     }
@@ -383,16 +417,34 @@ impl Widget for &App {
         };
 
         let debug_area = main_layout[0];
-        let total_grid_area =
-            Layout::vertical([Constraint::Percentage(100), Constraint::Length(3)])
-                .split(main_layout[1]);
+        let total_grid_area = Layout::vertical([
+            Constraint::Percentage(100),
+            Constraint::Length(3),
+            Constraint::Length(3),
+        ])
+        .split(main_layout[1]);
+
         let grid_area = total_grid_area[0];
-        let fen_area = total_grid_area[1];
+        let command_area = total_grid_area[1];
+        let fen_area = total_grid_area[2];
+
+        // Command bar
+        let command_color = if self.focus == Focus::Command {
+            Color::Red
+        } else {
+            Color::White
+        };
+
+        Paragraph::new(self.command.input.clone())
+            .block(Block::bordered().title("Command String:"))
+            .fg(command_color)
+            .render(command_area, buf);
 
         // Fen bar
-        let fen_color = match self.focus {
-            Focus::Board => Color::White,
-            Focus::Fen => Color::Blue,
+        let fen_color = if self.focus == Focus::Fen {
+            Color::Red
+        } else {
+            Color::White
         };
 
         Paragraph::new(self.fen.input.clone())

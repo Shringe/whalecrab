@@ -5,7 +5,7 @@ use crate::{
     rank::Rank,
     square::Square,
 };
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -156,15 +156,8 @@ impl Board {
             }
         }
 
-        if en_passant_fen != "-" {
-            let mut chars_fen = en_passant_fen.chars();
-            let file_fen = chars_fen.next()?;
-            let rank_fen = chars_fen.next()?;
-
-            new.en_passant_target = Some(Square::make_square(
-                Rank::from_index(rank_fen.to_digit(10)? as usize - 1),
-                File::from_char(file_fen)?,
-            ));
+        if let Ok(sq) = Square::from_str(en_passant_fen) {
+            new.en_passant_target = Some(sq);
         }
 
         Some(new)
