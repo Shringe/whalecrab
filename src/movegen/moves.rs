@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::{
-    bitboard::BitBoard, board::{Board, Color, PieceType}, castling::CastleSide, square::Square
+    bitboard::BitBoard, board::{Board, Color, PieceType}, castling::{self, CastleSide}, square::Square
 };
 
 /// Provides information of what to remove from the game after a piece gets captured
@@ -76,12 +76,57 @@ impl Move {
     /// Clones the bitboard, makes the move (captures if needed), and returns the new board. Does
     /// not verify legality at all.
     pub fn make(&self, board: &Board) -> Board {
+        let mut new = board.clone();
         let color = board.determine_color(self.from).unwrap_or_else(|| {
             panic!(
                 "Coudn't determine piece color while trying to make move: {}",
                 self
             )
         });
+
+        match &self.variant {
+            MoveType::Castle(side) => {
+                match &color {
+                    Color::White => {
+                        new.castling_rights.white_queenside = false;
+                        new.castling_rights.white_kingside = false;
+
+                        match side {
+                            CastleSide::Queenside => {
+                                new.white_king_bitboard = new.white_king_bitboard ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.white_rook_bitboard = new.white_rook_bitboard ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            },
+                            CastleSide::Kingside => {
+                                new.white_king_bitboard = new.white_king_bitboard ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                                new.white_rook_bitboard = new.white_rook_bitboard ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            },
+                        }
+                    },
+
+                    Color::Black => {
+                        new.castling_rights.black_queenside = false;
+                        new.castling_rights.black_kingside = false;
+
+                        match side {
+                            CastleSide::Queenside => {
+                                new.black_king_bitboard = new.black_king_bitboard ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.black_rook_bitboard = new.black_rook_bitboard ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            },
+
+                            CastleSide::Kingside => {
+                                new.black_king_bitboard = new.black_king_bitboard ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                                new.black_rook_bitboard = new.black_rook_bitboard ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                            },
+                        }
+                    },
+                }
+
+                new.next_turn();
+                return new;
+            },
+
+            _ => {},
+        }
 
         let (initial_piece, target_piece) = match &self.variant {
             MoveType::Promotion(promotion_piece) => (PieceType::Pawn, promotion_piece.clone()),
@@ -96,7 +141,6 @@ impl Move {
 
         let initial = BitBoard::from_square(self.from);
         let target = BitBoard::from_square(self.to);
-        let mut new = board.clone();
 
         // Remove the piece from its original square
         new.set_occupied_bitboard(
@@ -127,7 +171,7 @@ impl Move {
         new.next_turn();
         if self.variant == MoveType::CreateEnPassant {
             new.en_passant_target = self.to.backward(&color);
-        }
+        } 
 
         new
     }
