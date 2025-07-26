@@ -1,4 +1,5 @@
 use std::fmt::{self, Display};
+use std::str::FromStr;
 
 use crate::bitboard::BitBoard;
 use crate::board::{Board, Color};
@@ -34,6 +35,19 @@ pub struct Square(u8);
 impl Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}{}", self.get_file(), self.get_rank())
+    }
+}
+
+impl FromStr for Square {
+    type Err = ();
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut chars = s.chars();
+        let f = chars.next().ok_or(())?;
+        let r = chars.next().ok_or(())?;
+        let rank = Rank::from_index(r.to_digit(10).ok_or(())? as usize - 1);
+        let file = File::from_char(f).ok_or(())?;
+        Ok(Self::make_square(rank, file))
     }
 }
 
