@@ -186,6 +186,26 @@ impl Move {
             );
         }
 
+        // Revoke castling rights if something moves on a critical square
+        let mut revoke_rights = |square: &Square| match square {
+            &Square::E1 => {
+                new.castling_rights.white_kingside = false;
+                new.castling_rights.white_queenside = false;
+            }
+            &Square::A1 => new.castling_rights.white_queenside = false,
+            &Square::H1 => new.castling_rights.white_kingside = false,
+            &Square::E8 => {
+                new.castling_rights.black_kingside = false;
+                new.castling_rights.black_queenside = false;
+            }
+            &Square::A8 => new.castling_rights.black_queenside = false,
+            &Square::H8 => new.castling_rights.black_kingside = false,
+            _ => {}
+        };
+
+        revoke_rights(&self.from);
+        revoke_rights(&self.to);
+
         // Set en passant rules and switch turn
         new.next_turn();
         if self.variant == MoveType::CreateEnPassant {

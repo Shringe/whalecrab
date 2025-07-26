@@ -1,6 +1,5 @@
 use crate::{
     bitboard::BitBoard,
-    board::Color,
     movegen::moves::{Move, MoveType},
     square::Square,
 };
@@ -77,32 +76,6 @@ impl CastlingRights {
             white_kingside: false,
             black_queenside: false,
             black_kingside: false,
-        }
-    }
-
-    pub fn get_castle_rights(&self, color: &Color, side: &CastleSide) -> bool {
-        match color {
-            Color::White => match side {
-                CastleSide::Queenside => self.white_queenside,
-                CastleSide::Kingside => self.white_kingside,
-            },
-            Color::Black => match side {
-                CastleSide::Queenside => self.black_queenside,
-                CastleSide::Kingside => self.black_kingside,
-            },
-        }
-    }
-
-    pub fn revoke_castle_rights(&mut self, color: &Color, side: &CastleSide) {
-        match color {
-            Color::White => match side {
-                CastleSide::Queenside => self.white_queenside = false,
-                CastleSide::Kingside => self.white_kingside = false,
-            },
-            Color::Black => match side {
-                CastleSide::Queenside => self.black_queenside = false,
-                CastleSide::Kingside => self.black_kingside = false,
-            },
         }
     }
 }
