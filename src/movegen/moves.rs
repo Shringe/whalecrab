@@ -1,9 +1,7 @@
 use std::fmt;
 
 use crate::{
-    bitboard::BitBoard,
-    board::{Board, Color, PieceType},
-    square::Square,
+    bitboard::BitBoard, board::{Board, Color, PieceType}, castling::CastleSide, square::Square
 };
 
 /// Provides information of what to remove from the game after a piece gets captured
@@ -15,8 +13,7 @@ pub enum MoveType {
     CreateEnPassant,
     CaptureEnPassant,
     Promotion(PieceType),
-    CastleQueenside,
-    CastleKingside,
+    Castle(CastleSide),
 }
 
 #[derive(PartialEq, Debug)]
@@ -40,10 +37,10 @@ impl Move {
             from,
             to,
             variant: match (&board.turn, from, to) {
-                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => MoveType::CastleQueenside,
-                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => MoveType::CastleKingside,
-                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => MoveType::CastleQueenside,
-                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => MoveType::CastleKingside,
+                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => MoveType::Castle(CastleSide::Queenside),
+                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => MoveType::Castle(CastleSide::Kingside),
+                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => MoveType::Castle(CastleSide::Queenside),
+                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => MoveType::Castle(CastleSide::Kingside),
                 _ => {
                     if let Some(target) = board.en_passant_target {
                         if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
