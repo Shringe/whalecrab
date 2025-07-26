@@ -10,13 +10,15 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+
+        cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+        name = cargoToml.package.name;
+        version = cargoToml.package.version;
       in {
         packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "whalecrab";
-          version = "0.4.0";
-
+          inherit name version;
           cargoLock.lockFile = ./Cargo.lock;
-          src = pkgs.lib.cleanSource self;
+          src = self;
         };
 
         devShells.default = pkgs.mkShell {
