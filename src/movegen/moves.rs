@@ -1,7 +1,10 @@
 use std::fmt;
 
 use crate::{
-    bitboard::BitBoard, board::{Board, Color, PieceType}, castling::{self, CastleSide}, square::Square
+    bitboard::BitBoard,
+    board::{Board, Color, PieceType},
+    castling::{self, CastleSide},
+    square::Square,
 };
 
 /// Provides information of what to remove from the game after a piece gets captured
@@ -37,10 +40,18 @@ impl Move {
             from,
             to,
             variant: match (&board.turn, from, to) {
-                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => MoveType::Castle(CastleSide::Queenside),
-                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => MoveType::Castle(CastleSide::Kingside),
-                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => MoveType::Castle(CastleSide::Queenside),
-                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => MoveType::Castle(CastleSide::Kingside),
+                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => {
+                    MoveType::Castle(CastleSide::Queenside)
+                }
+                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => {
+                    MoveType::Castle(CastleSide::Kingside)
+                }
+                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => {
+                    MoveType::Castle(CastleSide::Queenside)
+                }
+                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => {
+                    MoveType::Castle(CastleSide::Kingside)
+                }
                 _ => {
                     if let Some(target) = board.en_passant_target {
                         if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
@@ -69,7 +80,7 @@ impl Move {
                         MoveType::Normal
                     }
                 }
-            }
+            },
         }
     }
 
@@ -93,15 +104,19 @@ impl Move {
 
                         match side {
                             CastleSide::Queenside => {
-                                new.white_king_bitboard = new.white_king_bitboard ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.white_rook_bitboard = new.white_rook_bitboard ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            },
+                                new.white_king_bitboard = new.white_king_bitboard
+                                    ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.white_rook_bitboard = new.white_rook_bitboard
+                                    ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            }
                             CastleSide::Kingside => {
-                                new.white_king_bitboard = new.white_king_bitboard ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                                new.white_rook_bitboard = new.white_rook_bitboard ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                            },
+                                new.white_king_bitboard = new.white_king_bitboard
+                                    ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                                new.white_rook_bitboard = new.white_rook_bitboard
+                                    ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            }
                         }
-                    },
+                    }
 
                     Color::Black => {
                         new.castling_rights.black_queenside = false;
@@ -109,23 +124,27 @@ impl Move {
 
                         match side {
                             CastleSide::Queenside => {
-                                new.black_king_bitboard = new.black_king_bitboard ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.black_rook_bitboard = new.black_rook_bitboard ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            },
+                                new.black_king_bitboard = new.black_king_bitboard
+                                    ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.black_rook_bitboard = new.black_rook_bitboard
+                                    ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            }
 
                             CastleSide::Kingside => {
-                                new.black_king_bitboard = new.black_king_bitboard ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                                new.black_rook_bitboard = new.black_rook_bitboard ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
-                            },
+                                new.black_king_bitboard = new.black_king_bitboard
+                                    ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                                new.black_rook_bitboard = new.black_rook_bitboard
+                                    ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                            }
                         }
-                    },
+                    }
                 }
 
                 new.next_turn();
                 return new;
-            },
+            }
 
-            _ => {},
+            _ => {}
         }
 
         let (initial_piece, target_piece) = match &self.variant {
@@ -171,7 +190,7 @@ impl Move {
         new.next_turn();
         if self.variant == MoveType::CreateEnPassant {
             new.en_passant_target = self.to.backward(&color);
-        } 
+        }
 
         new
     }
