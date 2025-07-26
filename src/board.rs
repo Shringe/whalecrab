@@ -1,5 +1,9 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY}, castling::CastlingRights, file::File, rank::Rank, square::Square
+    bitboard::{BitBoard, EMPTY},
+    castling::CastlingRights,
+    file::File,
+    rank::Rank,
+    square::Square,
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -165,6 +169,100 @@ impl Board {
         Some(new)
     }
 
+    /// Attempts to generate a fen from the current board state
+    pub fn to_fen(&self) -> String {
+        let mut fen = String::new();
+
+        for rank in (0..8).rev() {
+            let mut empty_count: u8 = 0;
+
+            for file in 0..8 {
+                let square = Square::make_square(Rank::from_index(rank), File::from_index(file));
+
+                if let Some(piece) = self.determine_piece(square) {
+                    // If we had empty squares, add the count first
+                    if empty_count > 0 {
+                        fen.push_str(&empty_count.to_string());
+                        empty_count = 0;
+                    }
+
+                    let piece_char = match self.determine_color(square).unwrap() {
+                        Color::White => match piece {
+                            PieceType::Pawn => 'P',
+                            PieceType::Knight => 'N',
+                            PieceType::Bishop => 'B',
+                            PieceType::Rook => 'R',
+                            PieceType::Queen => 'Q',
+                            PieceType::King => 'K',
+                        },
+
+                        Color::Black => match piece {
+                            PieceType::Pawn => 'p',
+                            PieceType::Knight => 'n',
+                            PieceType::Bishop => 'b',
+                            PieceType::Rook => 'r',
+                            PieceType::Queen => 'q',
+                            PieceType::King => 'k',
+                        },
+                    };
+
+                    fen.push(piece_char);
+                } else {
+                    empty_count += 1;
+                }
+            }
+
+            // Add any remaining empty squares at the end of the rank
+            if empty_count > 0 {
+                fen.push_str(&empty_count.to_string());
+            }
+
+            // Add rank separator (except for the last rank)
+            if rank > 0 {
+                fen.push('/');
+            }
+        }
+
+        fen.push(' ');
+        fen.push(match self.turn {
+            Color::White => 'w',
+            Color::Black => 'b',
+        });
+
+        fen.push(' ');
+        let mut castling = String::new();
+        if self.castling_rights.white_kingside {
+            castling.push('K');
+        }
+        if self.castling_rights.white_queenside {
+            castling.push('Q');
+        }
+        if self.castling_rights.black_kingside {
+            castling.push('k');
+        }
+        if self.castling_rights.black_queenside {
+            castling.push('q');
+        }
+
+        if castling.is_empty() {
+            fen.push('-');
+        } else {
+            fen.push_str(&castling);
+        }
+
+        fen.push(' ');
+        if let Some(target) = self.en_passant_target {
+            fen.push_str(&target.to_string());
+        } else {
+            fen.push('-');
+        }
+
+        // Placeholder as the Halfmove and Fullmove clock are not implemented
+        fen.push_str(" 0 0");
+
+        fen
+    }
+
     pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &Color, new: BitBoard) {
         match color {
             Color::White => match piece {
@@ -301,6 +399,19 @@ impl Default for Board {
 mod tests {
     use super::*;
     use crate::{movegen::moves::Move, test_utils::compare_to_fen};
+
+    #[test]
+    fn to_fen() {
+        let fen_before = "rnbq1rk1/p1p2p1p/3bpp2/1p6/2pP4/2N1B3/PP1Q1PPP/R3KBNR w KQ - 4 9";
+        let board_before = Board::from_fen(fen_before).unwrap();
+
+        let fen_after = board_before.to_fen();
+        let board_after = Board::from_fen(&fen_after).unwrap();
+
+        // I'm comparing the two boards directly instead of their fen because some parts of the fen implemenation
+        // are not yet implemented, which would fail the test.
+        assert_eq!(board_before, board_after);
+    }
 
     #[test]
     fn en_passant_fen() {
