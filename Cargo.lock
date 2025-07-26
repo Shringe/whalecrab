@@ -65,14 +65,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crabfish"
-version = "0.4.0"
-dependencies = [
- "crossterm 0.29.0",
- "ratatui",
-]
-
-[[package]]
 name = "crossterm"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -574,6 +566,14 @@ name = "wasi"
 version = "0.11.1+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
+
+[[package]]
+name = "whalecrab"
+version = "0.5.0"
+dependencies = [
+ "crossterm 0.29.0",
+ "ratatui",
+]
 
 [[package]]
 name = "winapi"

@@ -70,7 +70,7 @@ mod tests {
 
         assert_eq!(
             format_pretty_list(&with_trait),
-            "crabfish::square::Square list [
+            "whalecrab::square::Square list [
   A1,
   F5,
   H3,
@@ -82,7 +82,7 @@ mod tests {
 
         assert_eq!(
             format_pretty_list(&empty),
-            "crabfish::square::Square list [];"
+            "whalecrab::square::Square list [];"
         );
     }
 

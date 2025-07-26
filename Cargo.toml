@@ -1,6 +1,6 @@
 [package]
-name = "crabfish"
-version = "0.4.0"
+name = "whalecrab"
+version = "0.5.0"
 edition = "2021"
 
 [dependencies]
