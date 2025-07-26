@@ -1,11 +1,7 @@
 use crate::{
     bitboard::EMPTY,
     board::{Board, Color},
-    castling::{
-        BLACK_CASTLES_KINGSIDE, BLACK_CASTLES_QUEENSIDE, BLACK_TRAVERSES_CASTLING_KINGSIDE,
-        BLACK_TRAVERSES_CASTLING_QUEENSIDE, WHITE_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE,
-        WHITE_TRAVERSES_CASTLING_KINGSIDE, WHITE_TRAVERSES_CASTLING_QUEENSIDE,
-    },
+    castling,
     movegen::moves::{Move, MoveType},
     square::{Square, ALL_DIRECTIONS},
 };
@@ -44,29 +40,29 @@ impl Piece for King {
         match board.turn {
             Color::White => {
                 if board.castling_rights.white_queenside
-                    && occupied & WHITE_TRAVERSES_CASTLING_QUEENSIDE == EMPTY
+                    && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(WHITE_CASTLES_QUEENSIDE);
+                    moves.push(castling::WHITE_CASTLES_QUEENSIDE);
                 }
 
                 if board.castling_rights.white_kingside
-                    && occupied & WHITE_TRAVERSES_CASTLING_KINGSIDE == EMPTY
+                    && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(WHITE_CASTLES_KINGSIDE);
+                    moves.push(castling::WHITE_CASTLES_KINGSIDE);
                 }
             }
 
             Color::Black => {
                 if board.castling_rights.black_queenside
-                    && occupied & BLACK_TRAVERSES_CASTLING_QUEENSIDE == EMPTY
+                    && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(BLACK_CASTLES_QUEENSIDE);
+                    moves.push(castling::BLACK_CASTLES_QUEENSIDE);
                 }
 
                 if board.castling_rights.black_kingside
-                    && occupied & BLACK_TRAVERSES_CASTLING_KINGSIDE == EMPTY
+                    && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(BLACK_CASTLES_KINGSIDE);
+                    moves.push(castling::BLACK_CASTLES_KINGSIDE);
                 }
             }
         }
@@ -88,9 +84,9 @@ mod tests {
         let board =
             Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
                 .unwrap();
-        let moves = King(WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&board);
-        should_generate(&moves, &WHITE_CASTLES_KINGSIDE);
-        shouldnt_generate(&moves, &WHITE_CASTLES_QUEENSIDE);
+        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&board);
+        should_generate(&moves, &castling::WHITE_CASTLES_KINGSIDE);
+        shouldnt_generate(&moves, &castling::WHITE_CASTLES_QUEENSIDE);
     }
 
     #[test]
@@ -98,9 +94,9 @@ mod tests {
         let board =
             Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
                 .unwrap();
-        let moves = King(BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&board);
-        should_generate(&moves, &BLACK_CASTLES_QUEENSIDE);
-        shouldnt_generate(&moves, &BLACK_CASTLES_KINGSIDE);
+        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&board);
+        should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
+        shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
     }
 
     #[test]
