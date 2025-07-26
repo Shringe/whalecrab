@@ -5,6 +5,7 @@ use crate::{
     rank::Rank,
     square::Square,
 };
+use std::fmt;
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -40,7 +41,7 @@ pub enum PieceType {
     King,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -392,6 +393,12 @@ impl Default for Board {
 
             castling_rights: CastlingRights::default(),
         }
+    }
+}
+
+impl fmt::Debug for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Board(\"{}\")", self.to_fen())
     }
 }
 

@@ -26,11 +26,7 @@ pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
 /// Compares and actual board to one generated from a fen
 pub fn compare_to_fen(board: &Board, fen: &str) {
     let fen_board = &Board::from_fen(fen).unwrap();
-    assert_eq!(
-        board, fen_board,
-        "board:\n{:#?}\n\nfen_board:\n{:#?}",
-        board, fen_board
-    );
+    assert_eq!(board, fen_board);
 }
 
 /// Asserts that moves contains m
