@@ -26,8 +26,10 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             git
-            cargo
+            rustc
             rustfmt
+            cargo
+            rust-analyzer
           ];
         };
       }

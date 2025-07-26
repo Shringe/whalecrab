@@ -40,7 +40,7 @@ impl Display for Square {
 
 impl FromStr for Square {
     type Err = ();
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut chars = s.chars();
         let f = chars.next().ok_or(())?;
