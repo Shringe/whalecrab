@@ -19,10 +19,11 @@
           src = pkgs.lib.cleanSource self;
         };
 
-        devshells.default = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             git
             cargo
+            rustfmt
           ];
         };
       }

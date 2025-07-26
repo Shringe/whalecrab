@@ -341,7 +341,7 @@ impl App {
             match key_event.code {
                 KeyCode::Char('c') => self.exit(),
                 KeyCode::Char('g') => self.fen.input.clear(),
-                _ => {},
+                _ => {}
             }
         } else {
             match key_event.code {
@@ -354,12 +354,12 @@ impl App {
                     if let Some(valid) = Board::from_fen(&self.fen.input) {
                         self.board = valid;
                     }
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
-         
+
     fn select(&mut self, sq: Square) {
         self.selected_square = Some(sq);
     }
@@ -383,7 +383,9 @@ impl Widget for &App {
         };
 
         let debug_area = main_layout[0];
-        let total_grid_area = Layout::vertical([Constraint::Percentage(100), Constraint::Length(3)]).split(main_layout[1]);
+        let total_grid_area =
+            Layout::vertical([Constraint::Percentage(100), Constraint::Length(3)])
+                .split(main_layout[1]);
         let grid_area = total_grid_area[0];
         let fen_area = total_grid_area[1];
 
