@@ -222,6 +222,52 @@ mod tests {
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
     #[test]
+    fn both_lose_castling_rights_by_moving_kings() {
+        let mut board =
+            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
+                .unwrap();
+
+        let black_moves = Move::new(Square::E8, Square::D7, &board);
+        board = black_moves.make(&board);
+
+        compare_to_fen(
+            &board,
+            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 1 2",
+        );
+
+        let white_moves = Move::new(Square::E1, Square::E2, &board);
+        board = white_moves.make(&board);
+
+        compare_to_fen(
+            &board,
+            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP1KPPP/RNBQ1B1R b - - 2 2",
+        );
+    }
+
+    #[test]
+    fn both_lose_castling_rights_by_moving_rooks() {
+        let mut board =
+            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
+                .unwrap();
+
+        let black_moves = Move::new(Square::H8, Square::G8, &board);
+        board = black_moves.make(&board);
+
+        compare_to_fen(
+            &board,
+            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQq - 1 2",
+        );
+
+        let white_moves = Move::new(Square::H1, Square::G1, &board);
+        board = white_moves.make(&board);
+
+        compare_to_fen(
+            &board,
+            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKBR1 b Qq - 2 2",
+        );
+    }
+
+    #[test]
     fn white_king_castles_queenside() {
         let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/R3K1NR w KQkq - 6 7";
         let fen_after = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
