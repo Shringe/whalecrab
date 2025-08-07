@@ -9,19 +9,14 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
-use whalecrab::board::{self, PieceType};
-use whalecrab::movegen::moves::Move;
-use whalecrab::movegen::pieces::bishop::Bishop;
-use whalecrab::movegen::pieces::king::King;
-use whalecrab::movegen::pieces::knight::Knight;
-use whalecrab::movegen::pieces::pawn::Pawn;
-use whalecrab::movegen::pieces::piece::Piece;
-use whalecrab::movegen::pieces::queen::Queen;
-use whalecrab::movegen::pieces::rook::Rook;
 use whalecrab::rank::Rank;
 use whalecrab::square::Square;
 use whalecrab::test_utils::format_pretty_list;
 use whalecrab::{board::Board, file::File};
+use whalecrab::{
+    board::{self},
+    movegen::moves::{get_targets, Move},
+};
 
 pub struct Ascii {
     white_pawn: String,
@@ -310,32 +305,8 @@ impl App {
 
                     if let Some(piece) = self.board.determine_piece(new) {
                         if self.board.turn == self.board.determine_color(new).unwrap() {
-                            match piece {
-                                PieceType::Pawn => {
-                                    self.potential_targets =
-                                        Pawn(new).psuedo_legal_targets(&self.board)
-                                }
-                                PieceType::Knight => {
-                                    self.potential_targets =
-                                        Knight(new).psuedo_legal_targets(&self.board)
-                                }
-                                PieceType::Bishop => {
-                                    self.potential_targets =
-                                        Bishop(new).psuedo_legal_targets(&self.board)
-                                }
-                                PieceType::Rook => {
-                                    self.potential_targets =
-                                        Rook(new).psuedo_legal_targets(&self.board)
-                                }
-                                PieceType::Queen => {
-                                    self.potential_targets =
-                                        Queen(new).psuedo_legal_targets(&self.board)
-                                }
-                                PieceType::King => {
-                                    self.potential_targets =
-                                        King(new).psuedo_legal_targets(&self.board)
-                                }
-                            }
+                            self.potential_targets =
+                                get_targets(piece.get_legal_moves(&self.board, new));
                         }
                     }
                 }
