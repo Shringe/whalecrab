@@ -284,6 +284,14 @@ impl BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
     }
 
+    /// ands a vector of squares together into a bitboard
+    pub fn from_square_vec(squares: Vec<Square>) -> BitBoard {
+        squares
+            .into_iter()
+            .map(BitBoard::from_square)
+            .fold(EMPTY, |acc, bb| acc | bb)
+    }
+
     /// Construct a new `BitBoard` with a particular `Square` set
     #[inline]
     pub fn from_square(sq: Square) -> BitBoard {

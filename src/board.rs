@@ -2,6 +2,13 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::CastlingRights,
     file::File,
+    movegen::{
+        moves::{get_targets, Move},
+        pieces::{
+            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
+            rook::Rook,
+        },
+    },
     rank::Rank,
     square::Square,
 };
@@ -31,6 +38,15 @@ impl Color {
     }
 }
 
+pub const ALL_PIECE_TYPES: [PieceType; 6] = [
+    PieceType::Pawn,
+    PieceType::Knight,
+    PieceType::Bishop,
+    PieceType::Rook,
+    PieceType::Queen,
+    PieceType::King,
+];
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum PieceType {
     Pawn,
@@ -39,6 +55,19 @@ pub enum PieceType {
     Rook,
     Queen,
     King,
+}
+
+impl PieceType {
+    pub fn get_pseudo_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).psuedo_legal_moves(board),
+            PieceType::Knight => Knight(square).psuedo_legal_moves(board),
+            PieceType::Bishop => Bishop(square).psuedo_legal_moves(board),
+            PieceType::Rook => Rook(square).psuedo_legal_moves(board),
+            PieceType::Queen => Queen(square).psuedo_legal_moves(board),
+            PieceType::King => King(square).psuedo_legal_moves(board),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -362,6 +391,31 @@ impl Board {
         self.turn = self.turn.opponent();
         self.en_passant_target = None;
     }
+
+    /// Determines whether the opponent's king is in check
+    pub fn is_king_in_check(&self) -> bool {
+        let targets =
+            BitBoard::from_square_vec(get_targets(self.generate_all_psuedo_legal_moves()));
+        let king = self.get_occupied_bitboard(&PieceType::King, &self.turn.opponent());
+        king & targets != EMPTY
+    }
+
+    /// Generates all psuedo legal moves for the current player
+    pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let occupied = match self.turn {
+            Color::White => self.occupied_white_bitboard(),
+            Color::Black => self.occupied_black_bitboard(),
+        };
+
+        for sq in occupied {
+            if let Some(piece) = self.determine_piece(sq) {
+                moves.extend(piece.get_pseudo_legal_moves(self, sq))
+            }
+        }
+
+        moves
+    }
 }
 
 impl Default for Board {
@@ -398,7 +452,21 @@ impl fmt::Debug for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{movegen::moves::Move, test_utils::compare_to_fen};
+    use crate::test_utils::compare_to_fen;
+
+    #[test]
+    fn white_king_in_check() {
+        let white_in_check = "rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
+        let board = Board::from_fen(white_in_check).unwrap();
+        assert!(board.is_king_in_check())
+    }
+
+    #[test]
+    fn black_king_in_check() {
+        let black_in_check = "rnbqkb1r/ppp2ppp/5n2/1B1pp3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1";
+        let board = Board::from_fen(black_in_check).unwrap();
+        assert!(board.is_king_in_check())
+    }
 
     #[test]
     fn to_fen() {
