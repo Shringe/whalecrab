@@ -58,7 +58,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_pseudo_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+    pub fn get_psuedo_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => Pawn(square).psuedo_legal_moves(board),
             PieceType::Knight => Knight(square).psuedo_legal_moves(board),
@@ -66,6 +66,17 @@ impl PieceType {
             PieceType::Rook => Rook(square).psuedo_legal_moves(board),
             PieceType::Queen => Queen(square).psuedo_legal_moves(board),
             PieceType::King => King(square).psuedo_legal_moves(board),
+        }
+    }
+
+    pub fn get_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).legal_moves(board),
+            PieceType::Knight => Knight(square).legal_moves(board),
+            PieceType::Bishop => Bishop(square).legal_moves(board),
+            PieceType::Rook => Rook(square).legal_moves(board),
+            PieceType::Queen => Queen(square).legal_moves(board),
+            PieceType::King => King(square).legal_moves(board),
         }
     }
 }
@@ -410,7 +421,7 @@ impl Board {
 
         for sq in occupied {
             if let Some(piece) = self.determine_piece(sq) {
-                moves.extend(piece.get_pseudo_legal_moves(self, sq))
+                moves.extend(piece.get_psuedo_legal_moves(self, sq))
             }
         }
 
