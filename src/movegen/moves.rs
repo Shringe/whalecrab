@@ -19,6 +19,11 @@ pub enum MoveType {
     Castle(CastleSide),
 }
 
+/// Converts a vector of moves to a vector of taargets
+pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
+    moves.into_iter().map(|m| m.to).collect()
+}
+
 #[derive(PartialEq, Debug)]
 pub struct Move {
     pub from: Square,
