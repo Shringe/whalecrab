@@ -427,6 +427,23 @@ impl Board {
 
         moves
     }
+
+    /// Generates all legal moves for the current player
+    pub fn generate_all_legal_moves(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let occupied = match self.turn {
+            Color::White => self.occupied_white_bitboard(),
+            Color::Black => self.occupied_black_bitboard(),
+        };
+
+        for sq in occupied {
+            if let Some(piece) = self.determine_piece(sq) {
+                moves.extend(piece.get_legal_moves(self, sq))
+            }
+        }
+
+        moves
+    }
 }
 
 impl Default for Board {
