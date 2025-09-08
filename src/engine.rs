@@ -1,13 +1,32 @@
-use crate::board::Board;
+use crate::board::{Board, Color};
 use rand::Rng;
 
 impl Board {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
     /// Currently just produces a random number
-    fn grade_position(&self) -> f32 {
-        let mut rng = rand::rng();
-        let range = 0.3;
-        rng.random_range((range * -1.0)..range)
+    pub fn grade_position(&self) -> f32 {
+        let mut score = 0.0;
+
+        // Piece value
+        let mut white_piece_value = 0.0;
+        let mut black_piece_value = white_piece_value;
+        for sq in self.occupied_bitboard() {
+            match self
+                .determine_color(sq)
+                .expect("Expected piece on occupied_bitboard!")
+            {
+                Color::White => white_piece_value += self.determine_piece(sq).unwrap().value(),
+                Color::Black => black_piece_value += self.determine_piece(sq).unwrap().value(),
+            }
+        }
+
+        let piece_value = match self.turn {
+            Color::White => white_piece_value - black_piece_value,
+            Color::Black => black_piece_value - white_piece_value,
+        };
+
+        score += piece_value;
+        score
     }
 
     /// Finds the top engine move for the current position and makes it on a new board
