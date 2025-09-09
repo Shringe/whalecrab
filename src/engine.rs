@@ -43,7 +43,6 @@ impl ScoredMove {
 
 impl Board {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
-    /// Currently just produces a random number
     pub fn grade_position(&self) -> f32 {
         let mut score = 0.0;
 
@@ -60,10 +59,7 @@ impl Board {
             }
         }
 
-        let piece_value = match self.turn {
-            Color::White => white_piece_value - black_piece_value,
-            Color::Black => black_piece_value - white_piece_value,
-        };
+        let piece_value = white_piece_value - black_piece_value;
 
         score += piece_value;
         score
@@ -74,7 +70,10 @@ impl Board {
         let moves = self.generate_all_legal_moves();
         let mut scored_moves = ScoredMove::from_moves(self, moves);
         scored_moves.sort();
-        scored_moves.into_iter().next()
+        match self.turn {
+            Color::White => scored_moves.into_iter().next_back(),
+            Color::Black => scored_moves.into_iter().next(),
+        }
     }
 }
 
@@ -90,5 +89,17 @@ mod tests {
         let looking_for = Move::new(Square::C1, Square::G5, &board);
         let result = board.get_engine_move().expect("No moves found");
         assert_eq!(result.0, looking_for);
+    }
+
+    #[test]
+    fn engine_saves_queen() {
+        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
+        let board = Board::from_fen(starting).unwrap();
+        let result = board.get_engine_move().expect("No moves found");
+        let new = result.0.make(&board);
+        assert_eq!(
+            board.black_queen_bitboard.popcnt(),
+            new.black_queen_bitboard.popcnt()
+        );
     }
 }
