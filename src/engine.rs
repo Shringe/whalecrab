@@ -1,5 +1,45 @@
-use crate::board::{Board, Color};
-use rand::Rng;
+use std::cmp::Ordering;
+
+use crate::{
+    board::{Board, Color},
+    movegen::moves::Move,
+};
+
+pub struct ScoredMove(pub Move, f32);
+
+impl Ord for ScoredMove {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.1.partial_cmp(&other.1).unwrap_or(Ordering::Equal)
+    }
+}
+
+impl PartialOrd for ScoredMove {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for ScoredMove {
+    fn eq(&self, other: &Self) -> bool {
+        self.1 == other.1
+    }
+}
+
+impl Eq for ScoredMove {}
+
+impl ScoredMove {
+    pub fn from_moves(board: &Board, moves: Vec<Move>) -> Vec<Self> {
+        let mut scored_moves = Vec::new();
+        for m in moves {
+            let new = m.make(board);
+            let score = new.grade_position();
+            let scored_move = ScoredMove(m, score);
+            scored_moves.push(scored_move);
+        }
+
+        scored_moves
+    }
+}
 
 impl Board {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
@@ -29,34 +69,26 @@ impl Board {
         score
     }
 
-    /// Finds the top engine move for the current position and makes it on a new board
-    pub fn make_engine_move(&self) -> Board {
+    /// Finds and returns the suggested move for the current players turn
+    pub fn get_engine_move(&self) -> Option<ScoredMove> {
         let moves = self.generate_all_legal_moves();
-        let mut best_position = moves.get(0).expect("No moves to grade!").make(self);
-        let mut best_score = best_position.grade_position();
-        for m in moves {
-            let board = m.make(self);
-            let score = board.grade_position();
-            if score > best_score {
-                best_score = score;
-                best_position = board;
-            }
-        }
-
-        best_position
+        let mut scored_moves = ScoredMove::from_moves(self, moves);
+        scored_moves.sort();
+        scored_moves.into_iter().next()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::square::Square;
 
     #[test]
     fn engine_takes_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
-        let looking_for = "rnb1kbnr/pppp1ppp/8/4p1B1/3PP3/8/PPP2PPP/RN1QKBNR b KQkq - 0 3";
         let board = Board::from_fen(starting).unwrap();
-        let new = board.make_engine_move();
-        assert_eq!(new.to_fen(), Board::from_fen(looking_for).unwrap().to_fen());
+        let looking_for = Move::new(Square::C1, Square::G5, &board);
+        let result = board.get_engine_move().expect("No moves found");
+        assert_eq!(result.0, looking_for);
     }
 }
