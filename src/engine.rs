@@ -46,3 +46,17 @@ impl Board {
         best_position
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn engine_takes_queen() {
+        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
+        let looking_for = "rnb1kbnr/pppp1ppp/8/4p1B1/3PP3/8/PPP2PPP/RN1QKBNR b KQkq - 0 3";
+        let board = Board::from_fen(starting).unwrap();
+        let new = board.make_engine_move();
+        assert_eq!(new.to_fen(), Board::from_fen(looking_for).unwrap().to_fen());
+    }
+}
