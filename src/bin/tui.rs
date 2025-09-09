@@ -195,6 +195,10 @@ struct App {
     ascii: Ascii,
     potential_targets: Vec<Square>,
 
+    score: f32,
+    engine_suggestions: bool,
+    suggested: Option<Move>,
+
     focus: Focus,
     fen: Textbox,
     command: Textbox,
@@ -209,6 +213,10 @@ impl App {
             board: Board::default(),
             ascii: Ascii::default(),
             potential_targets: Vec::new(),
+
+            score: 0.0,
+            engine_suggestions: false,
+            suggested: None,
 
             focus: Focus::Board,
             fen: Textbox::new(),
@@ -259,6 +267,7 @@ impl App {
 
             KeyCode::Char('m') => self.focus = Focus::Fen,
             KeyCode::Char(':') => self.focus = Focus::Command,
+            KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
 
             KeyCode::Left => {
                 if let Some(new) = self.highlighted_square.left() {
@@ -296,7 +305,11 @@ impl App {
                         )
                         .make(&self.board);
 
+                        self.score = self.board.grade_position();
                         self.fen.input = self.board.to_fen();
+                        if let Some(sm) = self.board.get_engine_move() {
+                            self.suggested = Some(sm.0)
+                        }
                     }
 
                     self.unselect();
@@ -434,10 +447,18 @@ impl Widget for &App {
             area.width, area.height, self.focus
         ));
 
+        debug_text.push_str(&format!("Current evaluation: {}\n", self.score));
+
         debug_text.push_str(&format!(
             "Highlighted square: {}\n",
             self.highlighted_square
         ));
+
+        if self.engine_suggestions {
+            if let Some(m) = &self.suggested {
+                debug_text.push_str(&format!("Suggested move: {}\n", m));
+            }
+        }
 
         if let Some(sq) = self.selected_square {
             if let Some(piece) = self.board.determine_piece(sq) {
@@ -497,7 +518,7 @@ Selected Square info:
                     ""
                 };
 
-                // Highlight selected square
+                // Highlight selected square and suggested square
                 if self.potential_targets.contains(&square_index) {
                     if square_index == self.highlighted_square {
                         Paragraph::new(&*self.ascii.target)
