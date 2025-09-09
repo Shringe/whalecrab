@@ -13,5 +13,7 @@ fn main() {
         board = m.make(&board);
     }
 
+    println!("=========================");
+    println!("Final score: {}", board.grade_position());
     println!("Final fen: {}", board.to_fen());
 }
