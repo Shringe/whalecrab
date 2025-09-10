@@ -4,7 +4,7 @@ fn main() {
     let mut board = Board::default();
 
     for _ in 0..100 {
-        let m = board.get_engine_move().unwrap().0;
+        let m = board.find_best_move().unwrap().0;
         println!("Chose to play: {}", m);
         board = m.make(&board);
     }

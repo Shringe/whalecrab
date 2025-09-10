@@ -307,7 +307,7 @@ impl App {
 
                         self.score = self.board.grade_position();
                         self.fen.input = self.board.to_fen();
-                        if let Some(sm) = self.board.get_engine_move() {
+                        if let Some(sm) = self.board.find_best_move() {
                             self.suggested = Some(sm.0)
                         }
                     }

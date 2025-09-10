@@ -5,6 +5,7 @@ use crate::{
     movegen::moves::Move,
 };
 
+#[derive(Clone)]
 pub struct ScoredMove(pub Move, f32);
 
 impl Ord for ScoredMove {
@@ -66,7 +67,7 @@ impl Board {
     }
 
     /// Finds and returns the suggested move for the current players turn
-    pub fn get_engine_move(&self) -> Option<ScoredMove> {
+    pub fn find_best_move(&self) -> Option<ScoredMove> {
         let moves = self.generate_all_legal_moves();
         let mut scored_moves = ScoredMove::from_moves(self, moves);
         scored_moves.sort();
@@ -74,6 +75,41 @@ impl Board {
             Color::White => scored_moves.into_iter().next_back(),
             Color::Black => scored_moves.into_iter().next(),
         }
+    }
+
+    /// Recusively searches through the specified depth (in half moves) to find the best move
+    pub fn get_engine_move(&self, depth: u16, initial: Option<ScoredMove>) -> Option<ScoredMove> {
+        if depth == 0 {
+            let best = self.find_best_move();
+            return best;
+        }
+
+        let moves = self.generate_all_legal_moves();
+        let scored_moves = ScoredMove::from_moves(self, moves);
+        let mut best_initial = None;
+        let mut best_final = None;
+        for m in scored_moves {
+            let board = m.0.make(self);
+            let initial = if initial.is_some() {
+                initial.clone()
+            } else {
+                Some(m)
+            };
+
+            if let Some(m) = board.get_engine_move(depth - 1, initial.clone()) {
+                if let Some(b) = &best_final {
+                    if &m > b {
+                        best_initial = initial;
+                        best_final = Some(m);
+                    }
+                } else {
+                    best_initial = initial;
+                    best_final = Some(m)
+                }
+            }
+        }
+
+        best_initial
     }
 }
 
@@ -87,7 +123,7 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let board = Board::from_fen(starting).unwrap();
         let looking_for = Move::new(Square::C1, Square::G5, &board);
-        let result = board.get_engine_move().expect("No moves found");
+        let result = board.find_best_move().expect("No moves found");
         assert_eq!(result.0, looking_for);
     }
 
@@ -95,7 +131,7 @@ mod tests {
     fn engine_saves_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
         let board = Board::from_fen(starting).unwrap();
-        let result = board.get_engine_move().expect("No moves found");
+        let result = board.find_best_move().expect("No moves found");
         let new = result.0.make(&board);
         assert_eq!(
             board.black_queen_bitboard.popcnt(),

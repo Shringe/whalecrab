@@ -10,7 +10,7 @@ use crate::{
 /// Provides information of what to remove from the game after a piece gets captured
 pub struct Capture(PieceType, Square);
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum MoveType {
     Normal, // Includes regular captures
     CreateEnPassant,
@@ -24,7 +24,7 @@ pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
     moves.into_iter().map(|m| m.to).collect()
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
