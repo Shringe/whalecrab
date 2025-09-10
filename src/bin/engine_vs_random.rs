@@ -8,7 +8,7 @@ fn main() {
     for _ in 0..100 {
         board = match board.turn {
             Color::White => {
-                let m = board.get_engine_move().unwrap().0;
+                let m = board.find_best_move().unwrap().0;
                 println!("Chose to play: {}", m);
                 m.make(&board)
             }
