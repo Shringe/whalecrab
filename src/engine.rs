@@ -168,7 +168,7 @@ impl Board {
         min
     }
 
-    fn get_engine_move_minimax(&self, depth: u16) -> Option<Move> {
+    pub fn get_engine_move_minimax(&self, depth: u16) -> Option<Move> {
         let moves = self.generate_all_legal_moves();
         if moves.is_empty() {
             return None;
