@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt};
 
 use crate::{
     board::{Board, Color},
@@ -7,6 +7,22 @@ use crate::{
 
 #[derive(Clone)]
 pub struct ScoredMove(pub Move, f32);
+
+impl fmt::Display for ScoredMove {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} -> {}, {:?}, {}",
+            self.0.from, self.0.to, self.0.variant, self.1
+        )
+    }
+}
+
+impl fmt::Debug for ScoredMove {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
 
 impl Ord for ScoredMove {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -153,7 +169,7 @@ impl Board {
 
     fn mini(&self, depth: u16) -> f32 {
         if depth == 0 {
-            return self.grade_position() * -1.0;
+            return self.grade_position();
         }
 
         let mut min = f32::MAX;
@@ -170,23 +186,37 @@ impl Board {
 
     pub fn get_engine_move_minimax(&self, depth: u16) -> Option<Move> {
         let moves = self.generate_all_legal_moves();
-        if moves.is_empty() {
-            return None;
-        }
-
         let mut best_move = None;
-        let mut best_score = f32::MIN;
 
-        for m in moves {
-            let potential = m.make(self);
-            let score = potential.mini(depth - 1);
-            if score > best_score {
-                best_score = score;
-                best_move = Some(m);
+        match self.turn {
+            Color::White => {
+                let mut best_score = f32::MIN;
+                for m in moves {
+                    let potential = m.make(self);
+                    let score = potential.mini(depth - 1);
+                    if score > best_score {
+                        best_score = score;
+                        best_move = Some(m);
+                    }
+                }
+
+                best_move
+            }
+
+            Color::Black => {
+                let mut best_score = f32::MAX;
+                for m in moves {
+                    let potential = m.make(self);
+                    let score = potential.maxi(depth - 1);
+                    if score < best_score {
+                        best_score = score;
+                        best_move = Some(m);
+                    }
+                }
+
+                best_move
             }
         }
-
-        best_move
     }
 }
 
@@ -196,7 +226,7 @@ mod tests {
     use crate::square::Square;
 
     #[test]
-    fn engine_takes_queen() {
+    fn old_engine_takes_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let board = Board::from_fen(starting).unwrap();
         let looking_for = Move::new(Square::C1, Square::G5, &board);
@@ -205,11 +235,36 @@ mod tests {
     }
 
     #[test]
-    fn engine_saves_queen() {
+    fn old_engine_saves_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
         let board = Board::from_fen(starting).unwrap();
         let result = board.find_best_move().expect("No moves found");
         let new = result.0.make(&board);
+        assert_eq!(
+            board.black_queen_bitboard.popcnt(),
+            new.black_queen_bitboard.popcnt()
+        );
+    }
+
+    #[test]
+    fn minimax_engine_takes_queen() {
+        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
+        let board = Board::from_fen(starting).unwrap();
+        let looking_for = Move::new(Square::C1, Square::G5, &board);
+        let result = board.get_engine_move_minimax(2).expect("No moves found");
+        let moves = board.generate_all_legal_moves();
+        let mut scored = ScoredMove::from_moves(&board, moves);
+        scored.sort();
+        println!("Available moves: {:#?}", scored);
+        assert_eq!(result, looking_for);
+    }
+
+    #[test]
+    fn minimax_engine_saves_queen() {
+        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
+        let board = Board::from_fen(starting).unwrap();
+        let result = board.get_engine_move_minimax(2).expect("No moves found");
+        let new = result.make(&board);
         assert_eq!(
             board.black_queen_bitboard.popcnt(),
             new.black_queen_bitboard.popcnt()

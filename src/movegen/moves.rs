@@ -24,7 +24,7 @@ pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
     moves.into_iter().map(|m| m.to).collect()
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
@@ -34,6 +34,12 @@ pub struct Move {
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} -> {}, {:?}", self.from, self.to, self.variant)
+    }
+}
+
+impl fmt::Debug for Move {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 
