@@ -111,6 +111,83 @@ impl Board {
 
         best_initial
     }
+
+    // https://www.chessprogramming.org/Minimax
+    // int maxi( int depth ) {
+    //     if ( depth == 0 ) return evaluate();
+    //     int max = -oo;
+    //     for ( all moves) {
+    //         score = mini( depth - 1 );
+    //         if( score > max )
+    //             max = score;
+    //     }
+    //     return max;
+    // }
+    //
+    // int mini( int depth ) {
+    //     if ( depth == 0 ) return -evaluate();
+    //     int min = +oo;
+    //     for ( all moves) {
+    //         score = maxi( depth - 1 );
+    //         if( score < min )
+    //             min = score;
+    //     }
+    //     return min;
+    // }
+    fn maxi(&self, depth: u16) -> f32 {
+        if depth == 0 {
+            return self.grade_position();
+        }
+
+        let mut max = f32::MIN;
+        for m in self.generate_all_legal_moves() {
+            let potential = m.make(self);
+            let score = potential.mini(depth - 1);
+            if score > max {
+                max = score;
+            }
+        }
+
+        max
+    }
+
+    fn mini(&self, depth: u16) -> f32 {
+        if depth == 0 {
+            return self.grade_position() * -1.0;
+        }
+
+        let mut min = f32::MAX;
+        for m in self.generate_all_legal_moves() {
+            let potential = m.make(self);
+            let score = potential.maxi(depth - 1);
+            if score < min {
+                min = score;
+            }
+        }
+
+        min
+    }
+
+    fn get_engine_move_minimax(&self, depth: u16) -> Option<Move> {
+        let moves = self.generate_all_legal_moves();
+        if moves.is_empty() {
+            return None;
+        }
+
+        let mut best_move = None;
+        let mut best_score = f32::MIN;
+
+        for m in moves {
+            let potential = m.make(self);
+            let score = potential.mini(depth - 1);
+            if score > best_score {
+                best_score = score;
+                best_move = Some(m);
+            }
+        }
+
+        best_move
+    }
 }
 
 #[cfg(test)]
