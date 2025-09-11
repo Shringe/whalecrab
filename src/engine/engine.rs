@@ -64,21 +64,16 @@ impl Board {
         let mut score = 0.0;
 
         // Piece value
-        let mut white_piece_value = 0.0;
-        let mut black_piece_value = white_piece_value;
         for sq in self.occupied_bitboard() {
             match self
                 .determine_color(sq)
                 .expect("Expected piece on occupied_bitboard!")
             {
-                Color::White => white_piece_value += self.determine_piece(sq).unwrap().value(),
-                Color::Black => black_piece_value += self.determine_piece(sq).unwrap().value(),
+                Color::White => score += self.determine_piece(sq).unwrap().material_value(),
+                Color::Black => score -= self.determine_piece(sq).unwrap().material_value(),
             }
         }
 
-        let piece_value = white_piece_value - black_piece_value;
-
-        score += piece_value;
         score
     }
 
