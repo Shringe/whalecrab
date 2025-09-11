@@ -182,6 +182,52 @@ impl Textbox {
 }
 
 #[derive(Debug, PartialEq)]
+enum PlayerType {
+    Human,
+    Engine,
+}
+
+impl PlayerType {
+    pub fn cycle(&mut self) {
+        *self = match self {
+            PlayerType::Human => PlayerType::Engine,
+            PlayerType::Engine => PlayerType::Human,
+        };
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum MenuFocus {
+    Start,
+    Resume,
+    Quit,
+    White,
+    Black,
+}
+
+impl MenuFocus {
+    pub fn cycle(&mut self) {
+        *self = match self {
+            MenuFocus::Start => MenuFocus::Resume,
+            MenuFocus::Resume => MenuFocus::Quit,
+            MenuFocus::Quit => MenuFocus::White,
+            MenuFocus::White => MenuFocus::Black,
+            MenuFocus::Black => MenuFocus::Start,
+        };
+    }
+
+    pub fn cycle_back(&mut self) {
+        *self = match self {
+            MenuFocus::Start => MenuFocus::Black,
+            MenuFocus::Resume => MenuFocus::Start,
+            MenuFocus::Quit => MenuFocus::Resume,
+            MenuFocus::White => MenuFocus::Quit,
+            MenuFocus::Black => MenuFocus::White,
+        };
+    }
+}
+
+#[derive(Debug, PartialEq)]
 enum Focus {
     Board,
     Fen,
@@ -200,7 +246,11 @@ struct App {
     engine_suggestions: bool,
     suggested: Option<Move>,
 
+    player_white: PlayerType,
+    player_black: PlayerType,
+
     focus: Focus,
+    menu_focus: MenuFocus,
     fen: Textbox,
     command: Textbox,
     exit: bool,
@@ -219,7 +269,11 @@ impl App {
             engine_suggestions: false,
             suggested: None,
 
+            player_white: PlayerType::Human,
+            player_black: PlayerType::Engine,
+
             focus: Focus::Menu,
+            menu_focus: MenuFocus::Start,
             fen: Textbox::new(),
             command: Textbox::new(),
             exit: false,
@@ -260,9 +314,85 @@ impl App {
 
     fn handle_menu_key_event(&mut self, key_event: event::KeyEvent) {
         match key_event.code {
-            KeyCode::Esc => self.focus = Focus::Board,
+            KeyCode::Char('q') => self.exit(),
+            KeyCode::Char('c') => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    self.exit();
+                }
+            }
+
+            KeyCode::Esc | KeyCode::Char('m') => self.focus = Focus::Board,
+            KeyCode::Enter => match self.menu_focus {
+                MenuFocus::Start => {
+                    self.board = Board::default();
+                    self.focus = Focus::Board;
+                }
+                MenuFocus::Resume => self.focus = Focus::Board,
+                MenuFocus::Quit => self.exit(),
+                MenuFocus::White => self.player_white.cycle(),
+                MenuFocus::Black => self.player_black.cycle(),
+            },
+
+            KeyCode::Up | KeyCode::Left => self.menu_focus.cycle_back(),
+            KeyCode::Down | KeyCode::Right => self.menu_focus.cycle(),
+
             _ => {}
         };
+    }
+
+    /// Refreshes the board after playing a move and starts the next move
+    fn play_move(&mut self, m: &Move) {
+        self.board = m.make(&self.board);
+        self.score = self.board.grade_position();
+        self.fen.input = self.board.to_fen();
+        if let Some(sm) = self.board.find_best_move() {
+            self.suggested = Some(sm.0)
+        }
+
+        let player = match self.board.turn {
+            board::Color::White => &self.player_white,
+            board::Color::Black => &self.player_black,
+        };
+
+        match player {
+            PlayerType::Human => self.unselect(),
+            PlayerType::Engine => self.play_engine_move(),
+        };
+    }
+
+    /// Tries to make a human player's move if possible
+    fn play_human_move(&mut self) {
+        let new = self.highlighted_square;
+
+        if self.selected_square.is_some() {
+            if self.potential_targets.contains(&self.highlighted_square) {
+                let m = Move::new(
+                    self.selected_square.unwrap(),
+                    self.highlighted_square,
+                    &self.board,
+                );
+
+                self.play_move(&m);
+            }
+        } else {
+            self.select(new);
+
+            if let Some(piece) = self.board.determine_piece(new) {
+                if self.board.turn == self.board.determine_color(new).unwrap() {
+                    self.potential_targets = get_targets(piece.get_legal_moves(&self.board, new));
+                }
+            }
+        }
+    }
+
+    /// Plays the top engine move and then passes the turn to the next player
+    fn play_engine_move(&mut self) {
+        let m = self
+            .board
+            .get_engine_move_minimax(3)
+            .expect("Tried to play engine move, but there was no move to play");
+
+        self.play_move(&m);
     }
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
@@ -282,7 +412,7 @@ impl App {
 
             KeyCode::Left => {
                 if let Some(new) = self.highlighted_square.left() {
-                    self.highlighted_square = new;
+                    self.highlighted_square = new
                 }
             }
             KeyCode::Down => {
@@ -301,40 +431,19 @@ impl App {
                 }
             }
 
-            KeyCode::Esc => {
-                self.unselect();
-            }
+            KeyCode::Esc => self.unselect(),
             KeyCode::Enter => {
-                let new = self.highlighted_square;
+                let player = match self.board.turn {
+                    board::Color::White => &self.player_white,
+                    board::Color::Black => &self.player_black,
+                };
 
-                if self.selected_square.is_some() {
-                    if self.potential_targets.contains(&self.highlighted_square) {
-                        self.board = Move::new(
-                            self.selected_square.unwrap(),
-                            self.highlighted_square,
-                            &self.board,
-                        )
-                        .make(&self.board);
-
-                        self.score = self.board.grade_position();
-                        self.fen.input = self.board.to_fen();
-                        if let Some(sm) = self.board.find_best_move() {
-                            self.suggested = Some(sm.0)
-                        }
-                    }
-
-                    self.unselect();
-                } else {
-                    self.select(new);
-
-                    if let Some(piece) = self.board.determine_piece(new) {
-                        if self.board.turn == self.board.determine_color(new).unwrap() {
-                            self.potential_targets =
-                                get_targets(piece.get_legal_moves(&self.board, new));
-                        }
-                    }
-                }
+                match player {
+                    PlayerType::Human => self.play_human_move(),
+                    PlayerType::Engine => self.play_engine_move(),
+                };
             }
+
             _ => {}
         }
     }
@@ -404,11 +513,73 @@ impl App {
 
     fn render_menu(&self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::vertical([
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(3),
-        ]);
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ])
+        .split(area);
+
+        let option_header_area = layout[0];
+        let start_area = layout[1];
+        let resume_area = layout[2];
+        let quit_area = layout[3];
+        let player_header_area = layout[4];
+        let player_white_area = layout[5];
+        let player_black_area = layout[6];
+
+        let header_color = Color::DarkGray;
+        let mut start_color = Color::Gray;
+        let mut resume_color = Color::Gray;
+        let mut quit_color = Color::Gray;
+        let mut player_white_color = Color::Gray;
+        let mut player_black_color = Color::Gray;
+
+        match self.menu_focus {
+            MenuFocus::Start => start_color = Color::Green,
+            MenuFocus::Resume => resume_color = Color::Green,
+            MenuFocus::Quit => quit_color = Color::Green,
+            MenuFocus::White => player_white_color = Color::Green,
+            MenuFocus::Black => player_black_color = Color::Green,
+        }
+
+        Paragraph::new("--- Options ---")
+            .block(Block::new())
+            .fg(header_color)
+            .render(option_header_area, buf);
+
+        Paragraph::new("Start")
+            .block(Block::new())
+            .fg(start_color)
+            .render(start_area, buf);
+
+        Paragraph::new("Resume")
+            .block(Block::new())
+            .fg(resume_color)
+            .render(resume_area, buf);
+
+        Paragraph::new("Quit")
+            .block(Block::new())
+            .fg(quit_color)
+            .render(quit_area, buf);
+
+        Paragraph::new("--- Players ---")
+            .block(Block::new())
+            .fg(header_color)
+            .render(player_header_area, buf);
+
+        Paragraph::new(format!("White: {:?}", self.player_white))
+            .block(Block::new())
+            .fg(player_white_color)
+            .render(player_white_area, buf);
+
+        Paragraph::new(format!("Black: {:?}", self.player_black))
+            .block(Block::new())
+            .fg(player_black_color)
+            .render(player_black_area, buf);
     }
 
     fn render_main(&self, area: Rect, buf: &mut Buffer) {
