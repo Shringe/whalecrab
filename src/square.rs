@@ -29,7 +29,7 @@ pub const ALL_DIRECTIONS: [Direction; 8] = [
     Direction::SouthWest,
 ];
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Hash)]
 pub struct Square(u8);
 
 impl Display for Square {

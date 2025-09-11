@@ -12,11 +12,11 @@ use crate::{
     rank::Rank,
     square::Square,
 };
-use std::{fmt, str::FromStr};
+use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash)]
 pub enum Color {
     White,
     Black,
@@ -101,6 +101,7 @@ pub struct Board {
     pub turn: Color,
 
     pub castling_rights: CastlingRights,
+    pub transposition_table: HashMap<u64, f32>,
 }
 
 impl Board {
@@ -124,6 +125,7 @@ impl Board {
             turn: Color::White,
 
             castling_rights: CastlingRights::empty(),
+            transposition_table: HashMap::new(),
         }
     }
 
@@ -467,6 +469,7 @@ impl Default for Board {
             turn: Color::White,
 
             castling_rights: CastlingRights::default(),
+            transposition_table: HashMap::default(),
         }
     }
 }
@@ -474,6 +477,26 @@ impl Default for Board {
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Board(\"{}\")", self.to_fen())
+    }
+}
+
+impl Hash for Board {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.white_pawn_bitboard.hash(state);
+        self.white_knight_bitboard.hash(state);
+        self.white_bishop_bitboard.hash(state);
+        self.white_rook_bitboard.hash(state);
+        self.white_queen_bitboard.hash(state);
+        self.white_king_bitboard.hash(state);
+        self.black_pawn_bitboard.hash(state);
+        self.black_knight_bitboard.hash(state);
+        self.black_bishop_bitboard.hash(state);
+        self.black_rook_bitboard.hash(state);
+        self.black_queen_bitboard.hash(state);
+        self.black_king_bitboard.hash(state);
+        self.en_passant_target.hash(state);
+        self.turn.hash(state);
+        self.castling_rights.hash(state);
     }
 }
 
