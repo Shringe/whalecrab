@@ -186,6 +186,7 @@ enum Focus {
     Board,
     Fen,
     Command,
+    Menu,
 }
 
 struct App {
@@ -218,7 +219,7 @@ impl App {
             engine_suggestions: false,
             suggested: None,
 
-            focus: Focus::Board,
+            focus: Focus::Menu,
             fen: Textbox::new(),
             command: Textbox::new(),
             exit: false,
@@ -253,7 +254,15 @@ impl App {
             Focus::Board => self.handle_board_key_event(key_event),
             Focus::Fen => self.handle_fen_key_event(key_event),
             Focus::Command => self.handle_command_key_event(key_event),
+            Focus::Menu => self.handle_menu_key_event(key_event),
         }
+    }
+
+    fn handle_menu_key_event(&mut self, key_event: event::KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => self.focus = Focus::Board,
+            _ => {}
+        };
     }
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
@@ -262,11 +271,13 @@ impl App {
             KeyCode::Char('c') => {
                 if key_event.modifiers == KeyModifiers::CONTROL {
                     self.exit();
+                } else {
+                    self.focus = Focus::Command;
                 }
             }
 
-            KeyCode::Char('m') => self.focus = Focus::Fen,
-            KeyCode::Char(':') => self.focus = Focus::Command,
+            KeyCode::Char('m') => self.focus = Focus::Menu,
+            KeyCode::Char('f') => self.focus = Focus::Fen,
             KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
 
             KeyCode::Left => {
@@ -390,10 +401,17 @@ impl App {
     fn exit(&mut self) {
         self.exit = true;
     }
-}
 
-impl Widget for &App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render_menu(&self, area: Rect, buf: &mut Buffer) {
+        let layout = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
+        ]);
+    }
+
+    fn render_main(&self, area: Rect, buf: &mut Buffer) {
         let main_layout = if area.width < area.height * 2 {
             Layout::vertical([Constraint::Min(10), Constraint::Percentage(75)]).split(area)
         } else {
@@ -554,6 +572,15 @@ Selected Square info:
                         .render(*file_area, buf);
                 }
             }
+        }
+    }
+}
+
+impl Widget for &App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        match self.focus {
+            Focus::Menu => self.render_menu(area, buf),
+            _ => self.render_main(area, buf),
         }
     }
 }
