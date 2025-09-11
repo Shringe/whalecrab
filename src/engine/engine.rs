@@ -65,12 +65,19 @@ impl Board {
 
         // Piece value
         for sq in self.occupied_bitboard() {
-            match self
-                .determine_color(sq)
-                .expect("Expected piece on occupied_bitboard!")
-            {
-                Color::White => score += self.determine_piece(sq).unwrap().material_value(),
-                Color::Black => score -= self.determine_piece(sq).unwrap().material_value(),
+            let piece = self.determine_piece(sq).unwrap();
+            let color = self.determine_color(sq).unwrap();
+
+            match color {
+                Color::White => {
+                    score += piece.material_value();
+                    score += piece.square_value(&sq, &color);
+                }
+
+                Color::Black => {
+                    score -= piece.material_value();
+                    score -= piece.square_value(&sq, &color);
+                }
             }
         }
 

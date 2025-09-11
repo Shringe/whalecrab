@@ -3,7 +3,7 @@ use whalecrab::board::{Board, Color};
 fn main() {
     let mut board = Board::default();
 
-    for _ in 0..40 {
+    for _ in 0..20 {
         let m = match board.turn {
             Color::White => board.find_best_move().unwrap().0,
             Color::Black => board.get_engine_move_minimax(3).unwrap(),
