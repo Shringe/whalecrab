@@ -7,6 +7,18 @@ edition = "2021"
 name = "evaluation"
 harness = false
 
+[[bench]]
+name = "movegen"
+harness = false
+
+[[bench]]
+name = "movemaking"
+harness = false
+
+[[bench]]
+name = "scoring"
+harness = false
+
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
 
