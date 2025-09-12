@@ -152,7 +152,7 @@ impl Board {
             return self.grade_position();
         }
 
-        let mut max = f32::MIN;
+        let mut max = f32::NEG_INFINITY;
         for m in self.generate_all_legal_moves() {
             let mut potential = m.make(self);
             let score = potential.mini(alpha, beta, depth - 1);
@@ -176,7 +176,7 @@ impl Board {
             return self.grade_position();
         }
 
-        let mut min = f32::MAX;
+        let mut min = f32::INFINITY;
         for m in self.generate_all_legal_moves() {
             let mut potential = m.make(self);
             let score = potential.maxi(alpha, beta, depth - 1);
@@ -199,12 +199,12 @@ impl Board {
         let moves = self.generate_all_legal_moves();
         let mut best_move = None;
 
-        let alpha = f32::MIN;
-        let beta = f32::MAX;
+        let alpha = f32::NEG_INFINITY;
+        let beta = f32::INFINITY;
 
         match self.turn {
             Color::White => {
-                let mut best_score = f32::MIN;
+                let mut best_score = f32::NEG_INFINITY;
                 for m in moves {
                     let mut potential = m.make(self);
                     let score = potential.mini(alpha, beta, depth);
@@ -218,7 +218,7 @@ impl Board {
             }
 
             Color::Black => {
-                let mut best_score = f32::MAX;
+                let mut best_score = f32::INFINITY;
                 for m in moves {
                     let mut potential = m.make(self);
                     let score = potential.maxi(alpha, beta, depth);
