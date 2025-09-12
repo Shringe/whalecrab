@@ -207,7 +207,7 @@ impl Board {
                 let mut best_score = f32::MIN;
                 for m in moves {
                     let mut potential = m.make(self);
-                    let score = potential.mini(alpha, beta, depth - 1);
+                    let score = potential.mini(alpha, beta, depth);
                     if score > best_score {
                         best_score = score;
                         best_move = Some(m);
@@ -221,7 +221,7 @@ impl Board {
                 let mut best_score = f32::MAX;
                 for m in moves {
                     let mut potential = m.make(self);
-                    let score = potential.maxi(alpha, beta, depth - 1);
+                    let score = potential.maxi(alpha, beta, depth);
                     if score < best_score {
                         best_score = score;
                         best_move = Some(m);
