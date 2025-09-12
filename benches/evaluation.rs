@@ -1,26 +1,23 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use whalecrab::board::Board;
 
-fn engine_vs_engine(board: &mut Board) {
-    *board = if let Some(m) = board.get_engine_move_minimax(3) {
-        println!("Playing: {}", m);
-        m.make(board)
-    } else {
-        println!("Ran out of moves, resetting board.");
-        Board::default()
-    }
-}
-
-fn criterion_benchmark(c: &mut Criterion) {
+fn bench(c: &mut Criterion) {
     let mut board = Board::default();
-    c.bench_function("Evaluation: engine_vs_engine", |b| {
-        b.iter(|| engine_vs_engine(&mut board))
+    c.bench_function("Engine against self", |b| {
+        b.iter(|| {
+            board = if let Some(m) = board.get_engine_move_minimax(3) {
+                m.make(&board)
+            } else {
+                // Reset the board if no moves to play
+                Board::default()
+            }
+        })
     });
 }
 
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = criterion_benchmark
+    targets = bench
 }
 criterion_main!(benches);
