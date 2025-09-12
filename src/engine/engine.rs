@@ -147,50 +147,48 @@ impl Board {
         best_initial
     }
 
-    fn maxi(&mut self, alpha: &mut f32, beta: &mut f32, depth: u16) -> f32 {
+    fn maxi(&mut self, mut alpha: f32, beta: f32, depth: u16) -> f32 {
         if depth == 0 {
             return self.grade_position();
         }
 
-        // let mut alpha = alpha;
         let mut max = f32::MIN;
         for m in self.generate_all_legal_moves() {
             let mut potential = m.make(self);
             let score = potential.mini(alpha, beta, depth - 1);
             if score > max {
                 max = score;
-                if &score > alpha {
-                    *alpha = score;
+                if score > alpha {
+                    alpha = score;
                 }
             }
 
-            if &score >= beta {
-                return score;
+            if score >= beta {
+                break;
             }
         }
 
         max
     }
 
-    fn mini(&mut self, alpha: &mut f32, beta: &mut f32, depth: u16) -> f32 {
+    fn mini(&mut self, alpha: f32, mut beta: f32, depth: u16) -> f32 {
         if depth == 0 {
             return self.grade_position();
         }
 
-        // let mut beta = beta;
         let mut min = f32::MAX;
         for m in self.generate_all_legal_moves() {
             let mut potential = m.make(self);
             let score = potential.maxi(alpha, beta, depth - 1);
             if score < min {
                 min = score;
-                if &score < beta {
-                    *beta = score;
+                if score < beta {
+                    beta = score;
                 }
             }
 
-            if &score <= alpha {
-                return score;
+            if score <= alpha {
+                break;
             }
         }
 
@@ -201,14 +199,15 @@ impl Board {
         let moves = self.generate_all_legal_moves();
         let mut best_move = None;
 
+        let alpha = f32::MIN;
+        let beta = f32::MAX;
+
         match self.turn {
             Color::White => {
-                let mut alpha = f32::MAX;
-                let mut beta = f32::MIN;
                 let mut best_score = f32::MIN;
                 for m in moves {
                     let mut potential = m.make(self);
-                    let score = potential.mini(&mut alpha, &mut beta, depth - 1);
+                    let score = potential.mini(alpha, beta, depth - 1);
                     if score > best_score {
                         best_score = score;
                         best_move = Some(m);
@@ -219,12 +218,10 @@ impl Board {
             }
 
             Color::Black => {
-                let mut alpha = f32::MIN;
-                let mut beta = f32::MAX;
                 let mut best_score = f32::MAX;
                 for m in moves {
                     let mut potential = m.make(self);
-                    let score = potential.maxi(&mut alpha, &mut beta, depth - 1);
+                    let score = potential.maxi(alpha, beta, depth - 1);
                     if score < best_score {
                         best_score = score;
                         best_move = Some(m);
