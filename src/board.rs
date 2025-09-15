@@ -69,7 +69,7 @@ impl PieceType {
         }
     }
 
-    pub fn get_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+    pub fn get_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => Pawn(square).legal_moves(board),
             PieceType::Knight => Knight(square).legal_moves(board),
@@ -102,6 +102,8 @@ pub struct Board {
 
     pub castling_rights: CastlingRights,
     pub transposition_table: HashMap<u64, f32>,
+    pub white_attack_bitboard: BitBoard,
+    pub black_attack_bitboard: BitBoard,
 }
 
 impl Board {
@@ -126,6 +128,8 @@ impl Board {
 
             castling_rights: CastlingRights::empty(),
             transposition_table: HashMap::new(),
+            white_attack_bitboard: EMPTY,
+            black_attack_bitboard: EMPTY,
         }
     }
 
@@ -431,7 +435,7 @@ impl Board {
     }
 
     /// Generates all legal moves for the current player
-    pub fn generate_all_legal_moves(&self) -> Vec<Move> {
+    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         let occupied = match self.turn {
             Color::White => self.occupied_white_bitboard(),
@@ -470,6 +474,8 @@ impl Default for Board {
 
             castling_rights: CastlingRights::default(),
             transposition_table: HashMap::default(),
+            white_attack_bitboard: EMPTY,
+            black_attack_bitboard: EMPTY,
         }
     }
 }

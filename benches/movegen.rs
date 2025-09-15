@@ -46,7 +46,7 @@ fn generate_all_psuedo_legal_king_moves(board: &Board) {
 }
 
 fn bench(c: &mut Criterion) {
-    let board = common::midgame_board();
+    let mut board = common::midgame_board();
 
     c.bench_function("Generate all legal moves", |b| {
         b.iter(|| board.generate_all_legal_moves());
