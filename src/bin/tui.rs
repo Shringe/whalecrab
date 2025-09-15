@@ -379,7 +379,8 @@ impl App {
 
             if let Some(piece) = self.board.determine_piece(new) {
                 if self.board.turn == self.board.determine_color(new).unwrap() {
-                    self.potential_targets = get_targets(piece.get_legal_moves(&self.board, new));
+                    self.potential_targets =
+                        get_targets(piece.get_legal_moves(&mut self.board, new));
                 }
             }
         }
