@@ -1,5 +1,5 @@
-use crate::file::File;
-use crate::rank::Rank;
+use crate::file::{File, ALL_FILES};
+use crate::rank::{Rank, ALL_RANKS};
 use crate::square::*;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
@@ -7,8 +7,38 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, M
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
-#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash, Debug)]
 pub struct BitBoard(pub u64);
+
+impl fmt::Display for BitBoard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut out = String::new();
+
+        let mut ranks = ALL_RANKS.clone();
+        let mut files = ALL_FILES.clone();
+        ranks.reverse();
+        files.reverse();
+
+        for r in ranks {
+            for f in files {
+                let sqbb = BitBoard::from_rank_file(r, f);
+                if self.has_square(&sqbb) {
+                    out.push_str("1 ");
+                } else {
+                    out.push_str("0 ");
+                }
+            }
+
+            out.push_str(format!("| {}", r).as_str());
+            out.push('\n');
+        }
+
+        out.push_str("---------------\n");
+        out.push_str("A B C D E F G H");
+
+        write!(f, "{}", out)
+    }
+}
 
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.
 pub const EMPTY: BitBoard = BitBoard(0);
@@ -227,24 +257,6 @@ impl Not for &BitBoard {
     }
 }
 
-impl fmt::Display for BitBoard {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s: String = "".to_owned();
-        for x in 0..64 {
-            if self.0 & (1u64 << x) == (1u64 << x) {
-                s.push_str("X ");
-            } else {
-                s.push_str(". ");
-            }
-            if x % 8 == 7 {
-                s.push('\n');
-            }
-        }
-        write!(f, "{}", s)
-    }
-}
-
 impl BitBoard {
     pub const INITIAL_BLACK_PAWN: BitBoard =
         BitBoard(0b00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000);
@@ -374,5 +386,27 @@ mod tests {
         assert!(occupied.has_square(&first));
         assert!(occupied.has_square(&second));
         assert!(!occupied.has_square(&empty));
+    }
+
+    #[test]
+    fn display_formatting() {
+        let board = Board::default();
+        let occupied = board.occupied_black_bitboard();
+        let looking_for = "1 1 1 1 1 1 1 1 | 8
+1 1 1 1 1 1 1 1 | 7
+0 0 0 0 0 0 0 0 | 6
+0 0 0 0 0 0 0 0 | 5
+0 0 0 0 0 0 0 0 | 4
+0 0 0 0 0 0 0 0 | 3
+0 0 0 0 0 0 0 0 | 2
+0 0 0 0 0 0 0 0 | 1
+---------------
+A B C D E F G H"
+            .to_string();
+        let out = occupied.to_string();
+
+        println!("{}", out);
+        println!("{}", looking_for);
+        assert_eq!(out, looking_for);
     }
 }
