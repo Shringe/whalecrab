@@ -345,10 +345,17 @@ impl Board {
         }
     }
 
-    pub fn get_occupied_attack_bitboard(&mut self, color: &Color) -> &mut BitBoard {
+    pub fn get_occupied_attack_bitboard_mut(&mut self, color: &Color) -> &mut BitBoard {
         match color {
             Color::White => &mut self.white_attack_bitboard,
             Color::Black => &mut self.black_attack_bitboard,
+        }
+    }
+
+    pub fn get_occupied_attack_bitboard(&self, color: &Color) -> &BitBoard {
+        match color {
+            Color::White => &self.white_attack_bitboard,
+            Color::Black => &self.black_attack_bitboard,
         }
     }
 
