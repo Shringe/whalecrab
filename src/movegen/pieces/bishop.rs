@@ -12,6 +12,8 @@ impl Piece for Bishop {
     fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
 
+        let color = board.turn;
+
         for d in [
             Direction::NorthEast,
             Direction::NorthWest,
@@ -19,6 +21,8 @@ impl Piece for Bishop {
             Direction::SouthWest,
         ] {
             for sq in self.0.ray(&d, board) {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(sq);
                 moves.push(Move {
                     from: self.0,
                     to: sq,
