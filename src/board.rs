@@ -81,7 +81,7 @@ impl PieceType {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -508,6 +508,29 @@ impl Default for Board {
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Board(\"{}\")", self.to_fen())
+    }
+}
+
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        self.white_pawn_bitboard == other.white_pawn_bitboard
+            && self.white_knight_bitboard == other.white_knight_bitboard
+            && self.white_bishop_bitboard == other.white_bishop_bitboard
+            && self.white_rook_bitboard == other.white_rook_bitboard
+            && self.white_queen_bitboard == other.white_queen_bitboard
+            && self.white_king_bitboard == other.white_king_bitboard
+            && self.black_pawn_bitboard == other.black_pawn_bitboard
+            && self.black_knight_bitboard == other.black_knight_bitboard
+            && self.black_bishop_bitboard == other.black_bishop_bitboard
+            && self.black_rook_bitboard == other.black_rook_bitboard
+            && self.black_queen_bitboard == other.black_queen_bitboard
+            && self.black_king_bitboard == other.black_king_bitboard
+            && self.en_passant_target == other.en_passant_target
+            && self.turn == other.turn
+            && self.castling_rights == other.castling_rights
+        // && self.transposition_table == other.transposition_table
+        // && self.white_attack_bitboard == other.white_attack_bitboard
+        // && self.black_attack_bitboard == other.black_attack_bitboard
     }
 }
 
