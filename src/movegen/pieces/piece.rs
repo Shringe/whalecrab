@@ -47,11 +47,11 @@ pub trait Piece {
         let attack_board = board.get_occupied_attack_bitboard(&board.turn.opponent());
 
         for m in psuedo_legal {
-            let king_board = board.get_occupied_bitboard(&PieceType::King, &board.turn);
-            let kingfrombb = BitBoard::from_square(m.from);
-            let is_moving_king = king_board.has_square(&kingfrombb);
+            let piece = board
+                .determine_piece(m.from)
+                .expect("Can't move nonexisting piece!");
 
-            if is_moving_king {
+            if piece == PieceType::King {
                 let kingtobb = BitBoard::from_square(m.to);
                 if attack_board.has_square(&kingtobb) {
                     continue;
@@ -79,8 +79,8 @@ mod tests {
     fn white_cant_blunder_king() {
         let fen = "1k6/1r6/8/8/8/8/8/K7 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
+        board.initialize();
         let psuedo_legal = board.generate_all_psuedo_legal_moves();
-        // let legal = board.generate_all_legal_moves();
         let legal = board.generate_all_legal_moves();
 
         let legal_looking_for = vec![Move::new(Square::A1, Square::A2, &board)];
@@ -90,7 +90,14 @@ mod tests {
             Move::new(Square::A1, Square::B2, &board),
         ];
 
-        assert_eq!(psuedo_legal, psuedo_legal_looking_for);
-        assert_eq!(legal, legal_looking_for);
+        assert_eq!(
+            psuedo_legal, psuedo_legal_looking_for,
+            "Psuedo_legal moves incorrect"
+        );
+        assert_ne!(
+            psuedo_legal, legal,
+            "Illegal psuedo legal moves not filtered out in legal move generation"
+        );
+        assert_eq!(legal, legal_looking_for, "Legal moves incorrect");
     }
 }

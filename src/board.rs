@@ -133,6 +133,17 @@ impl Board {
         }
     }
 
+    /// Initializes context of the board such as populating attack bitboards
+    pub fn initialize(&mut self) {
+        // Populate player's attack bitboard
+        self.generate_all_psuedo_legal_moves();
+
+        // Populate enemy's attack bitboard
+        self.turn = self.turn.opponent();
+        self.generate_all_psuedo_legal_moves();
+        self.turn = self.turn.opponent();
+    }
+
     /// Takes a fen string, parses and converts it into a board position.
     /// Currently takes into account the following:
     /// - [x] Piece Placement
