@@ -83,6 +83,8 @@ pub trait Piece {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::{should_generate, shouldnt_generate};
+
     use super::*;
 
     #[test]
@@ -120,10 +122,7 @@ mod tests {
         let legal_moves = board.generate_all_legal_moves();
         let looking_for = Move::new(Square::C4, Square::E3, &board);
 
-        assert!(
-            legal_moves.contains(&looking_for),
-            "Knight should be able to block the attacking piece"
-        );
+        should_generate(&legal_moves, &looking_for);
     }
 
     #[test]
@@ -159,9 +158,23 @@ mod tests {
         let legal_moves = board.generate_all_legal_moves();
         let looking_for = Move::new(Square::E3, Square::F2, &board);
 
-        assert!(
-            !legal_moves.contains(&looking_for),
-            "Pinned piece should not be able to move legally"
-        );
+        shouldnt_generate(&legal_moves, &looking_for);
+    }
+
+    #[test]
+    fn cant_move_king_within_check_ray() {
+        let fen = "4K3/4R3/8/8/8/8/4k3/8 b - - 0 1";
+        let mut board = Board::from_fen(fen).unwrap();
+        board.initialize();
+
+        let legal_moves = board.generate_all_legal_moves();
+        let looking_for = [
+            Move::new(Square::E2, Square::E1, &board),
+            Move::new(Square::E2, Square::E3, &board),
+        ];
+
+        for m in looking_for {
+            shouldnt_generate(&legal_moves, &m);
+        }
     }
 }
