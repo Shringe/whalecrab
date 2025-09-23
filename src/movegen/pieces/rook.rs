@@ -1,6 +1,6 @@
 use crate::{
     board::Board,
-    movegen::moves::{Move, MoveType},
+    movegen::{moves::Move, pieces::piece::populate_ray_piece},
     square::{Direction, Square},
 };
 
@@ -10,24 +10,14 @@ pub struct Rook(pub Square);
 
 impl Piece for Rook {
     fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-
-        for d in [
+        let directions = [
             Direction::North,
             Direction::South,
             Direction::East,
             Direction::West,
-        ] {
-            for sq in self.0.ray(&d, board) {
-                moves.push(Move {
-                    from: self.0,
-                    to: sq,
-                    variant: MoveType::Normal,
-                });
-            }
-        }
+        ];
 
-        moves
+        populate_ray_piece(&self.0, &directions, board)
     }
 }
 

@@ -1,15 +1,27 @@
-use crate::{board::Board, movegen::moves::Move, square::Square};
+use crate::{
+    board::Board,
+    movegen::{moves::Move, pieces::piece::populate_ray_piece},
+    square::{Direction, Square},
+};
 
-use super::{bishop::Bishop, piece::Piece, rook::Rook};
+use super::piece::Piece;
 
 pub struct Queen(pub Square);
 
 impl Piece for Queen {
     fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-        moves.extend(Rook(self.0).psuedo_legal_moves(board));
-        moves.extend(Bishop(self.0).psuedo_legal_moves(board));
-        moves
+        let directions = [
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+            Direction::NorthEast,
+            Direction::SouthEast,
+            Direction::NorthWest,
+            Direction::SouthWest,
+        ];
+
+        populate_ray_piece(&self.0, &directions, board)
     }
 }
 

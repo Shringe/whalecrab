@@ -1,6 +1,6 @@
 use crate::{
     board::Board,
-    movegen::moves::{Move, MoveType},
+    movegen::{moves::Move, pieces::piece::populate_ray_piece},
     square::{Direction, Square},
 };
 
@@ -10,28 +10,14 @@ pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
     fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-
-        let color = board.turn;
-
-        for d in [
+        let directions = [
             Direction::NorthEast,
-            Direction::NorthWest,
             Direction::SouthEast,
+            Direction::NorthWest,
             Direction::SouthWest,
-        ] {
-            for sq in self.0.ray(&d, board) {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
-                attack_bitboard.set(sq);
-                moves.push(Move {
-                    from: self.0,
-                    to: sq,
-                    variant: MoveType::Normal,
-                });
-            }
-        }
+        ];
 
-        moves
+        populate_ray_piece(&self.0, &directions, board)
     }
 }
 
