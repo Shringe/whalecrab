@@ -16,7 +16,7 @@ use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, PartialEq, Clone, Hash)]
+#[derive(Debug, PartialEq, Clone, Hash, Copy)]
 pub enum Color {
     White,
     Black,
