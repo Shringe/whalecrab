@@ -156,7 +156,7 @@ impl Board {
         for (rank, row) in rows.rev().enumerate() {
             let mut file = 0;
             for c in row.chars() {
-                let sq = BitBoard::set(Rank::from_index(rank), File::from_index(file));
+                let sq = BitBoard::from_rank_file(Rank::from_index(rank), File::from_index(file));
                 let colored_piece = match c {
                     'p' => Some((PieceType::Pawn, Color::Black)),
                     'n' => Some((PieceType::Knight, Color::Black)),
@@ -342,6 +342,13 @@ impl Board {
                 PieceType::Queen => self.black_queen_bitboard,
                 PieceType::King => self.black_king_bitboard,
             },
+        }
+    }
+
+    pub fn get_occupied_attack_bitboard(&mut self, color: &Color) -> &mut BitBoard {
+        match color {
+            Color::White => &mut self.white_attack_bitboard,
+            Color::Black => &mut self.black_attack_bitboard,
         }
     }
 

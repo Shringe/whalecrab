@@ -62,14 +62,16 @@ impl Piece for Pawn {
         }
 
         // Captures
+        // TODO: Add promotion for pieces other than queen
         for diagnol in [self.0.fleft(&color), self.0.fright(&color)]
             .into_iter()
             .flatten()
         {
+            let attack_bitboard = board.get_occupied_attack_bitboard(&color);
+            attack_bitboard.set(diagnol);
             if let Some(enemy) = board.determine_color(diagnol) {
                 if enemy == *enemy_color {
                     if diagnol.get_rank() == final_rank {
-                        // TODO: Add promotion for pieces other than queen
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,

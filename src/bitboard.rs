@@ -280,8 +280,13 @@ impl BitBoard {
 
     /// Construct a new `BitBoard` with a particular `Square` set
     #[inline]
-    pub fn set(rank: Rank, file: File) -> BitBoard {
+    pub fn from_rank_file(rank: Rank, file: File) -> BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
+    }
+
+    /// Set a square on a BitBoard
+    pub fn set(&mut self, sq: Square) {
+        *self |= BitBoard::from_square(sq);
     }
 
     /// ands a vector of squares together into a bitboard
