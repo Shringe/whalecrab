@@ -14,10 +14,15 @@ impl Piece for King {
     /// King safety not considered.
     fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let enemy = board.turn.opponent();
+
+        let color = board.turn;
+        let enemy = color.opponent();
 
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(sq);
+
                 if let Some(piece) = board.determine_color(sq) {
                     if piece == enemy {
                         moves.push(Move {
