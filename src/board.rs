@@ -58,7 +58,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_psuedo_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+    pub fn get_psuedo_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => Pawn(square).psuedo_legal_moves(board),
             PieceType::Knight => Knight(square).psuedo_legal_moves(board),
@@ -410,7 +410,7 @@ impl Board {
     }
 
     /// Determines whether the opponent's king is in check
-    pub fn is_king_in_check(&self) -> bool {
+    pub fn is_king_in_check(&mut self) -> bool {
         let targets =
             BitBoard::from_square_vec(get_targets(self.generate_all_psuedo_legal_moves()));
         let king = self.get_occupied_bitboard(&PieceType::King, &self.turn.opponent());
@@ -418,7 +418,7 @@ impl Board {
     }
 
     /// Generates all psuedo legal moves for the current player
-    pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
+    pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         let occupied = match self.turn {
             Color::White => self.occupied_white_bitboard(),
@@ -514,14 +514,14 @@ mod tests {
     #[test]
     fn white_king_in_check() {
         let white_in_check = "rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
-        let board = Board::from_fen(white_in_check).unwrap();
+        let mut board = Board::from_fen(white_in_check).unwrap();
         assert!(board.is_king_in_check())
     }
 
     #[test]
     fn black_king_in_check() {
         let black_in_check = "rnbqkb1r/ppp2ppp/5n2/1B1pp3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1";
-        let board = Board::from_fen(black_in_check).unwrap();
+        let mut board = Board::from_fen(black_in_check).unwrap();
         assert!(board.is_king_in_check())
     }
 

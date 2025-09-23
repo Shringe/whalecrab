@@ -14,7 +14,7 @@ impl Piece for Pawn {
     /// En_Passant is considered
     /// Promotion is considered (only for queen)
     /// King safety not considered
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let color = board
@@ -136,7 +136,7 @@ mod tests {
             looking_for.from.in_bitboard(&board.white_pawn_bitboard),
             "White pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -182,7 +182,7 @@ mod tests {
             looking_for.from.in_bitboard(&board.black_pawn_bitboard),
             "Black pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -253,7 +253,7 @@ mod tests {
             looking_for.to.in_bitboard(&board.black_rook_bitboard),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",

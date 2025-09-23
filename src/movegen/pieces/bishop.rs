@@ -9,7 +9,7 @@ use super::piece::Piece;
 pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
 
         for d in [
@@ -53,7 +53,7 @@ mod tests {
             Move::new(Square::G2, Square::F1, &board),
         ] {
             if board.determine_piece(m.from) == Some(PieceType::Bishop) {
-                let moves = Bishop(m.from).psuedo_legal_moves(&board);
+                let moves = Bishop(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

@@ -9,7 +9,7 @@ use super::piece::Piece;
 pub struct Knight(pub Square);
 
 impl Piece for Knight {
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let rank = self.0.get_rank();
         let file = self.0.get_file();
@@ -119,7 +119,7 @@ mod tests {
             board = m.make(&board);
         }
 
-        let moves = Knight(avoid.from).psuedo_legal_moves(&board);
+        let moves = Knight(avoid.from).psuedo_legal_moves(&mut board);
         assert!(!moves.contains(&avoid));
     }
 
@@ -165,7 +165,7 @@ mod tests {
             },
         ] {
             if board.turn == Color::White {
-                let moves = Knight(m.from).psuedo_legal_moves(&board);
+                let moves = Knight(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -176,7 +176,7 @@ mod tests {
             board = m.make(&board);
         }
 
-        let moves = Knight(capture.from).psuedo_legal_moves(&board);
+        let moves = Knight(capture.from).psuedo_legal_moves(&mut board);
 
         assert!(
             moves.contains(&capture),

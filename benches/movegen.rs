@@ -9,39 +9,39 @@ use whalecrab::{
     },
 };
 
-fn generate_all_psuedo_legal_pawn_moves(board: &Board) {
+fn generate_all_psuedo_legal_pawn_moves(board: &mut Board) {
     for sq in board.white_pawn_bitboard | board.black_pawn_bitboard {
-        Pawn(sq).psuedo_legal_moves(&board);
+        Pawn(sq).psuedo_legal_moves(board);
     }
 }
 
-fn generate_all_psuedo_legal_rook_moves(board: &Board) {
+fn generate_all_psuedo_legal_rook_moves(board: &mut Board) {
     for sq in board.white_rook_bitboard | board.black_rook_bitboard {
-        Rook(sq).psuedo_legal_moves(&board);
+        Rook(sq).psuedo_legal_moves(board);
     }
 }
 
-fn generate_all_psuedo_legal_knight_moves(board: &Board) {
+fn generate_all_psuedo_legal_knight_moves(board: &mut Board) {
     for sq in board.white_knight_bitboard | board.black_knight_bitboard {
-        Knight(sq).psuedo_legal_moves(&board);
+        Knight(sq).psuedo_legal_moves(board);
     }
 }
 
-fn generate_all_psuedo_legal_bishop_moves(board: &Board) {
+fn generate_all_psuedo_legal_bishop_moves(board: &mut Board) {
     for sq in board.white_bishop_bitboard | board.black_bishop_bitboard {
-        Bishop(sq).psuedo_legal_moves(&board);
+        Bishop(sq).psuedo_legal_moves(board);
     }
 }
 
-fn generate_all_psuedo_legal_queen_moves(board: &Board) {
+fn generate_all_psuedo_legal_queen_moves(board: &mut Board) {
     for sq in board.white_queen_bitboard | board.black_queen_bitboard {
-        Queen(sq).psuedo_legal_moves(&board);
+        Queen(sq).psuedo_legal_moves(board);
     }
 }
 
-fn generate_all_psuedo_legal_king_moves(board: &Board) {
+fn generate_all_psuedo_legal_king_moves(board: &mut Board) {
     for sq in board.white_king_bitboard | board.black_king_bitboard {
-        King(sq).psuedo_legal_moves(&board);
+        King(sq).psuedo_legal_moves(board);
     }
 }
 
@@ -57,27 +57,27 @@ fn bench(c: &mut Criterion) {
     });
 
     c.bench_function("Generate all psuedo legal pawn moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_pawn_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_pawn_moves(&mut board))
     });
 
     c.bench_function("Generate all psuedo legal rook moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_rook_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_rook_moves(&mut board))
     });
 
     c.bench_function("Generate all psuedo legal knight moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_knight_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_knight_moves(&mut board))
     });
 
     c.bench_function("Generate all psuedo legal bishop moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_bishop_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_bishop_moves(&mut board))
     });
 
     c.bench_function("Generate all psuedo legal queen moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_queen_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_queen_moves(&mut board))
     });
 
     c.bench_function("Generate all psuedo legal king moves", |b| {
-        b.iter(|| generate_all_psuedo_legal_king_moves(&board))
+        b.iter(|| generate_all_psuedo_legal_king_moves(&mut board))
     });
 }
 

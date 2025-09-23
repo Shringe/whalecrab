@@ -12,7 +12,7 @@ pub struct King(pub Square);
 
 impl Piece for King {
     /// King safety not considered.
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let enemy = board.turn.opponent();
 
@@ -81,20 +81,20 @@ mod tests {
 
     #[test]
     fn white_sees_castling_kingside() {
-        let board =
+        let mut board =
             Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
                 .unwrap();
-        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&board);
+        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, &castling::WHITE_CASTLES_KINGSIDE);
         shouldnt_generate(&moves, &castling::WHITE_CASTLES_QUEENSIDE);
     }
 
     #[test]
     fn black_sees_castling_queenside() {
-        let board =
+        let mut board =
             Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
                 .unwrap();
-        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&board);
+        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
         shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
     }
@@ -112,7 +112,7 @@ mod tests {
             Move::new(Square::E7, Square::F6, &board),
         ] {
             if board.determine_piece(m.from) == Some(PieceType::King) {
-                let moves = King(m.from).psuedo_legal_moves(&board);
+                let moves = King(m.from).psuedo_legal_moves(&mut board);
                 should_generate(&moves, &m);
             }
             board = m.make(&board);

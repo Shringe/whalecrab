@@ -305,7 +305,7 @@ mod tests {
         let to_play = &WHITE_CASTLES_QUEENSIDE;
         let mut board = Board::from_fen(fen_before).unwrap();
 
-        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, to_play);
 
         board = to_play.make(&board);
@@ -319,7 +319,7 @@ mod tests {
         let to_play = &BLACK_CASTLES_KINGSIDE;
         let mut board = Board::from_fen(fen_before).unwrap();
 
-        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, to_play);
 
         board = to_play.make(&board);
@@ -389,7 +389,7 @@ mod tests {
             looking_for.to.in_bitboard(&board.black_rook_bitboard),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
@@ -560,7 +560,7 @@ mod tests {
             "Black pawn not in position"
         );
 
-        let moves = Pawn(capture.from).psuedo_legal_moves(&board);
+        let moves = Pawn(capture.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",

@@ -1,5 +1,5 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY},
+    bitboard::BitBoard,
     board::{Board, Color, PieceType},
     movegen::moves::{get_targets, Move},
     square::Square,
@@ -7,17 +7,17 @@ use crate::{
 
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move>;
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move>;
 
     /// Generates psuedo legal targets. Useful for highlighting squares in the TUI.
-    fn psuedo_legal_targets(&self, board: &Board) -> Vec<Square> {
+    fn psuedo_legal_targets(&self, board: &mut Board) -> Vec<Square> {
         let moves = self.psuedo_legal_moves(board);
         get_targets(moves)
     }
 
     /// Generates legal moves considering king safety.
     fn legal_moves(&self, board: &mut Board) -> Vec<Move> {
-        let psuedo_legal = self.psuedo_legal_moves(&board);
+        let psuedo_legal = self.psuedo_legal_moves(board);
         let mut legal = Vec::new();
 
         let attack_board = match board.turn {
@@ -77,7 +77,7 @@ mod tests {
         let fen = "1k6/1r6/8/8/8/8/8/K7 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         let psuedo_legal = board.generate_all_psuedo_legal_moves();
-        let legal = board.generate_all_legal_moves();
+        // let legal = board.generate_all_legal_moves();
         let legal = board.generate_all_legal_moves();
 
         let legal_looking_for = vec![Move::new(Square::A1, Square::A2, &board)];
