@@ -14,11 +14,15 @@ impl Piece for Knight {
         let rank = self.0.get_rank();
         let file = self.0.get_file();
 
-        let friendly = Some(board.turn.clone());
+        let color = board.turn;
+        let friendly = Some(board.turn);
 
         if rank.to_index() < 5 {
             let north = Square::make_square(rank.up().up(), file);
             for t in [north.left(), north.right()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
                 }
@@ -34,6 +38,9 @@ impl Piece for Knight {
         if rank.to_index() > 1 {
             let south = Square::make_square(rank.down().down(), file);
             for t in [south.left(), south.right()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
                 }
@@ -49,6 +56,9 @@ impl Piece for Knight {
         if file.to_index() < 5 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
                 }
@@ -64,6 +74,9 @@ impl Piece for Knight {
         if file.to_index() > 1 {
             let west = Square::make_square(rank, file.left().left());
             for t in [west.up(), west.down()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
                 }
