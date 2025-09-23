@@ -44,18 +44,28 @@ pub trait Piece {
         let psuedo_legal = self.psuedo_legal_moves(board);
         let mut legal = Vec::new();
 
-        let attack_board = board.get_occupied_attack_bitboard(&board.turn.opponent());
+        let color = &board.turn;
+        let attack_board = board.get_occupied_attack_bitboard(&color.opponent());
 
         for m in psuedo_legal {
             let piece = board
                 .determine_piece(m.from)
                 .expect("Can't move nonexisting piece!");
+            let frombb = BitBoard::from_square(m.from);
+            let tobb = BitBoard::from_square(m.to);
 
-            if piece == PieceType::King {
-                let kingtobb = BitBoard::from_square(m.to);
-                if attack_board.has_square(&kingtobb) {
-                    continue;
-                }
+            let kingbb = board.get_occupied_bitboard(&PieceType::King, &color);
+            let is_in_check = attack_board.has_square(&kingbb);
+            let is_moving_king = piece == PieceType::King;
+
+            // If we're in check, we must block, capture, or move the king
+            if is_in_check && !(is_moving_king || m.get_capture(&board).is_some()) {
+                continue;
+            }
+
+            // prevent moving into check
+            if is_moving_king && attack_board.has_square(&tobb) {
+                continue;
             }
 
             legal.push(m);
@@ -76,7 +86,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn white_cant_blunder_king() {
+    fn cant_move_into_check() {
         let fen = "1k6/1r6/8/8/8/8/8/K7 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         board.initialize();

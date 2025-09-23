@@ -227,7 +227,7 @@ impl Move {
     }
 
     /// Gets the square and piece type of the captured piece
-    fn get_capture(&self, board: &Board) -> Option<Capture> {
+    pub fn get_capture(&self, board: &Board) -> Option<Capture> {
         let target = if self.variant == MoveType::CaptureEnPassant {
             self.to
                 .backward(&board.turn)
