@@ -103,80 +103,54 @@ mod tests {
 
     #[test]
     fn block_check_with_piece() {
-        let fen = "4k3/8/8/8/8/8/3r4/4K3 w - - 0 1";
+        let fen = "4k3/4r3/8/8/2N5/8/4K3/8 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         board.initialize();
 
         let legal_moves = board.generate_all_legal_moves();
-        let blocking_move = Move::new(Square::D2, Square::D1, &board);
+        let looking_for = Move::new(Square::C4, Square::E3, &board);
 
         assert!(
-            legal_moves.contains(&blocking_move),
-            "Rook should be able to block the attacking piece"
+            legal_moves.contains(&looking_for),
+            "Knight should be able to block the attacking piece"
         );
     }
 
     #[test]
     fn must_move_out_of_check() {
-        let fen = "4k3/8/8/8/8/8/4r3/4K3 w - - 0 1";
+        let fen = "4k3/4r3/8/8/8/3P1P2/4KP2/3RRR2 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         board.initialize();
 
         let legal_moves = board.generate_all_legal_moves();
+        let looking_for = [Move::new(Square::E2, Square::D2, &board)];
 
-        // King is in check from e2 rook; only escape squares are d1 and f1
-        let expected_moves = vec![
-            Move::new(Square::E1, Square::D1, &board),
-            Move::new(Square::E1, Square::F1, &board),
-        ];
-
-        assert_eq!(
-            legal_moves.len(),
-            expected_moves.len(),
-            "Unexpected number of legal moves"
-        );
-
-        for m in expected_moves {
-            assert!(
-                legal_moves.contains(&m),
-                "Expected move {} missing in legal moves",
-                m
-            );
-        }
+        assert_eq!(legal_moves, looking_for);
     }
 
     #[test]
     fn capture_checking_piece() {
-        let fen = "4k3/8/8/8/8/8/4r3/3QK3 w - - 0 1";
+        let fen = "4k3/4r3/8/8/1B6/3P1P2/3PKP2/3RRR2 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         board.initialize();
 
         let legal_moves = board.generate_all_legal_moves();
-        let expected_capture = Move::new(Square::D1, Square::E2, &board);
+        let looking_for = [Move::new(Square::B4, Square::E7, &board)];
 
-        assert!(
-            legal_moves.contains(&expected_capture),
-            "Queen should be able to capture checking rook"
-        );
+        assert_eq!(legal_moves, looking_for);
     }
 
     #[test]
     fn pinned_piece_cannot_move() {
-        let fen = "4k3/8/8/8/4r3/8/4P3/4K3 w - - 0 1";
+        let fen = "4k3/4r3/8/8/3P1P2/4B3/3PK3/6P1 w - - 0 1";
         let mut board = Board::from_fen(fen).unwrap();
         board.initialize();
 
         let legal_moves = board.generate_all_legal_moves();
-        let pseudo_legal = board.generate_all_psuedo_legal_moves();
-
-        let illegal_due_to_pin = Move::new(Square::E2, Square::E3, &board);
+        let looking_for = Move::new(Square::E3, Square::F2, &board);
 
         assert!(
-            pseudo_legal.contains(&illegal_due_to_pin),
-            "Pinned move should be in pseudo-legal moves"
-        );
-        assert!(
-            !legal_moves.contains(&illegal_due_to_pin),
+            !legal_moves.contains(&looking_for),
             "Pinned piece should not be able to move legally"
         );
     }
