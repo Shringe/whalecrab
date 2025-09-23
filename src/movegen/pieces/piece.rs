@@ -1,6 +1,6 @@
 use crate::{
     bitboard::BitBoard,
-    board::{Board, Color, PieceType},
+    board::{Board, PieceType},
     movegen::moves::{get_targets, Move},
     square::Square,
 };
@@ -20,28 +20,7 @@ pub trait Piece {
         let psuedo_legal = self.psuedo_legal_moves(board);
         let mut legal = Vec::new();
 
-        let attack_board = match board.turn {
-            Color::White => {
-                let mut attacking = board.white_attack_bitboard;
-                for m in &psuedo_legal {
-                    let tobb = BitBoard::from_square(m.to);
-                    attacking |= tobb;
-                }
-
-                board.white_attack_bitboard = attacking;
-                board.black_attack_bitboard
-            }
-            Color::Black => {
-                let mut attacking = board.black_attack_bitboard;
-                for m in &psuedo_legal {
-                    let tobb = BitBoard::from_square(m.to);
-                    attacking |= tobb;
-                }
-
-                board.black_attack_bitboard = attacking;
-                board.white_attack_bitboard
-            }
-        };
+        let attack_board = board.get_occupied_attack_bitboard(&board.turn.opponent());
 
         for m in psuedo_legal {
             let king_board = board.get_occupied_bitboard(&PieceType::King, &board.turn);

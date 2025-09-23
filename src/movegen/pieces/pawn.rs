@@ -67,7 +67,7 @@ impl Piece for Pawn {
             .into_iter()
             .flatten()
         {
-            let attack_bitboard = board.get_occupied_attack_bitboard(&color);
+            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
             attack_bitboard.set(diagnol);
             if let Some(enemy) = board.determine_color(diagnol) {
                 if enemy == *enemy_color {
