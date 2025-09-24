@@ -319,11 +319,15 @@ impl Square {
             let (ray, check_ray) = self.ray(direction, board);
 
             if check_ray != EMPTY {
-                *board.get_occupied_attack_ray_bitboard_mut(&color) |= check_ray;
+                match color {
+                    Color::White => board.white_attack_ray_bitboard |= check_ray,
+                    Color::Black => board.black_attack_ray_bitboard |= check_ray,
+                }
             }
 
             for sq in ray {
-                board.get_occupied_attack_bitboard_mut(&color).set(sq);
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(sq);
                 moves.push(Move {
                     from: *self,
                     to: sq,
