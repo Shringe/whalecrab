@@ -2,7 +2,7 @@ use std::fmt::{self, Display};
 use std::str::FromStr;
 
 use crate::bitboard::BitBoard;
-use crate::board::{Board, Color};
+use crate::board::{Board, Color, PieceType};
 use crate::file::File;
 use crate::rank::Rank;
 
@@ -275,10 +275,15 @@ impl Square {
 
         while let Some(forward) = current.walk(direction) {
             if let Some(color) = board.determine_color(forward) {
-                if color == enemy {
+                let is_enemy = color == enemy;
+                let is_king = board.determine_piece(forward) == Some(PieceType::King);
+                if is_enemy {
                     squares.push(forward);
                 }
-                break;
+
+                if !(is_king && is_enemy) {
+                    break;
+                }
             } else {
                 squares.push(forward);
             }
