@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
-use crate::bitboard::BitBoard;
+use crate::bitboard::{BitBoard, EMPTY};
 use crate::board::{Board, Color, PieceType};
 use crate::file::File;
 use crate::movegen::moves::{Move, MoveType};
@@ -268,34 +268,46 @@ impl Square {
 
     /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
-    pub fn ray(&self, direction: &Direction, board: &Board) -> (Vec<Square>, Option<Square>) {
-        let mut squares = Vec::new();
+    /// Gives back a bitboard of attack squares and a bitboard of checking rays
+    pub fn ray(&self, direction: &Direction, board: &Board) -> (BitBoard, BitBoard) {
+        let mut ray = EMPTY;
+        let mut check_ray = EMPTY;
         let enemy = board.turn.opponent();
 
         let mut current = *self;
-        let mut pierce = None;
+        let mut is_check = false;
         while let Some(forward) = current.walk(direction) {
             if let Some(color) = board.determine_color(forward) {
-                let is_enemy = color == enemy;
-                let is_king = board.determine_piece(forward) == Some(PieceType::King);
-                if is_enemy {
-                    squares.push(forward);
+                if color == enemy {
+                    ray.set(forward);
+                    check_ray.set(forward);
                     if let Some(extra) = forward.walk(direction) {
-                        pierce = Some(extra);
+                        check_ray.set(extra);
+                    }
+
+                    if board.determine_piece(forward) == Some(PieceType::King) {
+                        is_check = true;
+                    } else if let Some(extra) = forward.walk(direction) {
+                        check_ray.set(extra);
+                        is_check = board.determine_piece(extra) == Some(PieceType::King);
                     }
                 }
 
-                if !(is_king && is_enemy) {
-                    break;
-                }
+                break;
+                // if !(is_king && is_enemy) {}
             } else {
-                squares.push(forward);
+                ray.set(forward);
+                check_ray.set(forward);
             }
 
             current = forward;
         }
 
-        (squares, pierce)
+        if !is_check {
+            check_ray = EMPTY;
+        }
+
+        (ray, check_ray)
     }
 
     /// Generates moves for ray pieces. Also populates attack bitboards appropiately
@@ -304,19 +316,14 @@ impl Square {
         let color = board.turn;
 
         for direction in directions {
-            let (squares, pierce) = self.ray(direction, board);
+            let (ray, check_ray) = self.ray(direction, board);
 
-            if let Some(sq) = pierce {
-                let attack_ray_bitboard = board.get_occupied_attack_ray_bitboard_mut(&color);
-                attack_ray_bitboard.set(sq);
+            if check_ray != EMPTY {
+                *board.get_occupied_attack_ray_bitboard_mut(&color) |= check_ray;
             }
 
-            for sq in squares {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
-                attack_bitboard.set(sq);
-                let attack_ray_bitboard = board.get_occupied_attack_ray_bitboard_mut(&color);
-                attack_ray_bitboard.set(sq);
-
+            for sq in ray {
+                board.get_occupied_attack_bitboard_mut(&color).set(sq);
                 moves.push(Move {
                     from: *self,
                     to: sq,
