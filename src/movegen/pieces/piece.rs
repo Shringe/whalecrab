@@ -1,33 +1,9 @@
 use crate::{
     bitboard::BitBoard,
     board::{Board, PieceType},
-    movegen::moves::{get_targets, Move, MoveType},
-    square::{Direction, Square},
+    movegen::moves::{get_targets, Move},
+    square::Square,
 };
-
-/// Movegeneration helper for ray pieces
-pub fn populate_ray_piece(
-    from_square: &Square,
-    directions: &[Direction],
-    board: &mut Board,
-) -> Vec<Move> {
-    let mut moves = Vec::new();
-    let color = board.turn;
-
-    for direction in directions {
-        for sq in from_square.ray(direction, board) {
-            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
-            attack_bitboard.set(sq);
-            moves.push(Move {
-                from: *from_square,
-                to: sq,
-                variant: MoveType::Normal,
-            });
-        }
-    }
-
-    moves
-}
 
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
@@ -51,7 +27,7 @@ pub trait Piece {
             let piece = board
                 .determine_piece(m.from)
                 .expect("Can't move nonexisting piece!");
-            let frombb = BitBoard::from_square(m.from);
+            // let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
 
             let kingbb = board.get_occupied_bitboard(&PieceType::King, &color);

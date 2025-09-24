@@ -104,6 +104,8 @@ pub struct Board {
     pub transposition_table: HashMap<u64, f32>,
     pub white_attack_bitboard: BitBoard,
     pub black_attack_bitboard: BitBoard,
+    pub white_attack_ray_bitboard: BitBoard,
+    pub black_attack_ray_bitboard: BitBoard,
 }
 
 impl Board {
@@ -130,6 +132,8 @@ impl Board {
             transposition_table: HashMap::new(),
             white_attack_bitboard: EMPTY,
             black_attack_bitboard: EMPTY,
+            white_attack_ray_bitboard: EMPTY,
+            black_attack_ray_bitboard: EMPTY,
         }
     }
 
@@ -370,6 +374,20 @@ impl Board {
         }
     }
 
+    pub fn get_occupied_attack_ray_bitboard_mut(&mut self, color: &Color) -> &mut BitBoard {
+        match color {
+            Color::White => &mut self.white_attack_ray_bitboard,
+            Color::Black => &mut self.black_attack_ray_bitboard,
+        }
+    }
+
+    pub fn get_occupied_attack_ray_bitboard(&self, color: &Color) -> &BitBoard {
+        match color {
+            Color::White => &self.white_attack_ray_bitboard,
+            Color::Black => &self.black_attack_ray_bitboard,
+        }
+    }
+
     pub fn occupied_white_bitboard(&self) -> BitBoard {
         self.white_pawn_bitboard
             | self.white_knight_bitboard
@@ -501,6 +519,8 @@ impl Default for Board {
             transposition_table: HashMap::default(),
             white_attack_bitboard: EMPTY,
             black_attack_bitboard: EMPTY,
+            white_attack_ray_bitboard: EMPTY,
+            black_attack_ray_bitboard: EMPTY,
         }
     }
 }

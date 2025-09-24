@@ -4,6 +4,7 @@ use std::str::FromStr;
 use crate::bitboard::BitBoard;
 use crate::board::{Board, Color, PieceType};
 use crate::file::File;
+use crate::movegen::moves::{Move, MoveType};
 use crate::rank::Rank;
 
 pub enum Direction {
@@ -267,18 +268,21 @@ impl Square {
 
     /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
-    pub fn ray(&self, direction: &Direction, board: &Board) -> Vec<Square> {
+    pub fn ray(&self, direction: &Direction, board: &Board) -> (Vec<Square>, Option<Square>) {
         let mut squares = Vec::new();
         let enemy = board.turn.opponent();
 
         let mut current = *self;
-
+        let mut pierce = None;
         while let Some(forward) = current.walk(direction) {
             if let Some(color) = board.determine_color(forward) {
                 let is_enemy = color == enemy;
                 let is_king = board.determine_piece(forward) == Some(PieceType::King);
                 if is_enemy {
                     squares.push(forward);
+                    if let Some(extra) = forward.walk(direction) {
+                        pierce = Some(extra);
+                    }
                 }
 
                 if !(is_king && is_enemy) {
@@ -291,7 +295,37 @@ impl Square {
             current = forward;
         }
 
-        squares
+        (squares, pierce)
+    }
+
+    /// Generates moves for ray pieces. Also populates attack bitboards appropiately
+    pub fn rays(&self, directions: &[Direction], board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let color = board.turn;
+
+        for direction in directions {
+            let (squares, pierce) = self.ray(direction, board);
+
+            if let Some(sq) = pierce {
+                let attack_ray_bitboard = board.get_occupied_attack_ray_bitboard_mut(&color);
+                attack_ray_bitboard.set(sq);
+            }
+
+            for sq in squares {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(sq);
+                let attack_ray_bitboard = board.get_occupied_attack_ray_bitboard_mut(&color);
+                attack_ray_bitboard.set(sq);
+
+                moves.push(Move {
+                    from: *self,
+                    to: sq,
+                    variant: MoveType::Normal,
+                });
+            }
+        }
+
+        moves
     }
 }
 

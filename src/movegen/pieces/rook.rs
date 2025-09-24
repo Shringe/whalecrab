@@ -1,6 +1,6 @@
 use crate::{
     board::Board,
-    movegen::{moves::Move, pieces::piece::populate_ray_piece},
+    movegen::moves::Move,
     square::{Direction, Square},
 };
 
@@ -17,7 +17,7 @@ impl Piece for Rook {
             Direction::West,
         ];
 
-        populate_ray_piece(&self.0, &directions, board)
+        self.0.rays(&directions, board)
     }
 }
 
