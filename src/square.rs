@@ -268,14 +268,16 @@ impl Square {
 
     /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
-    /// Gives back a bitboard of attack squares and a bitboard of checking rays
-    pub fn ray(&self, direction: &Direction, board: &Board) -> (BitBoard, BitBoard) {
+    /// Gives back a bitboard of attack squares, a bitboard of checking rays, and whether or not
+    /// the enemy king is attacked
+    pub fn ray(&self, direction: &Direction, board: &Board) -> (BitBoard, BitBoard, bool) {
         let mut ray = EMPTY;
         let mut check_ray = EMPTY;
         let enemy = board.turn.opponent();
 
         let mut current = *self;
         let mut is_check = false;
+        let mut is_check_ray = false;
         while let Some(forward) = current.walk(direction) {
             if let Some(color) = board.determine_color(forward) {
                 let is_king = board.determine_piece(forward) == Some(PieceType::King);
@@ -286,9 +288,10 @@ impl Square {
 
                     if is_king {
                         is_check = true;
+                        is_check_ray = true;
                     } else if let Some(extra) = forward.walk(direction) {
                         check_ray.set(extra);
-                        is_check = board.determine_piece(extra) == Some(PieceType::King);
+                        is_check_ray = board.determine_piece(extra) == Some(PieceType::King);
                     }
                 }
 
@@ -303,11 +306,11 @@ impl Square {
             current = forward;
         }
 
-        if !is_check {
+        if !is_check_ray {
             check_ray = EMPTY;
         }
 
-        (ray, check_ray)
+        (ray, check_ray, is_check)
     }
 
     /// Generates moves for ray pieces. Also populates attack bitboards appropiately
@@ -317,16 +320,18 @@ impl Square {
         let enemy = color.opponent();
 
         for direction in directions {
-            let (ray, check_ray) = self.ray(direction, board);
+            let (ray, check_ray, is_check) = self.ray(direction, board);
 
             if check_ray != EMPTY {
-                let num_checks = board.get_num_checks_mut(&enemy);
-                *num_checks += 1;
-
                 match color {
                     Color::White => board.white_attack_ray_bitboard |= check_ray,
                     Color::Black => board.black_attack_ray_bitboard |= check_ray,
                 }
+            }
+
+            if is_check {
+                let num_checks = board.get_num_checks_mut(&enemy);
+                *num_checks += 1;
             }
 
             for sq in ray {
