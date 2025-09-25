@@ -31,15 +31,25 @@ pub trait Piece {
             let tobb = BitBoard::from_square(m.to);
 
             let kingbb = board.get_occupied_bitboard(&PieceType::King, &color);
-            let is_in_check = attack_board.has_square(&kingbb);
+            let num_checks = board.get_num_checks(color);
             let is_moving_king = piece == PieceType::King;
             let is_capturing = m.get_capture(&board).is_some();
             let is_blocking =
                 board.get_occupied_attack_ray_bitboard(&color.opponent()) & tobb != EMPTY;
 
-            // If we're in check, we must block, capture, or move the king
-            if is_in_check && !(is_moving_king || is_capturing || is_blocking) {
-                continue;
+            // Handle being in check
+            match *num_checks {
+                1 => {
+                    if !(is_moving_king || is_capturing || is_blocking) {
+                        continue;
+                    }
+                }
+                2 => {
+                    if !is_moving_king {
+                        continue;
+                    }
+                }
+                _ => {}
             }
 
             // prevent moving into check

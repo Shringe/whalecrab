@@ -1,5 +1,5 @@
 use crate::{
-    board::Board,
+    board::{Board, PieceType},
     movegen::moves::{Move, MoveType},
     square::Square,
 };
@@ -15,7 +15,8 @@ impl Piece for Knight {
         let file = self.0.get_file();
 
         let color = board.turn;
-        let friendly = Some(board.turn);
+        let enemy = color.opponent();
+        let friendly = Some(color);
 
         if rank.to_index() < 5 {
             let north = Square::make_square(rank.up().up(), file);
@@ -25,6 +26,11 @@ impl Piece for Knight {
 
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -45,6 +51,11 @@ impl Piece for Knight {
                     continue;
                 }
 
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
+                }
+
                 moves.push(Move {
                     from: self.0,
                     to: t,
@@ -63,6 +74,11 @@ impl Piece for Knight {
                     continue;
                 }
 
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
+                }
+
                 moves.push(Move {
                     from: self.0,
                     to: t,
@@ -79,6 +95,11 @@ impl Piece for Knight {
 
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {

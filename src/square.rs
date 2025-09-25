@@ -314,11 +314,15 @@ impl Square {
     pub fn rays(&self, directions: &[Direction], board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let color = board.turn;
+        let enemy = color.opponent();
 
         for direction in directions {
             let (ray, check_ray) = self.ray(direction, board);
 
             if check_ray != EMPTY {
+                let num_checks = board.get_num_checks_mut(&enemy);
+                *num_checks += 1;
+
                 match color {
                     Color::White => board.white_attack_ray_bitboard |= check_ray,
                     Color::Black => board.black_attack_ray_bitboard |= check_ray,
