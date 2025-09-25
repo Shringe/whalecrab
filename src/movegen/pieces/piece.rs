@@ -156,4 +156,21 @@ mod tests {
             shouldnt_generate(&legal_moves, &m);
         }
     }
+
+    #[test]
+    fn must_move_out_of_double_check() {
+        let fen = "4k3/4r3/8/6Qb/8/2R5/4KP2/8 w - - 0 1";
+        let mut board = Board::from_fen(fen).unwrap();
+        board.initialize();
+        let legal_moves = board.generate_all_legal_moves();
+        let king = Square::E2;
+
+        for m in legal_moves {
+            assert_eq!(
+                m.from, king,
+                "Tried to move piece other than queen while double check. {}",
+                m
+            );
+        }
+    }
 }
