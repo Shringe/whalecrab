@@ -191,11 +191,89 @@ mod tests {
         }
     }
 
+    fn ensure_legal_game(mut board: Board, game_turns: &Vec<Move>) {
+        for (i, to_play) in game_turns.iter().enumerate() {
+            let psuedo_legal_moves = board.generate_all_psuedo_legal_moves();
+            let legal_moves = board.generate_all_legal_moves();
+
+            assert!(
+                psuedo_legal_moves.contains(&to_play),
+                "Turn: {}. The legal and expected move was not generated psuedo legally: {}.\nAvailable moves: {}",
+                i + 1,
+                to_play,
+                format_pretty_list(&psuedo_legal_moves)
+            );
+
+            let turn = i + 1;
+            let color = board.turn;
+            let piece = board
+                .determine_piece(to_play.from)
+                .expect("Tried to play with nonexisting piece");
+            let piece_attacks = BitBoard::from_square_vec(get_targets(
+                piece.get_psuedo_legal_moves(&mut board, to_play.from),
+            ));
+
+            let piece_attacks_legal = BitBoard::from_square_vec(get_targets(
+                piece.get_legal_moves(&mut board, to_play.from),
+            ));
+
+            assert!(
+                legal_moves.contains(&to_play),
+                "Turn: {}. The legal and expected move was not generated legally: {}.
+Piece info:
+type: {:?}
+color: {:?}
+location: {}
+wants: {}
+psuedo legally attacking:
+{}
+
+legally attacking:
+{}
+
+White Board info:
+num_checks: {}
+ray_attacks:
+{}
+
+attacks:
+{}
+
+Black Board info:
+num_checks: {}
+ray_attacks:
+{}
+
+attacks:
+{}
+
+Available moves: {}",
+                turn,
+                to_play,
+                piece,
+                color,
+                to_play.from,
+                to_play.to,
+                piece_attacks,
+                piece_attacks_legal,
+                board.white_num_checks,
+                board.white_attack_ray_bitboard,
+                board.white_attack_bitboard,
+                board.black_num_checks,
+                board.black_attack_ray_bitboard,
+                board.black_attack_bitboard,
+                format_pretty_list(&legal_moves)
+            );
+
+            board = to_play.make(&board);
+        }
+    }
+
     /// https://www.chessgames.com/perl/chessgame?gid=1242968
     #[test]
     fn queens_gambit_game() {
-        let mut board = Board::default();
-        let game_turns = [
+        let board = Board::default();
+        let game_turns = vec![
             Move::new(Square::D2, Square::D4, &board),
             Move::new(Square::D7, Square::D5, &board),
             Move::new(Square::C2, Square::C4, &board),
@@ -214,27 +292,6 @@ mod tests {
             Move::new(Square::E8, Square::D8, &board),
         ];
 
-        for (i, to_play) in game_turns.iter().enumerate() {
-            let psuedo_legal_moves = board.generate_all_psuedo_legal_moves();
-            let legal_moves = board.generate_all_legal_moves();
-
-            assert!(
-                psuedo_legal_moves.contains(&to_play),
-                "Turn: {}. The legal and expected move was not generated psuedo legally: {}.\nAvailable moves: {}",
-                i + 1,
-                to_play,
-                format_pretty_list(&psuedo_legal_moves)
-            );
-
-            assert!(
-                legal_moves.contains(&to_play),
-                "Turn: {}. The legal and expected move was not generated legally: {}.\nAvailable moves: {}",
-                i + 1,
-                to_play,
-                format_pretty_list(&legal_moves)
-            );
-
-            board = to_play.make(&board);
-        }
+        ensure_legal_game(board, &game_turns);
     }
 }
