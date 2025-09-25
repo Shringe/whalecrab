@@ -15,9 +15,8 @@ impl fmt::Display for BitBoard {
         let mut out = String::new();
 
         let mut ranks = ALL_RANKS.clone();
-        let mut files = ALL_FILES.clone();
+        let files = ALL_FILES.clone();
         ranks.reverse();
-        files.reverse();
 
         for r in ranks {
             for f in files {
@@ -391,14 +390,15 @@ mod tests {
     #[test]
     fn display_formatting() {
         let board = Board::default();
-        let occupied = board.occupied_black_bitboard();
+        let mut occupied = board.occupied_black_bitboard();
+        occupied.set(Square::F2);
         let looking_for = "1 1 1 1 1 1 1 1 | 8
 1 1 1 1 1 1 1 1 | 7
 0 0 0 0 0 0 0 0 | 6
 0 0 0 0 0 0 0 0 | 5
 0 0 0 0 0 0 0 0 | 4
 0 0 0 0 0 0 0 0 | 3
-0 0 0 0 0 0 0 0 | 2
+0 0 0 0 0 1 0 0 | 2
 0 0 0 0 0 0 0 0 | 1
 ---------------
 A B C D E F G H"
