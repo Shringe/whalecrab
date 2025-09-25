@@ -278,14 +278,13 @@ impl Square {
         let mut is_check = false;
         while let Some(forward) = current.walk(direction) {
             if let Some(color) = board.determine_color(forward) {
-                if color == enemy {
+                let is_king = board.determine_piece(forward) == Some(PieceType::King);
+                let is_enemy = color == enemy;
+                if is_enemy {
                     ray.set(forward);
                     check_ray.set(forward);
-                    if let Some(extra) = forward.walk(direction) {
-                        check_ray.set(extra);
-                    }
 
-                    if board.determine_piece(forward) == Some(PieceType::King) {
+                    if is_king {
                         is_check = true;
                     } else if let Some(extra) = forward.walk(direction) {
                         check_ray.set(extra);
@@ -293,8 +292,9 @@ impl Square {
                     }
                 }
 
-                break;
-                // if !(is_king && is_enemy) {}
+                if !(is_king && is_enemy) {
+                    break;
+                }
             } else {
                 ray.set(forward);
                 check_ray.set(forward);
