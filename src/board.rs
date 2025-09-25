@@ -97,15 +97,17 @@ pub struct Board {
     pub black_queen_bitboard: BitBoard,
     pub black_king_bitboard: BitBoard,
 
+    pub castling_rights: CastlingRights,
     pub en_passant_target: Option<Square>,
     pub turn: Color,
 
-    pub castling_rights: CastlingRights,
     pub transposition_table: HashMap<u64, f32>,
     pub white_attack_bitboard: BitBoard,
     pub black_attack_bitboard: BitBoard,
     pub white_attack_ray_bitboard: BitBoard,
     pub black_attack_ray_bitboard: BitBoard,
+    pub white_num_checks: u8,
+    pub black_num_checks: u8,
 }
 
 impl Board {
@@ -134,6 +136,8 @@ impl Board {
             black_attack_bitboard: EMPTY,
             white_attack_ray_bitboard: EMPTY,
             black_attack_ray_bitboard: EMPTY,
+            white_num_checks: 0,
+            black_num_checks: 0,
         }
     }
 
@@ -388,6 +392,20 @@ impl Board {
         }
     }
 
+    pub fn get_num_checks_mut(&mut self, color: &Color) -> &mut u8 {
+        match color {
+            Color::White => &mut self.white_num_checks,
+            Color::Black => &mut self.black_num_checks,
+        }
+    }
+
+    pub fn get_num_checks(&self, color: &Color) -> &u8 {
+        match color {
+            Color::White => &self.white_num_checks,
+            Color::Black => &self.black_num_checks,
+        }
+    }
+
     pub fn occupied_white_bitboard(&self) -> BitBoard {
         self.white_pawn_bitboard
             | self.white_knight_bitboard
@@ -521,6 +539,8 @@ impl Default for Board {
             black_attack_bitboard: EMPTY,
             white_attack_ray_bitboard: EMPTY,
             black_attack_ray_bitboard: EMPTY,
+            white_num_checks: 0,
+            black_num_checks: 0,
         }
     }
 }

@@ -78,6 +78,11 @@ impl Piece for Pawn {
                             variant: MoveType::Promotion(PieceType::Queen),
                         });
                     } else {
+                        if board.determine_piece(diagnol) == Some(PieceType::King) {
+                            let num_checks = board.get_num_checks_mut(&enemy);
+                            *num_checks += 1;
+                        }
+
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
