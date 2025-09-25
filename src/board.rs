@@ -79,6 +79,13 @@ impl PieceType {
             PieceType::King => King(square).legal_moves(board),
         }
     }
+
+    pub fn is_ray_piece(&self) -> bool {
+        match self {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone)]
