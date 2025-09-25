@@ -22,12 +22,13 @@ pub trait Piece {
 
         let color = &board.turn;
         let attack_board = board.get_occupied_attack_bitboard(&color.opponent());
+        let attack_ray_board = board.get_occupied_attack_ray_bitboard(&color.opponent());
 
         for m in psuedo_legal {
             let piece = board
                 .determine_piece(m.from)
                 .expect("Can't move nonexisting piece!");
-            // let frombb = BitBoard::from_square(m.from);
+            let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
 
             let num_checks = board.get_num_checks(color);
@@ -51,9 +52,16 @@ pub trait Piece {
                 _ => {}
             }
 
-            // prevent moving into check
-            if is_moving_king && attack_board.has_square(&tobb) {
-                continue;
+            if is_moving_king {
+                // Prevent moving into check
+                if attack_board.has_square(&tobb) {
+                    continue;
+                }
+            } else {
+                // Prevent moving piece blocking check (pin)
+                if attack_ray_board.has_square(&frombb) {
+                    continue;
+                }
             }
 
             legal.push(m);
