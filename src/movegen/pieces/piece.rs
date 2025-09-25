@@ -79,7 +79,7 @@ pub trait Piece {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::{should_generate, shouldnt_generate};
+    use crate::test_utils::{format_pretty_list, should_generate, shouldnt_generate};
 
     use super::*;
 
@@ -188,6 +188,53 @@ mod tests {
                 "Tried to move piece other than queen while double check. {}",
                 m
             );
+        }
+    }
+
+    /// https://www.chessgames.com/perl/chessgame?gid=1242968
+    #[test]
+    fn queens_gambit_game() {
+        let mut board = Board::default();
+        let game_turns = [
+            Move::new(Square::D2, Square::D4, &board),
+            Move::new(Square::D7, Square::D5, &board),
+            Move::new(Square::C2, Square::C4, &board),
+            Move::new(Square::E7, Square::E6, &board),
+            Move::new(Square::B1, Square::C3, &board),
+            Move::new(Square::G8, Square::F6, &board),
+            Move::new(Square::C1, Square::G5, &board),
+            Move::new(Square::B8, Square::D7, &board),
+            Move::new(Square::C4, Square::D5, &board),
+            Move::new(Square::E6, Square::D5, &board),
+            Move::new(Square::C3, Square::D5, &board),
+            Move::new(Square::F6, Square::D5, &board),
+            Move::new(Square::G5, Square::D8, &board),
+            Move::new(Square::F8, Square::B4, &board),
+            Move::new(Square::D1, Square::D2, &board),
+            Move::new(Square::E8, Square::D8, &board),
+        ];
+
+        for (i, to_play) in game_turns.iter().enumerate() {
+            let psuedo_legal_moves = board.generate_all_psuedo_legal_moves();
+            let legal_moves = board.generate_all_legal_moves();
+
+            assert!(
+                psuedo_legal_moves.contains(&to_play),
+                "Turn: {}. The legal and expected move was not generated psuedo legally: {}.\nAvailable moves: {}",
+                i + 1,
+                to_play,
+                format_pretty_list(&psuedo_legal_moves)
+            );
+
+            assert!(
+                legal_moves.contains(&to_play),
+                "Turn: {}. The legal and expected move was not generated legally: {}.\nAvailable moves: {}",
+                i + 1,
+                to_play,
+                format_pretty_list(&legal_moves)
+            );
+
+            board = to_play.make(&board);
         }
     }
 }
