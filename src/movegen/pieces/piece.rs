@@ -30,7 +30,6 @@ pub trait Piece {
             // let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
 
-            let kingbb = board.get_occupied_bitboard(&PieceType::King, &color);
             let num_checks = board.get_num_checks(color);
             let is_moving_king = piece == PieceType::King;
             let is_capturing = m.get_capture(&board).is_some();
