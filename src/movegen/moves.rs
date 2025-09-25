@@ -172,6 +172,14 @@ impl Move {
         let initial = BitBoard::from_square(self.from);
         let target = BitBoard::from_square(self.to);
 
+        // Update attack bitboards
+        if initial_piece.is_ray_piece() {
+            // HACK: Clone so that attack boards are not automatically updated for now
+            let moves = initial_piece.get_psuedo_legal_moves(&mut new.clone(), self.from);
+            let initial_attack_ray = BitBoard::from_square_vec(get_targets(moves));
+            *new.get_occupied_attack_bitboard_mut(&color) ^= initial_attack_ray;
+        }
+
         // Remove the piece from its original square
         new.set_occupied_bitboard(
             &initial_piece,

@@ -334,9 +334,9 @@ impl Square {
                 *num_checks += 1;
             }
 
+            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+            *attack_bitboard |= ray;
             for sq in ray {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
-                attack_bitboard.set(sq);
                 moves.push(Move {
                     from: *self,
                     to: sq,
