@@ -1,15 +1,27 @@
-use crate::{board::Board, movegen::moves::Move, square::Square};
+use crate::{
+    board::Board,
+    movegen::moves::Move,
+    square::{Direction, Square},
+};
 
-use super::{bishop::Bishop, piece::Piece, rook::Rook};
+use super::piece::Piece;
 
 pub struct Queen(pub Square);
 
 impl Piece for Queen {
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-        moves.extend(Rook(self.0).psuedo_legal_moves(board));
-        moves.extend(Bishop(self.0).psuedo_legal_moves(board));
-        moves
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+        let directions = [
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+            Direction::NorthEast,
+            Direction::SouthEast,
+            Direction::NorthWest,
+            Direction::SouthWest,
+        ];
+
+        self.0.rays(&directions, board)
     }
 }
 
@@ -35,7 +47,7 @@ mod tests {
             Move::new(Square::A3, Square::A1, &board),
         ] {
             if board.determine_piece(m.from) == Some(PieceType::Queen) {
-                let moves = Queen(m.from).psuedo_legal_moves(&board);
+                let moves = Queen(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",
@@ -63,7 +75,7 @@ mod tests {
             Move::new(Square::G2, Square::F1, &board),
         ] {
             if board.determine_piece(m.from) == Some(PieceType::Queen) {
-                let moves = Queen(m.from).psuedo_legal_moves(&board);
+                let moves = Queen(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

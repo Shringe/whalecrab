@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::{
-    bitboard::BitBoard,
+    bitboard::{BitBoard, EMPTY},
     board::{Board, Color, PieceType},
     castling::{self, CastleSide},
     square::Square,
@@ -64,15 +64,11 @@ impl Move {
                     MoveType::Castle(CastleSide::Kingside)
                 }
                 _ => {
-                    if let Some(target) = board.en_passant_target {
-                        if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
-                            MoveType::CaptureEnPassant
-                        } else {
-                            MoveType::Normal
-                        }
-                    } else if board.determine_piece(from) == Some(PieceType::Pawn) {
+                    if board.determine_piece(from) == Some(PieceType::Pawn) {
                         let color = board.determine_color(from).unwrap();
-                        if let Some(once) = from.forward(&color) {
+                        if Some(to) == board.en_passant_target {
+                            MoveType::CaptureEnPassant
+                        } else if let Some(once) = from.forward(&color) {
                             if let Some(twice) = once.forward(&color) {
                                 if to == twice {
                                     MoveType::CreateEnPassant
@@ -172,6 +168,25 @@ impl Move {
         let initial = BitBoard::from_square(self.from);
         let target = BitBoard::from_square(self.to);
 
+        // Update attack bitboards
+        match initial_piece {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
+                // HACK: Clone so that attack boards are not automatically updated for now
+                // TODO: Implement way to movegen withhout setting attack boards
+                let attack_board = *board.get_occupied_attack_bitboard(&color);
+                let attack_ray_board = *board.get_occupied_attack_ray_bitboard(&color);
+                let moves = initial_piece.get_psuedo_legal_moves(&mut new, self.from);
+                let initial_attack_ray = BitBoard::from_square_vec(get_targets(moves));
+
+                *new.get_occupied_attack_bitboard_mut(&color) = attack_board ^ initial_attack_ray;
+                *new.get_occupied_attack_ray_bitboard_mut(&color) = attack_ray_board;
+            }
+            PieceType::King => {
+                *new.get_occupied_attack_ray_bitboard_mut(&color.opponent()) = EMPTY;
+            }
+            _ => {}
+        }
+
         // Remove the piece from its original square
         new.set_occupied_bitboard(
             &initial_piece,
@@ -227,7 +242,7 @@ impl Move {
     }
 
     /// Gets the square and piece type of the captured piece
-    fn get_capture(&self, board: &Board) -> Option<Capture> {
+    pub fn get_capture(&self, board: &Board) -> Option<Capture> {
         let target = if self.variant == MoveType::CaptureEnPassant {
             self.to
                 .backward(&board.turn)
@@ -305,7 +320,7 @@ mod tests {
         let to_play = &WHITE_CASTLES_QUEENSIDE;
         let mut board = Board::from_fen(fen_before).unwrap();
 
-        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, to_play);
 
         board = to_play.make(&board);
@@ -319,7 +334,7 @@ mod tests {
         let to_play = &BLACK_CASTLES_KINGSIDE;
         let mut board = Board::from_fen(fen_before).unwrap();
 
-        let moves = King(to_play.from).psuedo_legal_moves(&board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
         should_generate(&moves, to_play);
 
         board = to_play.make(&board);
@@ -389,7 +404,7 @@ mod tests {
             looking_for.to.in_bitboard(&board.black_rook_bitboard),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
@@ -560,7 +575,7 @@ mod tests {
             "Black pawn not in position"
         );
 
-        let moves = Pawn(capture.from).psuedo_legal_moves(&board);
+        let moves = Pawn(capture.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",

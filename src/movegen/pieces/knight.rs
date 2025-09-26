@@ -1,5 +1,5 @@
 use crate::{
-    board::Board,
+    board::{Board, PieceType},
     movegen::moves::{Move, MoveType},
     square::Square,
 };
@@ -9,18 +9,28 @@ use super::piece::Piece;
 pub struct Knight(pub Square);
 
 impl Piece for Knight {
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let rank = self.0.get_rank();
         let file = self.0.get_file();
 
-        let friendly = Some(board.turn.clone());
+        let color = board.turn;
+        let enemy = color.opponent();
+        let friendly = Some(color);
 
         if rank.to_index() < 5 {
             let north = Square::make_square(rank.up().up(), file);
             for t in [north.left(), north.right()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -34,8 +44,16 @@ impl Piece for Knight {
         if rank.to_index() > 1 {
             let south = Square::make_square(rank.down().down(), file);
             for t in [south.left(), south.right()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -49,8 +67,16 @@ impl Piece for Knight {
         if file.to_index() < 5 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -64,8 +90,16 @@ impl Piece for Knight {
         if file.to_index() > 1 {
             let west = Square::make_square(rank, file.left().left());
             for t in [west.up(), west.down()].into_iter().flatten() {
+                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                attack_bitboard.set(t);
+
                 if board.determine_color(t) == friendly {
                     continue;
+                }
+
+                if board.determine_piece(t) == Some(PieceType::King) {
+                    let num_checks = board.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -119,7 +153,7 @@ mod tests {
             board = m.make(&board);
         }
 
-        let moves = Knight(avoid.from).psuedo_legal_moves(&board);
+        let moves = Knight(avoid.from).psuedo_legal_moves(&mut board);
         assert!(!moves.contains(&avoid));
     }
 
@@ -165,7 +199,7 @@ mod tests {
             },
         ] {
             if board.turn == Color::White {
-                let moves = Knight(m.from).psuedo_legal_moves(&board);
+                let moves = Knight(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -176,7 +210,7 @@ mod tests {
             board = m.make(&board);
         }
 
-        let moves = Knight(capture.from).psuedo_legal_moves(&board);
+        let moves = Knight(capture.from).psuedo_legal_moves(&mut board);
 
         assert!(
             moves.contains(&capture),

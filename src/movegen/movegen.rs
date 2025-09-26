@@ -6,7 +6,7 @@ use crate::{
 use super::pieces::{pawn::Pawn, piece::Piece};
 
 /// Generates all moves for all pawn
-pub fn generate_all_psuedo_legal_pawn_moves(board: &Board) -> Vec<Move> {
+pub fn generate_all_psuedo_legal_pawn_moves(board: &mut Board) -> Vec<Move> {
     let mut moves = Vec::new();
 
     let occupied = match board.turn {
@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn psuedo_legal_pawn_moves() {
         let mut board = Board::default();
-        let moves = generate_all_psuedo_legal_pawn_moves(&board);
+        let moves = generate_all_psuedo_legal_pawn_moves(&mut board);
 
         // White pawn single push
         let expected_move = Move {
@@ -57,7 +57,7 @@ mod tests {
         );
 
         board.turn = board.turn.opponent();
-        let moves = generate_all_psuedo_legal_pawn_moves(&board);
+        let moves = generate_all_psuedo_legal_pawn_moves(&mut board);
 
         // Black pawn double push from starting rank
         let double_push = Move {
@@ -137,7 +137,7 @@ mod tests {
             "There is no en_passant_target!"
         );
 
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn doesn't see en passant: {}!

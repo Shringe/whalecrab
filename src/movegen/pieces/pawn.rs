@@ -14,7 +14,7 @@ impl Piece for Pawn {
     /// En_Passant is considered
     /// Promotion is considered (only for queen)
     /// King safety not considered
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let color = board
@@ -62,20 +62,27 @@ impl Piece for Pawn {
         }
 
         // Captures
+        // TODO: Add promotion for pieces other than queen
         for diagnol in [self.0.fleft(&color), self.0.fright(&color)]
             .into_iter()
             .flatten()
         {
+            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+            attack_bitboard.set(diagnol);
             if let Some(enemy) = board.determine_color(diagnol) {
                 if enemy == *enemy_color {
                     if diagnol.get_rank() == final_rank {
-                        // TODO: Add promotion for pieces other than queen
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
                             variant: MoveType::Promotion(PieceType::Queen),
                         });
                     } else {
+                        if board.determine_piece(diagnol) == Some(PieceType::King) {
+                            let num_checks = board.get_num_checks_mut(&enemy);
+                            *num_checks += 1;
+                        }
+
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
@@ -136,7 +143,7 @@ mod tests {
             looking_for.from.in_bitboard(&board.white_pawn_bitboard),
             "White pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -182,7 +189,7 @@ mod tests {
             looking_for.from.in_bitboard(&board.black_pawn_bitboard),
             "Black pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -253,7 +260,7 @@ mod tests {
             looking_for.to.in_bitboard(&board.black_rook_bitboard),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
