@@ -195,7 +195,7 @@ impl Board {
         min
     }
 
-    pub fn get_engine_move_minimax(&self, depth: u16) -> Option<Move> {
+    pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
         let moves = self.generate_all_legal_moves();
         let mut best_move = None;
 
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn minimax_engine_saves_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
-        let board = Board::from_fen(starting).unwrap();
+        let mut board = Board::from_fen(starting).unwrap();
         let result = board.get_engine_move_minimax(2).expect("No moves found");
         let new = result.make(&board);
         assert_eq!(

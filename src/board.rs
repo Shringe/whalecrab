@@ -16,7 +16,7 @@ use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, PartialEq, Clone, Hash)]
+#[derive(Debug, PartialEq, Clone, Hash, Copy)]
 pub enum Color {
     White,
     Black,
@@ -58,7 +58,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_psuedo_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+    pub fn get_psuedo_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => Pawn(square).psuedo_legal_moves(board),
             PieceType::Knight => Knight(square).psuedo_legal_moves(board),
@@ -69,7 +69,7 @@ impl PieceType {
         }
     }
 
-    pub fn get_legal_moves(&self, board: &Board, square: Square) -> Vec<Move> {
+    pub fn get_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => Pawn(square).legal_moves(board),
             PieceType::Knight => Knight(square).legal_moves(board),
@@ -79,9 +79,16 @@ impl PieceType {
             PieceType::King => King(square).legal_moves(board),
         }
     }
+
+    pub fn is_ray_piece(&self) -> bool {
+        match self {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => true,
+            _ => false,
+        }
+    }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct Board {
     pub white_pawn_bitboard: BitBoard,
     pub white_knight_bitboard: BitBoard,
@@ -97,11 +104,17 @@ pub struct Board {
     pub black_queen_bitboard: BitBoard,
     pub black_king_bitboard: BitBoard,
 
+    pub castling_rights: CastlingRights,
     pub en_passant_target: Option<Square>,
     pub turn: Color,
 
-    pub castling_rights: CastlingRights,
     pub transposition_table: HashMap<u64, f32>,
+    pub white_attack_bitboard: BitBoard,
+    pub black_attack_bitboard: BitBoard,
+    pub white_attack_ray_bitboard: BitBoard,
+    pub black_attack_ray_bitboard: BitBoard,
+    pub white_num_checks: u8,
+    pub black_num_checks: u8,
 }
 
 impl Board {
@@ -126,7 +139,24 @@ impl Board {
 
             castling_rights: CastlingRights::empty(),
             transposition_table: HashMap::new(),
+            white_attack_bitboard: EMPTY,
+            black_attack_bitboard: EMPTY,
+            white_attack_ray_bitboard: EMPTY,
+            black_attack_ray_bitboard: EMPTY,
+            white_num_checks: 0,
+            black_num_checks: 0,
         }
+    }
+
+    /// Initializes context of the board such as populating attack bitboards
+    pub fn initialize(&mut self) {
+        // Populate player's attack bitboard
+        self.generate_all_psuedo_legal_moves();
+
+        // Populate enemy's attack bitboard
+        self.turn = self.turn.opponent();
+        self.generate_all_psuedo_legal_moves();
+        self.turn = self.turn.opponent();
     }
 
     /// Takes a fen string, parses and converts it into a board position.
@@ -152,7 +182,7 @@ impl Board {
         for (rank, row) in rows.rev().enumerate() {
             let mut file = 0;
             for c in row.chars() {
-                let sq = BitBoard::set(Rank::from_index(rank), File::from_index(file));
+                let sq = BitBoard::from_rank_file(Rank::from_index(rank), File::from_index(file));
                 let colored_piece = match c {
                     'p' => Some((PieceType::Pawn, Color::Black)),
                     'n' => Some((PieceType::Knight, Color::Black)),
@@ -288,7 +318,7 @@ impl Board {
 
         fen.push(' ');
         if let Some(target) = self.en_passant_target {
-            fen.push_str(&target.to_string());
+            fen.push_str(&target.to_string().to_lowercase());
         } else {
             fen.push('-');
         }
@@ -338,6 +368,48 @@ impl Board {
                 PieceType::Queen => self.black_queen_bitboard,
                 PieceType::King => self.black_king_bitboard,
             },
+        }
+    }
+
+    pub fn get_occupied_attack_bitboard_mut(&mut self, color: &Color) -> &mut BitBoard {
+        match color {
+            Color::White => &mut self.white_attack_bitboard,
+            Color::Black => &mut self.black_attack_bitboard,
+        }
+    }
+
+    pub fn get_occupied_attack_bitboard(&self, color: &Color) -> &BitBoard {
+        match color {
+            Color::White => &self.white_attack_bitboard,
+            Color::Black => &self.black_attack_bitboard,
+        }
+    }
+
+    pub fn get_occupied_attack_ray_bitboard_mut(&mut self, color: &Color) -> &mut BitBoard {
+        match color {
+            Color::White => &mut self.white_attack_ray_bitboard,
+            Color::Black => &mut self.black_attack_ray_bitboard,
+        }
+    }
+
+    pub fn get_occupied_attack_ray_bitboard(&self, color: &Color) -> &BitBoard {
+        match color {
+            Color::White => &self.white_attack_ray_bitboard,
+            Color::Black => &self.black_attack_ray_bitboard,
+        }
+    }
+
+    pub fn get_num_checks_mut(&mut self, color: &Color) -> &mut u8 {
+        match color {
+            Color::White => &mut self.white_num_checks,
+            Color::Black => &mut self.black_num_checks,
+        }
+    }
+
+    pub fn get_num_checks(&self, color: &Color) -> &u8 {
+        match color {
+            Color::White => &self.white_num_checks,
+            Color::Black => &self.black_num_checks,
         }
     }
 
@@ -406,7 +478,7 @@ impl Board {
     }
 
     /// Determines whether the opponent's king is in check
-    pub fn is_king_in_check(&self) -> bool {
+    pub fn is_king_in_check(&mut self) -> bool {
         let targets =
             BitBoard::from_square_vec(get_targets(self.generate_all_psuedo_legal_moves()));
         let king = self.get_occupied_bitboard(&PieceType::King, &self.turn.opponent());
@@ -414,7 +486,7 @@ impl Board {
     }
 
     /// Generates all psuedo legal moves for the current player
-    pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
+    pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         let occupied = match self.turn {
             Color::White => self.occupied_white_bitboard(),
@@ -431,7 +503,7 @@ impl Board {
     }
 
     /// Generates all legal moves for the current player
-    pub fn generate_all_legal_moves(&self) -> Vec<Move> {
+    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         let occupied = match self.turn {
             Color::White => self.occupied_white_bitboard(),
@@ -470,6 +542,12 @@ impl Default for Board {
 
             castling_rights: CastlingRights::default(),
             transposition_table: HashMap::default(),
+            white_attack_bitboard: EMPTY,
+            black_attack_bitboard: EMPTY,
+            white_attack_ray_bitboard: EMPTY,
+            black_attack_ray_bitboard: EMPTY,
+            white_num_checks: 0,
+            black_num_checks: 0,
         }
     }
 }
@@ -477,6 +555,29 @@ impl Default for Board {
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Board(\"{}\")", self.to_fen())
+    }
+}
+
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        self.white_pawn_bitboard == other.white_pawn_bitboard
+            && self.white_knight_bitboard == other.white_knight_bitboard
+            && self.white_bishop_bitboard == other.white_bishop_bitboard
+            && self.white_rook_bitboard == other.white_rook_bitboard
+            && self.white_queen_bitboard == other.white_queen_bitboard
+            && self.white_king_bitboard == other.white_king_bitboard
+            && self.black_pawn_bitboard == other.black_pawn_bitboard
+            && self.black_knight_bitboard == other.black_knight_bitboard
+            && self.black_bishop_bitboard == other.black_bishop_bitboard
+            && self.black_rook_bitboard == other.black_rook_bitboard
+            && self.black_queen_bitboard == other.black_queen_bitboard
+            && self.black_king_bitboard == other.black_king_bitboard
+            && self.en_passant_target == other.en_passant_target
+            && self.turn == other.turn
+            && self.castling_rights == other.castling_rights
+        // && self.transposition_table == other.transposition_table
+        // && self.white_attack_bitboard == other.white_attack_bitboard
+        // && self.black_attack_bitboard == other.black_attack_bitboard
     }
 }
 
@@ -508,14 +609,14 @@ mod tests {
     #[test]
     fn white_king_in_check() {
         let white_in_check = "rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
-        let board = Board::from_fen(white_in_check).unwrap();
+        let mut board = Board::from_fen(white_in_check).unwrap();
         assert!(board.is_king_in_check())
     }
 
     #[test]
     fn black_king_in_check() {
         let black_in_check = "rnbqkb1r/ppp2ppp/5n2/1B1pp3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1";
-        let board = Board::from_fen(black_in_check).unwrap();
+        let mut board = Board::from_fen(black_in_check).unwrap();
         assert!(board.is_king_in_check())
     }
 

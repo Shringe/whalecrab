@@ -1,6 +1,6 @@
 use crate::{
     board::Board,
-    movegen::moves::{Move, MoveType},
+    movegen::moves::Move,
     square::{Direction, Square},
 };
 
@@ -9,25 +9,15 @@ use super::piece::Piece;
 pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
-    fn psuedo_legal_moves(&self, board: &Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-
-        for d in [
+    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+        let directions = [
             Direction::NorthEast,
-            Direction::NorthWest,
             Direction::SouthEast,
+            Direction::NorthWest,
             Direction::SouthWest,
-        ] {
-            for sq in self.0.ray(&d, board) {
-                moves.push(Move {
-                    from: self.0,
-                    to: sq,
-                    variant: MoveType::Normal,
-                });
-            }
-        }
+        ];
 
-        moves
+        self.0.rays(&directions, board)
     }
 }
 
@@ -53,7 +43,7 @@ mod tests {
             Move::new(Square::G2, Square::F1, &board),
         ] {
             if board.determine_piece(m.from) == Some(PieceType::Bishop) {
-                let moves = Bishop(m.from).psuedo_legal_moves(&board);
+                let moves = Bishop(m.from).psuedo_legal_moves(&mut board);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",
