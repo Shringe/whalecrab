@@ -88,6 +88,26 @@ impl PieceType {
     }
 }
 
+macro_rules! color_field_getters {
+    ($field_name:ident, $return_type:ty) => {
+        paste::paste! {
+            pub fn [<get_ $field_name _mut>](&mut self, color: &Color) -> &mut $return_type {
+                match color {
+                    Color::White => &mut self.[<white_ $field_name>],
+                    Color::Black => &mut self.[<black_ $field_name>],
+                }
+            }
+
+            pub fn [<get_ $field_name>](&self, color: &Color) -> &$return_type {
+                match color {
+                    Color::White => &self.[<white_ $field_name>],
+                    Color::Black => &self.[<black_ $field_name>],
+                }
+            }
+        }
+    };
+}
+
 #[derive(Clone)]
 pub struct Board {
     pub white_pawns: BitBoard,
@@ -118,6 +138,10 @@ pub struct Board {
 }
 
 impl Board {
+    color_field_getters!(attacks, BitBoard);
+    color_field_getters!(check_rays, BitBoard);
+    color_field_getters!(num_checks, u8);
+
     pub fn empty() -> Self {
         Self {
             white_pawns: EMPTY,
@@ -369,48 +393,6 @@ impl Board {
                 PieceType::Queen => self.black_queens,
                 PieceType::King => self.black_kings,
             },
-        }
-    }
-
-    pub fn get_attacks_mut(&mut self, color: &Color) -> &mut BitBoard {
-        match color {
-            Color::White => &mut self.white_attacks,
-            Color::Black => &mut self.black_attacks,
-        }
-    }
-
-    pub fn get_attacks(&self, color: &Color) -> &BitBoard {
-        match color {
-            Color::White => &self.white_attacks,
-            Color::Black => &self.black_attacks,
-        }
-    }
-
-    pub fn get_check_rays_mut(&mut self, color: &Color) -> &mut BitBoard {
-        match color {
-            Color::White => &mut self.white_check_rays,
-            Color::Black => &mut self.black_check_rays,
-        }
-    }
-
-    pub fn get_check_rays(&self, color: &Color) -> &BitBoard {
-        match color {
-            Color::White => &self.white_check_rays,
-            Color::Black => &self.black_check_rays,
-        }
-    }
-
-    pub fn get_num_checks_mut(&mut self, color: &Color) -> &mut u8 {
-        match color {
-            Color::White => &mut self.white_num_checks,
-            Color::Black => &mut self.black_num_checks,
-        }
-    }
-
-    pub fn get_num_checks(&self, color: &Color) -> &u8 {
-        match color {
-            Color::White => &self.white_num_checks,
-            Color::Black => &self.black_num_checks,
         }
     }
 

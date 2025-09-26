@@ -1050,6 +1050,7 @@ version = "0.6.0"
 dependencies = [
  "criterion",
  "crossterm 0.29.0",
+ "paste",
  "rand",
  "ratatui",
 ]
