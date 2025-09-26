@@ -91,22 +91,23 @@ impl PieceType {
 macro_rules! color_field_getters {
     ($field_name:ident, $return_type:ty) => {
         paste::paste! {
-            pub fn [<get_ $field_name _mut>](&mut self, color: &Color) -> &mut $return_type {
+            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::board::Color) -> &mut $return_type {
                 match color {
-                    Color::White => &mut self.[<white_ $field_name>],
-                    Color::Black => &mut self.[<black_ $field_name>],
+                    crate::board::Color::White => &mut self.[<white_ $field_name>],
+                    crate::board::Color::Black => &mut self.[<black_ $field_name>],
                 }
             }
 
-            pub fn [<get_ $field_name>](&self, color: &Color) -> &$return_type {
+            pub fn [<get_ $field_name>](&self, color: &crate::board::Color) -> &$return_type {
                 match color {
-                    Color::White => &self.[<white_ $field_name>],
-                    Color::Black => &self.[<black_ $field_name>],
+                    crate::board::Color::White => &self.[<white_ $field_name>],
+                    crate::board::Color::Black => &self.[<black_ $field_name>],
                 }
             }
         }
     };
 }
+pub(crate) use color_field_getters;
 
 #[derive(Clone)]
 pub struct Board {
