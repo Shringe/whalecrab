@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::{
-    bitboard::BitBoard,
+    bitboard::{BitBoard, EMPTY},
     board::{Board, Color, PieceType},
     castling::{self, CastleSide},
     square::Square,
@@ -169,11 +169,17 @@ impl Move {
         let target = BitBoard::from_square(self.to);
 
         // Update attack bitboards
-        if initial_piece.is_ray_piece() {
-            // HACK: Clone so that attack boards are not automatically updated for now
-            let moves = initial_piece.get_psuedo_legal_moves(&mut new.clone(), self.from);
-            let initial_attack_ray = BitBoard::from_square_vec(get_targets(moves));
-            *new.get_occupied_attack_bitboard_mut(&color) ^= initial_attack_ray;
+        match initial_piece {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
+                // HACK: Clone so that attack boards are not automatically updated for now
+                let moves = initial_piece.get_psuedo_legal_moves(&mut new.clone(), self.from);
+                let initial_attack_ray = BitBoard::from_square_vec(get_targets(moves));
+                *new.get_occupied_attack_bitboard_mut(&color) ^= initial_attack_ray;
+            }
+            PieceType::King => {
+                *new.get_occupied_attack_ray_bitboard_mut(&color.opponent()) = EMPTY;
+            }
+            _ => {}
         }
 
         // Remove the piece from its original square
