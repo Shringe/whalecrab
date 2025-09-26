@@ -64,15 +64,11 @@ impl Move {
                     MoveType::Castle(CastleSide::Kingside)
                 }
                 _ => {
-                    if let Some(target) = board.en_passant_target {
-                        if to == target && board.determine_piece(from) == Some(PieceType::Pawn) {
-                            MoveType::CaptureEnPassant
-                        } else {
-                            MoveType::Normal
-                        }
-                    } else if board.determine_piece(from) == Some(PieceType::Pawn) {
+                    if board.determine_piece(from) == Some(PieceType::Pawn) {
                         let color = board.determine_color(from).unwrap();
-                        if let Some(once) = from.forward(&color) {
+                        if Some(to) == board.en_passant_target {
+                            MoveType::CaptureEnPassant
+                        } else if let Some(once) = from.forward(&color) {
                             if let Some(twice) = once.forward(&color) {
                                 if to == twice {
                                     MoveType::CreateEnPassant

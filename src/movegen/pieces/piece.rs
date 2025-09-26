@@ -79,6 +79,8 @@ pub trait Piece {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::test_utils::{format_pretty_list, should_generate, shouldnt_generate};
 
     use super::*;
@@ -191,24 +193,47 @@ mod tests {
         }
     }
 
-    fn ensure_legal_game(mut board: Board, game_turns: &Vec<Move>) {
+    fn ensure_legal_game(mut board: Board, game_turns: &Vec<(Square, Square)>) {
+        let mut move_num = 0;
+        let mut psuedo_illegal_moves = HashMap::new();
+        let mut illegal_moves = HashMap::new();
         for (i, to_play) in game_turns.iter().enumerate() {
+            let to_play = Move::new(to_play.0, to_play.1, &board);
+            let fen = board.to_fen();
             let psuedo_legal_moves = board.generate_all_psuedo_legal_moves();
             let legal_moves = board.generate_all_legal_moves();
 
-            assert!(
-                psuedo_legal_moves.contains(&to_play),
-                "Turn: {}. The legal and expected move was not generated psuedo legally: {}.\nAvailable moves: {}",
-                i + 1,
-                to_play,
-                format_pretty_list(&psuedo_legal_moves)
-            );
-
             let turn = i + 1;
+            if i % 2 == 0 {
+                move_num += 1;
+            }
+
+            if !psuedo_legal_moves.contains(&to_play) {
+                let short = format!(
+                    "Move: {}, Turn: {}. The move {} was deemed psuedo illegal\n  {}",
+                    move_num, turn, to_play, fen
+                );
+
+                let long = format!(
+                    "Available moves: {}",
+                    format_pretty_list(&psuedo_legal_moves)
+                );
+
+                psuedo_illegal_moves.insert(short, long);
+            }
+
             let color = board.turn;
-            let piece = board
-                .determine_piece(to_play.from)
-                .expect("Tried to play with nonexisting piece");
+            let piece = if let Some(piece) = board.determine_piece(to_play.from) {
+                piece
+            } else {
+                let short = format!(
+                    "Move: {}, Turn: {}. Tried to move nonexistant piece at square: {}\n  {}",
+                    move_num, turn, to_play.from, fen
+                );
+                let long = short.clone();
+                psuedo_illegal_moves.insert(short, long);
+                break;
+            };
             let piece_attacks = BitBoard::from_square_vec(get_targets(
                 piece.get_psuedo_legal_moves(&mut board, to_play.from),
             ));
@@ -217,10 +242,14 @@ mod tests {
                 piece.get_legal_moves(&mut board, to_play.from),
             ));
 
-            assert!(
-                legal_moves.contains(&to_play),
-                "Turn: {}. The legal and expected move was not generated legally: {}.
-Piece info:
+            if !legal_moves.contains(&to_play) {
+                let short = format!(
+                    "Move: {}, Turn: {}. The move {} was deemed illegal\n  {}",
+                    move_num, turn, to_play, fen
+                );
+
+                let long = format!(
+                    "Piece info:
 type: {:?}
 color: {:?}
 location: {}
@@ -247,25 +276,58 @@ ray_attacks:
 attacks:
 {}
 
-Available moves: {}",
-                turn,
-                to_play,
-                piece,
-                color,
-                to_play.from,
-                to_play.to,
-                piece_attacks,
-                piece_attacks_legal,
-                board.white_num_checks,
-                board.white_attack_ray_bitboard,
-                board.white_attack_bitboard,
-                board.black_num_checks,
-                board.black_attack_ray_bitboard,
-                board.black_attack_bitboard,
-                format_pretty_list(&legal_moves)
-            );
+Available moves: {}
+",
+                    piece,
+                    color,
+                    to_play.from,
+                    to_play.to,
+                    piece_attacks,
+                    piece_attacks_legal,
+                    board.white_num_checks,
+                    board.white_attack_ray_bitboard,
+                    board.white_attack_bitboard,
+                    board.black_num_checks,
+                    board.black_attack_ray_bitboard,
+                    board.black_attack_bitboard,
+                    format_pretty_list(&legal_moves)
+                );
+
+                illegal_moves.insert(short, long);
+            }
 
             board = to_play.make(&board);
+        }
+
+        match psuedo_illegal_moves.len() {
+            0 => {}
+            1 => {
+                let (short, long) = psuedo_illegal_moves.iter().next().unwrap();
+                panic!("{}\n{}", short, long);
+            }
+            _ => {
+                for (short, _) in &psuedo_illegal_moves {
+                    println!("{}", short);
+                }
+                panic!(
+                    "{} psuedo illegal moves were found",
+                    psuedo_illegal_moves.len()
+                );
+            }
+        }
+
+        match illegal_moves.len() {
+            0 => {}
+            1 => {
+                let (short, long) = illegal_moves.iter().next().unwrap();
+                panic!("{}\n{}", short, long);
+            }
+            _ => {
+                for (short, _) in &illegal_moves {
+                    println!("{}", short);
+                }
+                panic!("{} illegal moves were found", illegal_moves.len());
+            }
         }
     }
 
@@ -274,22 +336,98 @@ Available moves: {}",
     fn queens_gambit_game() {
         let board = Board::default();
         let game_turns = vec![
-            Move::new(Square::D2, Square::D4, &board),
-            Move::new(Square::D7, Square::D5, &board),
-            Move::new(Square::C2, Square::C4, &board),
-            Move::new(Square::E7, Square::E6, &board),
-            Move::new(Square::B1, Square::C3, &board),
-            Move::new(Square::G8, Square::F6, &board),
-            Move::new(Square::C1, Square::G5, &board),
-            Move::new(Square::B8, Square::D7, &board),
-            Move::new(Square::C4, Square::D5, &board),
-            Move::new(Square::E6, Square::D5, &board),
-            Move::new(Square::C3, Square::D5, &board),
-            Move::new(Square::F6, Square::D5, &board),
-            Move::new(Square::G5, Square::D8, &board),
-            Move::new(Square::F8, Square::B4, &board),
-            Move::new(Square::D1, Square::D2, &board),
-            Move::new(Square::E8, Square::D8, &board),
+            (Square::D2, Square::D4),
+            (Square::D7, Square::D5),
+            (Square::C2, Square::C4),
+            (Square::E7, Square::E6),
+            (Square::B1, Square::C3),
+            (Square::G8, Square::F6),
+            (Square::C1, Square::G5),
+            (Square::B8, Square::D7),
+            (Square::C4, Square::D5),
+            (Square::E6, Square::D5),
+            (Square::C3, Square::D5),
+            (Square::F6, Square::D5),
+            (Square::G5, Square::D8),
+            (Square::F8, Square::B4),
+            (Square::D1, Square::D2),
+            (Square::E8, Square::D8),
+        ];
+
+        ensure_legal_game(board, &game_turns);
+    }
+
+    /// https://www.chessgames.com/perl/chessgame?gid=1955216
+    #[test]
+    fn sicilian_defense_game() {
+        let board = Board::default();
+        let game_turns = vec![
+            (Square::E2, Square::E4),
+            (Square::C7, Square::C5),
+            (Square::G1, Square::F3),
+            (Square::B8, Square::C6),
+            (Square::B1, Square::C3),
+            (Square::E7, Square::E5),
+            (Square::F1, Square::C4),
+            (Square::F8, Square::E7),
+            (Square::D2, Square::D3),
+            (Square::D7, Square::D6),
+            (Square::F3, Square::D2),
+            (Square::G8, Square::F6),
+            (Square::D2, Square::F1),
+            (Square::F6, Square::D7),
+            (Square::C3, Square::D5),
+            (Square::D7, Square::B6),
+            (Square::D5, Square::B6),
+            (Square::A7, Square::B6),
+            (Square::C2, Square::C3),
+            (Square::E8, Square::G8),
+            (Square::F1, Square::E3),
+            (Square::E7, Square::G5),
+            (Square::E1, Square::G1),
+            (Square::G8, Square::H8),
+            (Square::A2, Square::A3),
+            (Square::F7, Square::F5),
+            (Square::E3, Square::F5),
+            (Square::G5, Square::C1),
+            (Square::A1, Square::C1),
+            (Square::C8, Square::F5),
+            (Square::E4, Square::F5),
+            (Square::D6, Square::D5),
+            (Square::C4, Square::A2),
+            (Square::F8, Square::F5),
+            (Square::D1, Square::G4),
+            (Square::F5, Square::F6),
+            (Square::F2, Square::F4),
+            (Square::E5, Square::F4),
+            (Square::G4, Square::G5),
+            (Square::D8, Square::F8),
+            (Square::G5, Square::D5),
+            (Square::A8, Square::D8),
+            (Square::D5, Square::F3),
+            (Square::C6, Square::E5),
+            (Square::F3, Square::E4),
+            (Square::E5, Square::G4),
+            (Square::C1, Square::E1),
+            (Square::G4, Square::E3),
+            (Square::F1, Square::F2),
+            (Square::D8, Square::E8),
+            (Square::E4, Square::B7),
+            (Square::G7, Square::G5),
+            (Square::F2, Square::E2),
+            (Square::G5, Square::G4),
+            (Square::E2, Square::F2),
+            (Square::F8, Square::H6),
+            (Square::B7, Square::C7),
+            (Square::E8, Square::F8),
+            (Square::H2, Square::H3),
+            (Square::G4, Square::H3),
+            (Square::G2, Square::G3),
+            (Square::F4, Square::G3),
+            (Square::F2, Square::F6),
+            (Square::H3, Square::H2),
+            (Square::G1, Square::H1),
+            (Square::G3, Square::G2),
         ];
 
         ensure_legal_game(board, &game_turns);
