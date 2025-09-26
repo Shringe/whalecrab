@@ -67,7 +67,7 @@ impl Piece for Pawn {
             .into_iter()
             .flatten()
         {
-            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+            let attack_bitboard = board.get_attacks_mut(&color);
             attack_bitboard.set(diagnol);
             if let Some(enemy) = board.determine_color(diagnol) {
                 if enemy == *enemy_color {
@@ -136,11 +136,11 @@ mod tests {
 
         assert_eq!(board.turn, Color::White);
         assert!(
-            looking_for.to.in_bitboard(&board.black_pawn_bitboard),
+            looking_for.to.in_bitboard(&board.black_pawns),
             "Black pawn not in position"
         );
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawn_bitboard),
+            looking_for.from.in_bitboard(&board.white_pawns),
             "White pawn not in position"
         );
         let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
@@ -182,11 +182,11 @@ mod tests {
 
         assert_eq!(board.turn, Color::Black);
         assert!(
-            looking_for.to.in_bitboard(&board.white_pawn_bitboard),
+            looking_for.to.in_bitboard(&board.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.from.in_bitboard(&board.black_pawn_bitboard),
+            looking_for.from.in_bitboard(&board.black_pawns),
             "Black pawn not in position"
         );
         let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
@@ -253,11 +253,11 @@ mod tests {
 
         assert_eq!(board.turn, Color::White);
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawn_bitboard),
+            looking_for.from.in_bitboard(&board.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.to.in_bitboard(&board.black_rook_bitboard),
+            looking_for.to.in_bitboard(&board.black_rooks),
             "Black rook not in position"
         );
         let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);

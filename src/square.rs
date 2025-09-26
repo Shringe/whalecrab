@@ -324,8 +324,8 @@ impl Square {
 
             if check_ray != EMPTY {
                 match color {
-                    Color::White => board.white_attack_ray_bitboard |= check_ray,
-                    Color::Black => board.black_attack_ray_bitboard |= check_ray,
+                    Color::White => board.white_check_rays |= check_ray,
+                    Color::Black => board.black_check_rays |= check_ray,
                 }
             }
 
@@ -334,7 +334,7 @@ impl Square {
                 *num_checks += 1;
             }
 
-            let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+            let attack_bitboard = board.get_attacks_mut(&color);
             *attack_bitboard |= ray;
             for sq in ray {
                 moves.push(Move {

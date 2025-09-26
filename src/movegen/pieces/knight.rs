@@ -21,7 +21,7 @@ impl Piece for Knight {
         if rank.to_index() < 5 {
             let north = Square::make_square(rank.up().up(), file);
             for t in [north.left(), north.right()].into_iter().flatten() {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                let attack_bitboard = board.get_attacks_mut(&color);
                 attack_bitboard.set(t);
 
                 if board.determine_color(t) == friendly {
@@ -44,7 +44,7 @@ impl Piece for Knight {
         if rank.to_index() > 1 {
             let south = Square::make_square(rank.down().down(), file);
             for t in [south.left(), south.right()].into_iter().flatten() {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                let attack_bitboard = board.get_attacks_mut(&color);
                 attack_bitboard.set(t);
 
                 if board.determine_color(t) == friendly {
@@ -67,7 +67,7 @@ impl Piece for Knight {
         if file.to_index() < 5 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                let attack_bitboard = board.get_attacks_mut(&color);
                 attack_bitboard.set(t);
 
                 if board.determine_color(t) == friendly {
@@ -90,7 +90,7 @@ impl Piece for Knight {
         if file.to_index() > 1 {
             let west = Square::make_square(rank, file.left().left());
             for t in [west.up(), west.down()].into_iter().flatten() {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                let attack_bitboard = board.get_attacks_mut(&color);
                 attack_bitboard.set(t);
 
                 if board.determine_color(t) == friendly {
@@ -218,11 +218,11 @@ mod tests {
             format_pretty_list(&moves)
         );
 
-        let knight_before = board.white_knight_bitboard.popcnt();
-        let pawns_before = board.black_pawn_bitboard.popcnt();
+        let knight_before = board.white_knights.popcnt();
+        let pawns_before = board.black_pawns.popcnt();
         let board = capture.make(&board);
-        let knight_after = board.white_knight_bitboard.popcnt();
-        let pawns_after = board.black_pawn_bitboard.popcnt();
+        let knight_after = board.white_knights.popcnt();
+        let pawns_after = board.black_pawns.popcnt();
 
         assert_eq!(knight_before, knight_after, "We lost the knight!");
         assert_eq!(
