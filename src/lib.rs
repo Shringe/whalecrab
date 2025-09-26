@@ -3,6 +3,7 @@ pub mod board;
 pub mod castling;
 pub mod engine;
 pub mod file;
+pub mod game;
 pub mod movegen;
 pub mod rank;
 pub mod square;
