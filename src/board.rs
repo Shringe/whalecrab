@@ -318,7 +318,7 @@ impl Board {
 
         fen.push(' ');
         if let Some(target) = self.en_passant_target {
-            fen.push_str(&target.to_string());
+            fen.push_str(&target.to_string().to_lowercase());
         } else {
             fen.push('-');
         }
