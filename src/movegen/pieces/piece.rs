@@ -21,8 +21,8 @@ pub trait Piece {
         let mut legal = Vec::new();
 
         let color = &board.turn;
-        let attack_board = board.get_occupied_attack_bitboard(&color.opponent());
-        let attack_ray_board = board.get_occupied_attack_ray_bitboard(&color.opponent());
+        let attack_board = board.get_attacks(&color.opponent());
+        let check_ray_board = board.get_check_rays(&color.opponent());
 
         for m in psuedo_legal {
             let piece = board
@@ -34,8 +34,7 @@ pub trait Piece {
             let num_checks = board.get_num_checks(color);
             let is_moving_king = piece == PieceType::King;
             let is_capturing = m.get_capture(&board).is_some();
-            let is_blocking =
-                board.get_occupied_attack_ray_bitboard(&color.opponent()) & tobb != EMPTY;
+            let is_blocking = board.get_check_rays(&color.opponent()) & tobb != EMPTY;
 
             // Handle being in check
             match *num_checks {
@@ -59,7 +58,7 @@ pub trait Piece {
                 }
             } else {
                 // Prevent moving piece blocking check (pin)
-                if attack_ray_board.has_square(&frombb) {
+                if check_ray_board.has_square(&frombb) {
                     continue;
                 }
             }
@@ -285,11 +284,11 @@ Available moves: {}
                     piece_attacks,
                     piece_attacks_legal,
                     board.white_num_checks,
-                    board.white_attack_ray_bitboard,
-                    board.white_attack_bitboard,
+                    board.white_check_rays,
+                    board.white_attacks,
                     board.black_num_checks,
-                    board.black_attack_ray_bitboard,
-                    board.black_attack_bitboard,
+                    board.black_check_rays,
+                    board.black_attacks,
                     format_pretty_list(&legal_moves)
                 );
 

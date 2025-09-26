@@ -10,8 +10,8 @@ pub fn generate_all_psuedo_legal_pawn_moves(board: &mut Board) -> Vec<Move> {
     let mut moves = Vec::new();
 
     let occupied = match board.turn {
-        Color::White => board.white_pawn_bitboard,
-        Color::Black => board.black_pawn_bitboard,
+        Color::White => board.white_pawns,
+        Color::Black => board.black_pawns,
     };
 
     for p in occupied {
@@ -128,7 +128,7 @@ mod tests {
 
         assert_eq!(board.turn, Color::White);
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawn_bitboard),
+            looking_for.from.in_bitboard(&board.white_pawns),
             "White pawn not in position"
         );
 

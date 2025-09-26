@@ -10,37 +10,37 @@ use whalecrab::{
 };
 
 fn generate_all_psuedo_legal_pawn_moves(board: &mut Board) {
-    for sq in board.white_pawn_bitboard | board.black_pawn_bitboard {
+    for sq in board.white_pawns | board.black_pawns {
         Pawn(sq).psuedo_legal_moves(board);
     }
 }
 
 fn generate_all_psuedo_legal_rook_moves(board: &mut Board) {
-    for sq in board.white_rook_bitboard | board.black_rook_bitboard {
+    for sq in board.white_rooks | board.black_rooks {
         Rook(sq).psuedo_legal_moves(board);
     }
 }
 
 fn generate_all_psuedo_legal_knight_moves(board: &mut Board) {
-    for sq in board.white_knight_bitboard | board.black_knight_bitboard {
+    for sq in board.white_knights | board.black_knights {
         Knight(sq).psuedo_legal_moves(board);
     }
 }
 
 fn generate_all_psuedo_legal_bishop_moves(board: &mut Board) {
-    for sq in board.white_bishop_bitboard | board.black_bishop_bitboard {
+    for sq in board.white_bishops | board.black_bishops {
         Bishop(sq).psuedo_legal_moves(board);
     }
 }
 
 fn generate_all_psuedo_legal_queen_moves(board: &mut Board) {
-    for sq in board.white_queen_bitboard | board.black_queen_bitboard {
+    for sq in board.white_queens | board.black_queens {
         Queen(sq).psuedo_legal_moves(board);
     }
 }
 
 fn generate_all_psuedo_legal_king_moves(board: &mut Board) {
-    for sq in board.white_king_bitboard | board.black_king_bitboard {
+    for sq in board.white_kings | board.black_kings {
         King(sq).psuedo_legal_moves(board);
     }
 }

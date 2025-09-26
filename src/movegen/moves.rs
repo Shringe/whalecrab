@@ -111,16 +111,16 @@ impl Move {
 
                         match side {
                             CastleSide::Queenside => {
-                                new.white_king_bitboard = new.white_king_bitboard
-                                    ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.white_rook_bitboard = new.white_rook_bitboard
-                                    ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                                new.white_kings =
+                                    new.white_kings ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.white_rooks =
+                                    new.white_rooks ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
                             }
                             CastleSide::Kingside => {
-                                new.white_king_bitboard = new.white_king_bitboard
-                                    ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                                new.white_rook_bitboard = new.white_rook_bitboard
-                                    ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                                new.white_kings =
+                                    new.white_kings ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                                new.white_rooks =
+                                    new.white_rooks ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
                             }
                         }
                     }
@@ -131,17 +131,17 @@ impl Move {
 
                         match side {
                             CastleSide::Queenside => {
-                                new.black_king_bitboard = new.black_king_bitboard
-                                    ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.black_rook_bitboard = new.black_rook_bitboard
-                                    ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                                new.black_kings =
+                                    new.black_kings ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                                new.black_rooks =
+                                    new.black_rooks ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
                             }
 
                             CastleSide::Kingside => {
-                                new.black_king_bitboard = new.black_king_bitboard
-                                    ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                                new.black_rook_bitboard = new.black_rook_bitboard
-                                    ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                                new.black_kings =
+                                    new.black_kings ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                                new.black_rooks =
+                                    new.black_rooks ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
                             }
                         }
                     }
@@ -173,16 +173,16 @@ impl Move {
             PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
                 // HACK: Clone so that attack boards are not automatically updated for now
                 // TODO: Implement way to movegen withhout setting attack boards
-                let attack_board = *board.get_occupied_attack_bitboard(&color);
-                let attack_ray_board = *board.get_occupied_attack_ray_bitboard(&color);
+                let attack_board = *board.get_attacks(&color);
+                let check_ray_board = *board.get_check_rays(&color);
                 let moves = initial_piece.get_psuedo_legal_moves(&mut new, self.from);
-                let initial_attack_ray = BitBoard::from_square_vec(get_targets(moves));
+                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
 
-                *new.get_occupied_attack_bitboard_mut(&color) = attack_board ^ initial_attack_ray;
-                *new.get_occupied_attack_ray_bitboard_mut(&color) = attack_ray_board;
+                *new.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
+                *new.get_check_rays_mut(&color) = check_ray_board;
             }
             PieceType::King => {
-                *new.get_occupied_attack_ray_bitboard_mut(&color.opponent()) = EMPTY;
+                *new.get_check_rays_mut(&color.opponent()) = EMPTY;
             }
             _ => {}
         }
@@ -397,11 +397,11 @@ mod tests {
 
         assert_eq!(board.turn, Color::White);
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawn_bitboard),
+            looking_for.from.in_bitboard(&board.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.to.in_bitboard(&board.black_rook_bitboard),
+            looking_for.to.in_bitboard(&board.black_rooks),
             "Black rook not in position"
         );
         let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
@@ -415,15 +415,15 @@ mod tests {
 
         assert_eq!(after.turn, Color::Black);
         assert!(
-            Square::H8.in_bitboard(&after.white_queen_bitboard),
+            Square::H8.in_bitboard(&after.white_queens),
             "Expected white queen at H8 after promotion"
         );
         assert!(
-            !Square::H8.in_bitboard(&after.white_pawn_bitboard),
+            !Square::H8.in_bitboard(&after.white_pawns),
             "H8 incorrectly contains a white pawn after promotion"
         );
         assert!(
-            !looking_for.from.in_bitboard(&after.white_pawn_bitboard),
+            !looking_for.from.in_bitboard(&after.white_pawns),
             "Original white pawn still present at {} after promotion",
             looking_for.from
         );
@@ -453,20 +453,20 @@ mod tests {
         let after_knight = knight.make(&original);
         let after_king = king.make(&original);
 
-        assert!(pawn.from.in_bitboard(&original.white_pawn_bitboard));
-        assert!(!pawn.to.in_bitboard(&original.white_pawn_bitboard));
-        assert!(!pawn.from.in_bitboard(&after_pawn.white_pawn_bitboard));
-        assert!(pawn.to.in_bitboard(&after_pawn.white_pawn_bitboard));
+        assert!(pawn.from.in_bitboard(&original.white_pawns));
+        assert!(!pawn.to.in_bitboard(&original.white_pawns));
+        assert!(!pawn.from.in_bitboard(&after_pawn.white_pawns));
+        assert!(pawn.to.in_bitboard(&after_pawn.white_pawns));
 
-        assert!(knight.from.in_bitboard(&original.black_knight_bitboard));
-        assert!(!knight.to.in_bitboard(&original.black_knight_bitboard));
-        assert!(!knight.from.in_bitboard(&after_knight.black_knight_bitboard));
-        assert!(knight.to.in_bitboard(&after_knight.black_knight_bitboard));
+        assert!(knight.from.in_bitboard(&original.black_knights));
+        assert!(!knight.to.in_bitboard(&original.black_knights));
+        assert!(!knight.from.in_bitboard(&after_knight.black_knights));
+        assert!(knight.to.in_bitboard(&after_knight.black_knights));
 
-        assert!(king.from.in_bitboard(&original.white_king_bitboard));
-        assert!(!king.to.in_bitboard(&original.white_king_bitboard));
-        assert!(!king.from.in_bitboard(&after_king.white_king_bitboard));
-        assert!(king.to.in_bitboard(&after_king.white_king_bitboard));
+        assert!(king.from.in_bitboard(&original.white_kings));
+        assert!(!king.to.in_bitboard(&original.white_kings));
+        assert!(!king.from.in_bitboard(&after_king.white_kings));
+        assert!(king.to.in_bitboard(&after_king.white_kings));
     }
 
     #[test]
@@ -477,8 +477,8 @@ mod tests {
             to: Square::C5,
             variant: MoveType::Normal,
         };
-        let white_pawns_before = board.white_pawn_bitboard.popcnt();
-        let black_pawns_before = board.black_pawn_bitboard.popcnt();
+        let white_pawns_before = board.white_pawns.popcnt();
+        let black_pawns_before = board.black_pawns.popcnt();
 
         for m in [
             &Move {
@@ -496,23 +496,23 @@ mod tests {
             board = m.make(&board);
         }
 
-        let white_pawns_after = board.white_pawn_bitboard.popcnt();
-        let black_pawns_after = board.black_pawn_bitboard.popcnt();
+        let white_pawns_after = board.white_pawns.popcnt();
+        let black_pawns_after = board.black_pawns.popcnt();
 
         assert!(
-            !Square::B2.in_bitboard(&board.white_pawn_bitboard),
+            !Square::B2.in_bitboard(&board.white_pawns),
             "White never moved"
         );
         assert!(
-            !capture.from.in_bitboard(&board.white_pawn_bitboard),
+            !capture.from.in_bitboard(&board.white_pawns),
             "White moved but failed to capture"
         );
         assert!(
-            !capture.to.in_bitboard(&board.black_pawn_bitboard),
+            !capture.to.in_bitboard(&board.black_pawns),
             "The black pawn is still standing"
         );
         assert!(
-            capture.to.in_bitboard(&board.white_pawn_bitboard),
+            capture.to.in_bitboard(&board.white_pawns),
             "White isn't in the correct position"
         );
 
@@ -571,7 +571,7 @@ mod tests {
 
         assert_eq!(board.turn, Color::Black);
         assert!(
-            capture.from.in_bitboard(&board.black_pawn_bitboard),
+            capture.from.in_bitboard(&board.black_pawns),
             "Black pawn not in position"
         );
 
@@ -582,11 +582,11 @@ mod tests {
             format_pretty_list(&moves)
         );
 
-        let white_pawns_before = board.white_pawn_bitboard.popcnt();
-        let black_pawns_before = board.black_pawn_bitboard.popcnt();
+        let white_pawns_before = board.white_pawns.popcnt();
+        let black_pawns_before = board.black_pawns.popcnt();
         board = capture.make(&board);
-        let white_pawns_after = board.white_pawn_bitboard.popcnt();
-        let black_pawns_after = board.black_pawn_bitboard.popcnt();
+        let white_pawns_after = board.white_pawns.popcnt();
+        let black_pawns_after = board.black_pawns.popcnt();
 
         assert_eq!(black_pawns_before, black_pawns_after);
         assert_eq!(

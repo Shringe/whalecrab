@@ -264,10 +264,7 @@ mod tests {
         let mut board = Board::from_fen(starting).unwrap();
         let result = board.find_best_move().expect("No moves found");
         let new = result.0.make(&board);
-        assert_eq!(
-            board.black_queen_bitboard.popcnt(),
-            new.black_queen_bitboard.popcnt()
-        );
+        assert_eq!(board.black_queens.popcnt(), new.black_queens.popcnt());
     }
 
     #[test]
@@ -289,10 +286,7 @@ mod tests {
         let mut board = Board::from_fen(starting).unwrap();
         let result = board.get_engine_move_minimax(2).expect("No moves found");
         let new = result.make(&board);
-        assert_eq!(
-            board.black_queen_bitboard.popcnt(),
-            new.black_queen_bitboard.popcnt()
-        );
+        assert_eq!(board.black_queens.popcnt(), new.black_queens.popcnt());
     }
 
     #[test]

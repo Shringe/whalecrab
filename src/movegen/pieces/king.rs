@@ -20,7 +20,7 @@ impl Piece for King {
 
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
-                let attack_bitboard = board.get_occupied_attack_bitboard_mut(&color);
+                let attack_bitboard = board.get_attacks_mut(&color);
                 attack_bitboard.set(sq);
 
                 if let Some(piece) = board.determine_color(sq) {
