@@ -169,55 +169,47 @@ impl Game {
             }
         };
 
-        match &m.variant {
-            MoveType::Castle(side) => {
-                match &color {
-                    Color::White => {
-                        self.position.castling_rights.white_queenside = false;
-                        self.position.castling_rights.white_kingside = false;
+        if let MoveType::Castle(side) = &m.variant {
+            match &color {
+                Color::White => {
+                    self.position.castling_rights.white_queenside = false;
+                    self.position.castling_rights.white_kingside = false;
 
-                        match side {
-                            CastleSide::Queenside => {
-                                self.position.white_kings ^=
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                                self.position.white_rooks ^=
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            }
-                            CastleSide::Kingside => {
-                                self.position.white_kings ^=
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                                self.position.white_rooks ^=
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                            }
+                    match side {
+                        CastleSide::Queenside => {
+                            self.position.white_kings ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                            self.position.white_rooks ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
                         }
-                    }
-
-                    Color::Black => {
-                        self.position.castling_rights.black_queenside = false;
-                        self.position.castling_rights.black_kingside = false;
-
-                        match side {
-                            CastleSide::Queenside => {
-                                self.position.black_kings ^=
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                                self.position.black_rooks ^=
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            }
-                            CastleSide::Kingside => {
-                                self.position.black_kings ^=
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                                self.position.black_rooks ^=
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                            }
+                        CastleSide::Kingside => {
+                            self.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                            self.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
                         }
                     }
                 }
 
-                self.next_turn();
-                return;
+                Color::Black => {
+                    self.position.castling_rights.black_queenside = false;
+                    self.position.castling_rights.black_kingside = false;
+
+                    match side {
+                        CastleSide::Queenside => {
+                            self.position.black_kings ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                            self.position.black_rooks ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                        }
+                        CastleSide::Kingside => {
+                            self.position.black_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                            self.position.black_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                        }
+                    }
+                }
             }
 
-            _ => {}
+            self.next_turn();
+            return;
         }
 
         // Update attack bitboards
