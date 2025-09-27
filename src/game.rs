@@ -4,22 +4,35 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, Color, PieceType},
     castling::{self, CastleSide},
-    movegen::moves::{get_targets, Move, MoveType},
+    movegen::{
+        moves::{get_targets, Move, MoveType},
+        pieces::{
+            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
+            rook::Rook,
+        },
+    },
     square::Square,
 };
 
 pub struct Game {
-    pub position: Board,
-    pub transposition_table: HashMap<u64, f32>,
-    pub white_num_checks: u8,
-    pub black_num_checks: u8,
-    pub white_attacks: BitBoard,
-    pub black_attacks: BitBoard,
-    pub white_check_rays: BitBoard,
-    pub black_check_rays: BitBoard,
-    pub white_occupied: BitBoard,
-    pub black_occupied: BitBoard,
-    pub occupied: BitBoard,
+    position: Board,
+    white_pieces: BitBoard,
+    black_pieces: BitBoard,
+    pieces: BitBoard,
+    pawns: BitBoard,
+    knights: BitBoard,
+    bishops: BitBoard,
+    rooks: BitBoard,
+    queens: BitBoard,
+    kings: BitBoard,
+
+    transposition_table: HashMap<u64, f32>,
+    white_num_checks: u8,
+    black_num_checks: u8,
+    white_attacks: BitBoard,
+    black_attacks: BitBoard,
+    white_check_rays: BitBoard,
+    black_check_rays: BitBoard,
 }
 
 impl Default for Game {
@@ -32,6 +45,7 @@ impl Game {
     color_field_getters!(attacks, BitBoard);
     color_field_getters!(check_rays, BitBoard);
     color_field_getters!(num_checks, u8);
+    // color_field_getters!(pieces, BitBoard);
 
     pub fn from_position(position: Board) -> Self {
         let mut game = Self {
@@ -43,9 +57,15 @@ impl Game {
             black_attacks: EMPTY,
             white_check_rays: EMPTY,
             black_check_rays: EMPTY,
-            white_occupied: EMPTY,
-            black_occupied: EMPTY,
-            occupied: EMPTY,
+            white_pieces: EMPTY,
+            black_pieces: EMPTY,
+            pieces: EMPTY,
+            pawns: EMPTY,
+            knights: EMPTY,
+            bishops: EMPTY,
+            rooks: EMPTY,
+            queens: EMPTY,
+            kings: EMPTY,
         };
 
         game.refresh();
@@ -55,23 +75,36 @@ impl Game {
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
     fn refresh(&mut self) {
-        let white_occupied = self.position.white_pawns
+        let white_pieces = self.position.white_pawns
             | self.position.white_knights
             | self.position.white_bishops
             | self.position.white_rooks
             | self.position.white_queens
             | self.position.white_kings;
-        let black_occupied = self.position.black_pawns
+        let black_pieces = self.position.black_pawns
             | self.position.black_knights
             | self.position.black_bishops
             | self.position.black_rooks
             | self.position.black_queens
             | self.position.black_kings;
-        let occupied = white_occupied | black_occupied;
+        let pieces = white_pieces | black_pieces;
 
-        self.white_occupied = white_occupied;
-        self.black_occupied = black_occupied;
-        self.occupied = occupied;
+        let pawns = self.position.white_pawns | self.position.black_pawns;
+        let knights = self.position.white_knights | self.position.black_knights;
+        let bishops = self.position.white_bishops | self.position.black_bishops;
+        let rooks = self.position.white_rooks | self.position.black_rooks;
+        let queens = self.position.white_queens | self.position.black_queens;
+        let kings = self.position.white_kings | self.position.black_kings;
+
+        self.pawns = pawns;
+        self.knights = knights;
+        self.bishops = bishops;
+        self.rooks = rooks;
+        self.queens = queens;
+        self.kings = kings;
+        self.white_pieces = white_pieces;
+        self.black_pieces = black_pieces;
+        self.pieces = pieces;
     }
 
     /// Finishes a turn
@@ -105,9 +138,9 @@ impl Game {
 
     /// Determines color of standing piece
     pub fn determine_color(&self, sqbb: &BitBoard) -> Option<Color> {
-        if self.white_occupied.has_square(sqbb) {
+        if self.white_pieces.has_square(sqbb) {
             Some(Color::White)
-        } else if self.black_occupied.has_square(sqbb) {
+        } else if self.black_pieces.has_square(sqbb) {
             Some(Color::Black)
         } else {
             None
@@ -116,7 +149,7 @@ impl Game {
 
     /// Determines type and color of standing piece
     pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, Color)> {
-        if self.white_occupied.has_square(sqbb) {
+        if self.white_pieces.has_square(sqbb) {
             if self.position.white_pawns.has_square(sqbb) {
                 Some((PieceType::Pawn, Color::White))
             } else if self.position.white_knights.has_square(sqbb) {
@@ -132,7 +165,7 @@ impl Game {
             } else {
                 unreachable!("The white occupied bitboard has a square that no white pieces have!")
             }
-        } else if self.black_occupied.has_square(sqbb) {
+        } else if self.black_pieces.has_square(sqbb) {
             if self.position.black_pawns.has_square(sqbb) {
                 Some((PieceType::Pawn, Color::Black))
             } else if self.position.black_knights.has_square(sqbb) {
@@ -288,39 +321,36 @@ impl Game {
         }
     }
 
-    // /// Generates all psuedo legal moves for the current player
-    // pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
-    //     let mut moves = Vec::new();
-    //     let occupied = match self.turn {
-    //         Color::White => self.occupied_white_bitboard(),
-    //         Color::Black => self.occupied_black_bitboard(),
-    //     };
-    //
-    //     for sq in occupied {
-    //         if let Some(piece) = self.determine_piece(sq) {
-    //             moves.extend(piece.get_psuedo_legal_moves(self, sq))
-    //         }
-    //     }
-    //
-    //     moves
-    // }
-    //
-    // /// Generates all legal moves for the current player
-    // pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-    //     let mut moves = Vec::new();
-    //     let occupied = match self.turn {
-    //         Color::White => self.occupied_white_bitboard(),
-    //         Color::Black => self.occupied_black_bitboard(),
-    //     };
-    //
-    //     for sq in occupied {
-    //         if let Some(piece) = self.determine_piece(sq) {
-    //             moves.extend(piece.get_legal_moves(self, sq))
-    //         }
-    //     }
-    //
-    //     moves
-    // }
+    /// Generates all legal moves for the current player
+    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
+        let mut moves = Vec::new();
+
+        for sq in self.pawns {
+            moves.extend(Pawn(sq).legal_moves(&mut self.position))
+        }
+
+        for sq in self.knights {
+            moves.extend(Knight(sq).legal_moves(&mut self.position))
+        }
+
+        for sq in self.bishops {
+            moves.extend(Bishop(sq).legal_moves(&mut self.position))
+        }
+
+        for sq in self.rooks {
+            moves.extend(Rook(sq).legal_moves(&mut self.position))
+        }
+
+        for sq in self.queens {
+            moves.extend(Queen(sq).legal_moves(&mut self.position))
+        }
+
+        for sq in self.kings {
+            moves.extend(King(sq).legal_moves(&mut self.position))
+        }
+
+        moves
+    }
 }
 
 #[cfg(test)]
