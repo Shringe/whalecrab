@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, Color, PieceType},
+    castling::{self, CastleSide},
+    movegen::moves::{get_targets, Move, MoveType},
+    square::Square,
 };
 
 pub struct Game {
@@ -67,23 +70,31 @@ impl Game {
         self.occupied = occupied;
     }
 
-    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &Color) -> BitBoard {
+    /// Finishes a turn
+    fn next_turn(&mut self) {
+        self.position.turn = self.position.turn.opponent();
+        self.position.en_passant_target = None;
+        self.refresh();
+    }
+
+    /// Gets the bitboard of a colored piece
+    pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &Color) -> &mut BitBoard {
         match color {
             Color::White => match piece {
-                PieceType::Pawn => self.position.white_pawns,
-                PieceType::Knight => self.position.white_knights,
-                PieceType::Bishop => self.position.white_bishops,
-                PieceType::Rook => self.position.white_rooks,
-                PieceType::Queen => self.position.white_queens,
-                PieceType::King => self.position.white_kings,
+                PieceType::Pawn => &mut self.position.white_pawns,
+                PieceType::Knight => &mut self.position.white_knights,
+                PieceType::Bishop => &mut self.position.white_bishops,
+                PieceType::Rook => &mut self.position.white_rooks,
+                PieceType::Queen => &mut self.position.white_queens,
+                PieceType::King => &mut self.position.white_kings,
             },
             Color::Black => match piece {
-                PieceType::Pawn => self.position.black_pawns,
-                PieceType::Knight => self.position.black_knights,
-                PieceType::Bishop => self.position.black_bishops,
-                PieceType::Rook => self.position.black_rooks,
-                PieceType::Queen => self.position.black_queens,
-                PieceType::King => self.position.black_kings,
+                PieceType::Pawn => &mut self.position.black_pawns,
+                PieceType::Knight => &mut self.position.black_knights,
+                PieceType::Bishop => &mut self.position.black_bishops,
+                PieceType::Rook => &mut self.position.black_rooks,
+                PieceType::Queen => &mut self.position.black_queens,
+                PieceType::King => &mut self.position.black_kings,
             },
         }
     }
@@ -135,6 +146,149 @@ impl Game {
             }
         } else {
             None
+        }
+    }
+
+    /// Plays a move on the board, updating the position and engine values
+    pub fn make(&mut self, m: &Move) {
+        let frombb = BitBoard::from_square(m.from);
+        let tobb = BitBoard::from_square(m.to);
+        let (piece, color) = self
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+        let (enemy_piece, enemy_color) = match self.determine_piece(&tobb) {
+            Some((piece, color)) => (Some(piece), color),
+            None => {
+                let enemy_piece = if m.variant == MoveType::CaptureEnPassant {
+                    Some(PieceType::Pawn)
+                } else {
+                    None
+                };
+
+                (enemy_piece, color.opponent())
+            }
+        };
+
+        match &m.variant {
+            MoveType::Castle(side) => {
+                match &color {
+                    Color::White => {
+                        self.position.castling_rights.white_queenside = false;
+                        self.position.castling_rights.white_kingside = false;
+
+                        match side {
+                            CastleSide::Queenside => {
+                                self.position.white_kings ^=
+                                    castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                                self.position.white_rooks ^=
+                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            }
+                            CastleSide::Kingside => {
+                                self.position.white_kings ^=
+                                    castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                                self.position.white_rooks ^=
+                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            }
+                        }
+                    }
+
+                    Color::Black => {
+                        self.position.castling_rights.black_queenside = false;
+                        self.position.castling_rights.black_kingside = false;
+
+                        match side {
+                            CastleSide::Queenside => {
+                                self.position.black_kings ^=
+                                    castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                                self.position.black_rooks ^=
+                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            }
+                            CastleSide::Kingside => {
+                                self.position.black_kings ^=
+                                    castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                                self.position.black_rooks ^=
+                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            }
+                        }
+                    }
+                }
+
+                self.next_turn();
+                return;
+            }
+
+            _ => {}
+        }
+
+        // Update attack bitboards
+        match piece {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
+                // HACK: Clone so that attack boards are not automatically updated for now
+                // TODO: Implement way to movegen withhout setting attack boards
+                let attack_board = *self.get_attacks(&color);
+                let check_ray_board = *self.get_check_rays(&color);
+                let moves = piece.get_psuedo_legal_moves(&mut self.position, m.from);
+                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
+
+                *self.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
+                *self.get_check_rays_mut(&color) = check_ray_board;
+            }
+            PieceType::King => {
+                *self.get_check_rays_mut(&enemy_color) = EMPTY;
+            }
+            _ => {}
+        }
+
+        // Remove the piece from its original square
+        let pieces = self.get_pieces_mut(&piece, &color);
+        *pieces ^= frombb;
+
+        // Add the piece to the new square
+        if let MoveType::Promotion(piece) = &m.variant {
+            let pieces = self.get_pieces_mut(piece, &color);
+            *pieces |= tobb;
+        } else {
+            *pieces |= tobb;
+        }
+
+        // Capture if available
+        if let Some(piece) = &enemy_piece {
+            let pieces = self.get_pieces_mut(piece, &enemy_color);
+            if m.variant == MoveType::CaptureEnPassant {
+                let en_passant_bb = BitBoard::from_square(
+                    m.to.backward(&color)
+                        .expect("Can't find pawn in front of en_passant_target!"),
+                );
+                *pieces ^= en_passant_bb;
+            } else {
+                *pieces ^= tobb;
+            }
+        }
+
+        // Revoke castling rights if something moves on a critical square
+        let mut revoke_rights = |square: &Square| match square {
+            &Square::E1 => {
+                self.position.castling_rights.white_kingside = false;
+                self.position.castling_rights.white_queenside = false;
+            }
+            &Square::A1 => self.position.castling_rights.white_queenside = false,
+            &Square::H1 => self.position.castling_rights.white_kingside = false,
+            &Square::E8 => {
+                self.position.castling_rights.black_kingside = false;
+                self.position.castling_rights.black_queenside = false;
+            }
+            &Square::A8 => self.position.castling_rights.black_queenside = false,
+            &Square::H8 => self.position.castling_rights.black_kingside = false,
+            _ => {}
+        };
+
+        revoke_rights(&m.from);
+        revoke_rights(&m.to);
+
+        // Set en passant rules and switch turn
+        self.next_turn();
+        if m.variant == MoveType::CreateEnPassant {
+            self.position.en_passant_target = m.to.backward(&color);
         }
     }
 
