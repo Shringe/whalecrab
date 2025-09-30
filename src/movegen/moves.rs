@@ -76,6 +76,8 @@ impl Move {
                                 }
                             } else if once.get_rank() == color.final_rank() {
                                 MoveType::Promotion(PieceType::Queen)
+                            } else if let Some(enemy) = board.determine_piece(to) {
+                                MoveType::Capture(enemy)
                             } else {
                                 MoveType::Normal
                             }

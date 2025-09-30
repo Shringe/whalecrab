@@ -88,7 +88,7 @@ impl Piece for Pawn {
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
-                            variant: MoveType::Normal,
+                            variant: MoveType::Capture(piece),
                         });
                     }
                 }
@@ -119,7 +119,7 @@ mod tests {
         let looking_for = Move {
             from: Square::H4,
             to: Square::G5,
-            variant: MoveType::Normal,
+            variant: MoveType::Capture(PieceType::Pawn),
         };
         for m in [
             Move {
@@ -159,7 +159,7 @@ mod tests {
         let looking_for = Move {
             from: Square::D5,
             to: Square::C4,
-            variant: MoveType::Normal,
+            variant: MoveType::Capture(PieceType::Pawn),
         };
 
         for m in [
