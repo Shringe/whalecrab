@@ -1,7 +1,8 @@
 use crate::{
-    bitboard::EMPTY,
+    bitboard::{BitBoard, EMPTY},
     board::{Board, Color},
     castling,
+    game::Game,
     movegen::moves::{Move, MoveType},
     square::{Square, ALL_DIRECTIONS},
 };
@@ -12,18 +13,19 @@ pub struct King(pub Square);
 
 impl Piece for King {
     /// King safety not considered.
-    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
-        let color = board.turn;
+        let color = game.position.turn;
         let enemy = color.opponent();
 
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
-                let attack_bitboard = board.get_attacks_mut(&color);
+                let sqbb = BitBoard::from_square(sq);
+                let attack_bitboard = game.get_attacks_mut(&color);
                 attack_bitboard.set(sq);
 
-                if let Some(piece) = board.determine_color(sq) {
+                if let Some(piece) = game.determine_color(&sqbb) {
                     if piece == enemy {
                         moves.push(Move {
                             from: self.0,
@@ -41,16 +43,16 @@ impl Piece for King {
             }
         }
 
-        let occupied = board.occupied_bitboard();
-        match board.turn {
+        let occupied = &game.occupied;
+        match game.position.turn {
             Color::White => {
-                if board.castling_rights.white_queenside
+                if game.position.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(castling::WHITE_CASTLES_QUEENSIDE);
                 }
 
-                if board.castling_rights.white_kingside
+                if game.position.castling_rights.white_kingside
                     && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(castling::WHITE_CASTLES_KINGSIDE);
@@ -58,13 +60,13 @@ impl Piece for King {
             }
 
             Color::Black => {
-                if board.castling_rights.black_queenside
+                if game.position.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(castling::BLACK_CASTLES_QUEENSIDE);
                 }
 
-                if board.castling_rights.black_kingside
+                if game.position.castling_rights.black_kingside
                     && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(castling::BLACK_CASTLES_KINGSIDE);
@@ -86,41 +88,44 @@ mod tests {
 
     #[test]
     fn white_sees_castling_kingside() {
-        let mut board =
+        let mut game = Game::from_position(
             Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
-                .unwrap();
-        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&mut board);
+                .unwrap(),
+        );
+        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, &castling::WHITE_CASTLES_KINGSIDE);
         shouldnt_generate(&moves, &castling::WHITE_CASTLES_QUEENSIDE);
     }
 
     #[test]
     fn black_sees_castling_queenside() {
-        let mut board =
+        let mut game = Game::from_position(
             Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
-                .unwrap();
-        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&mut board);
+                .unwrap(),
+        );
+        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
         shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
     }
 
     #[test]
     fn double_bongcloud() {
-        let mut board = Board::default();
+        let mut game = Game::default();
 
         for m in [
-            Move::new(Square::E2, Square::E4, &board),
-            Move::new(Square::E7, Square::E5, &board),
-            Move::new(Square::E1, Square::E2, &board),
-            Move::new(Square::E8, Square::E7, &board),
-            Move::new(Square::E2, Square::D3, &board),
-            Move::new(Square::E7, Square::F6, &board),
+            Move::new(Square::E2, Square::E4, &game.position),
+            Move::new(Square::E7, Square::E5, &game.position),
+            Move::new(Square::E1, Square::E2, &game.position),
+            Move::new(Square::E8, Square::E7, &game.position),
+            Move::new(Square::E2, Square::D3, &game.position),
+            Move::new(Square::E7, Square::F6, &game.position),
         ] {
-            if board.determine_piece(m.from) == Some(PieceType::King) {
-                let moves = King(m.from).psuedo_legal_moves(&mut board);
+            let frombb = BitBoard::from_square(m.from);
+            if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
+                let moves = King(m.from).psuedo_legal_moves(&mut game);
                 should_generate(&moves, &m);
             }
-            board = m.make(&board);
+            game.play(&m);
         }
     }
 }

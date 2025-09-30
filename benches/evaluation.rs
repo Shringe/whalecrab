@@ -1,15 +1,15 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use whalecrab::board::Board;
+use whalecrab::game::Game;
 
 fn bench(c: &mut Criterion) {
-    let mut board = Board::default();
+    let mut game = Game::default();
     c.bench_function("Engine against self", |b| {
         b.iter(|| {
-            board = if let Some(m) = board.get_engine_move_minimax(3) {
-                m.make(&board)
+            if let Some(m) = game.get_engine_move_minimax(3) {
+                game.play(&m);
             } else {
                 // Reset the board if no moves to play
-                Board::default()
+                game = Game::default();
             }
         })
     });

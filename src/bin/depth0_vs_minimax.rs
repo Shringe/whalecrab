@@ -1,12 +1,12 @@
-use whalecrab::board::{Board, Color};
+use whalecrab::{board::Color, game::Game};
 
 fn main() {
-    let mut board = Board::default();
+    let mut game = Game::default();
 
     for _ in 0..40 {
-        let m = match board.turn {
+        let m = match game.position.turn {
             Color::White => {
-                if let Some(sm) = board.find_best_move() {
+                if let Some(sm) = game.find_best_move() {
                     sm.0
                 } else {
                     println!("White has no more moves!");
@@ -14,7 +14,7 @@ fn main() {
                 }
             }
             Color::Black => {
-                if let Some(m) = board.get_engine_move_minimax(3) {
+                if let Some(m) = game.get_engine_move_minimax(3) {
                     m
                 } else {
                     println!("Black has no more moves!");
@@ -23,11 +23,11 @@ fn main() {
             }
         };
 
-        println!("{:?}, Chose to play: {}", board.turn, m);
-        board = m.make(&board);
+        println!("{:?}, Chose to play: {}", game.position.turn, m);
+        game.play(&m);
     }
 
     println!("=========================");
-    println!("Final score: {}", board.grade_position());
-    println!("Final fen: {}", board.to_fen());
+    println!("Final score: {}", game.grade_position());
+    println!("Final fen: {}", game.position.to_fen());
 }

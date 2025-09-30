@@ -4,35 +4,30 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, Color, PieceType},
     castling::{self, CastleSide},
-    movegen::{
-        moves::{get_targets, Move, MoveType},
-        pieces::{
-            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
-            rook::Rook,
-        },
-    },
+    movegen::moves::{get_targets, Move, MoveType},
     square::Square,
 };
 
+#[derive(Clone)]
 pub struct Game {
-    position: Board,
-    white_pieces: BitBoard,
-    black_pieces: BitBoard,
-    pieces: BitBoard,
-    pawns: BitBoard,
-    knights: BitBoard,
-    bishops: BitBoard,
-    rooks: BitBoard,
-    queens: BitBoard,
-    kings: BitBoard,
+    pub position: Board,
+    pub white_occupied: BitBoard,
+    pub black_occupied: BitBoard,
+    pub occupied: BitBoard,
+    pub pawns: BitBoard,
+    pub knights: BitBoard,
+    pub bishops: BitBoard,
+    pub rooks: BitBoard,
+    pub queens: BitBoard,
+    pub kings: BitBoard,
 
-    transposition_table: HashMap<u64, f32>,
-    white_num_checks: u8,
-    black_num_checks: u8,
-    white_attacks: BitBoard,
-    black_attacks: BitBoard,
-    white_check_rays: BitBoard,
-    black_check_rays: BitBoard,
+    pub transposition_table: HashMap<u64, f32>,
+    pub white_num_checks: u8,
+    pub black_num_checks: u8,
+    pub white_attacks: BitBoard,
+    pub black_attacks: BitBoard,
+    pub white_check_rays: BitBoard,
+    pub black_check_rays: BitBoard,
 }
 
 impl Default for Game {
@@ -45,7 +40,7 @@ impl Game {
     color_field_getters!(attacks, BitBoard);
     color_field_getters!(check_rays, BitBoard);
     color_field_getters!(num_checks, u8);
-    // color_field_getters!(pieces, BitBoard);
+    color_field_getters!(occupied, BitBoard);
 
     pub fn from_position(position: Board) -> Self {
         let mut game = Self {
@@ -57,9 +52,9 @@ impl Game {
             black_attacks: EMPTY,
             white_check_rays: EMPTY,
             black_check_rays: EMPTY,
-            white_pieces: EMPTY,
-            black_pieces: EMPTY,
-            pieces: EMPTY,
+            white_occupied: EMPTY,
+            black_occupied: EMPTY,
+            occupied: EMPTY,
             pawns: EMPTY,
             knights: EMPTY,
             bishops: EMPTY,
@@ -102,9 +97,9 @@ impl Game {
         self.rooks = rooks;
         self.queens = queens;
         self.kings = kings;
-        self.white_pieces = white_pieces;
-        self.black_pieces = black_pieces;
-        self.pieces = pieces;
+        self.white_occupied = white_pieces;
+        self.black_occupied = black_pieces;
+        self.occupied = pieces;
     }
 
     /// Finishes a turn
@@ -138,9 +133,9 @@ impl Game {
 
     /// Determines color of standing piece
     pub fn determine_color(&self, sqbb: &BitBoard) -> Option<Color> {
-        if self.white_pieces.has_square(sqbb) {
+        if self.white_occupied.has_square(sqbb) {
             Some(Color::White)
-        } else if self.black_pieces.has_square(sqbb) {
+        } else if self.black_occupied.has_square(sqbb) {
             Some(Color::Black)
         } else {
             None
@@ -149,7 +144,7 @@ impl Game {
 
     /// Determines type and color of standing piece
     pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, Color)> {
-        if self.white_pieces.has_square(sqbb) {
+        if self.white_occupied.has_square(sqbb) {
             if self.position.white_pawns.has_square(sqbb) {
                 Some((PieceType::Pawn, Color::White))
             } else if self.position.white_knights.has_square(sqbb) {
@@ -165,7 +160,7 @@ impl Game {
             } else {
                 unreachable!("The white occupied bitboard has a square that no white pieces have!")
             }
-        } else if self.black_pieces.has_square(sqbb) {
+        } else if self.black_occupied.has_square(sqbb) {
             if self.position.black_pawns.has_square(sqbb) {
                 Some((PieceType::Pawn, Color::Black))
             } else if self.position.black_knights.has_square(sqbb) {
@@ -256,7 +251,7 @@ impl Game {
                 // TODO: Implement way to movegen withhout setting attack boards
                 let attack_board = *self.get_attacks(&color);
                 let check_ray_board = *self.get_check_rays(&color);
-                let moves = piece.get_psuedo_legal_moves(&mut self.position, m.from);
+                let moves = piece.get_psuedo_legal_moves(self, m.from);
                 let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
 
                 *self.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
@@ -321,32 +316,31 @@ impl Game {
         }
     }
 
+    /// Generates all psuedo legal moves for the current player
+    pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let occupied = self.get_occupied(&self.position.turn);
+
+        for sq in *occupied {
+            let sqbb = BitBoard::from_square(sq);
+            if let Some((piece, _)) = self.determine_piece(&sqbb) {
+                moves.extend(piece.get_psuedo_legal_moves(self, sq))
+            }
+        }
+
+        moves
+    }
+
     /// Generates all legal moves for the current player
     pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
+        let occupied = self.get_occupied(&self.position.turn);
 
-        for sq in self.pawns {
-            moves.extend(Pawn(sq).legal_moves(&mut self.position))
-        }
-
-        for sq in self.knights {
-            moves.extend(Knight(sq).legal_moves(&mut self.position))
-        }
-
-        for sq in self.bishops {
-            moves.extend(Bishop(sq).legal_moves(&mut self.position))
-        }
-
-        for sq in self.rooks {
-            moves.extend(Rook(sq).legal_moves(&mut self.position))
-        }
-
-        for sq in self.queens {
-            moves.extend(Queen(sq).legal_moves(&mut self.position))
-        }
-
-        for sq in self.kings {
-            moves.extend(King(sq).legal_moves(&mut self.position))
+        for sq in *occupied {
+            let sqbb = BitBoard::from_square(sq);
+            if let Some((piece, _)) = self.determine_piece(&sqbb) {
+                moves.extend(piece.get_legal_moves(self, sq))
+            }
         }
 
         moves
@@ -420,7 +414,7 @@ mod tests {
         let to_play = &WHITE_CASTLES_QUEENSIDE;
         let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game.position);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, to_play);
 
         game.play(to_play);
@@ -434,7 +428,7 @@ mod tests {
         let to_play = &BLACK_CASTLES_KINGSIDE;
         let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game.position);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, to_play);
 
         game.play(to_play);
@@ -504,7 +498,7 @@ mod tests {
             looking_for.to.in_bitboard(&game.position.black_rooks),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game.position);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
@@ -686,7 +680,7 @@ mod tests {
             "Black pawn not in position"
         );
 
-        let moves = Pawn(capture.from).psuedo_legal_moves(&mut game.position);
+        let moves = Pawn(capture.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",

@@ -1,9 +1,8 @@
 use std::fmt;
 
 use crate::{
-    bitboard::{BitBoard, EMPTY},
     board::{Board, Color, PieceType},
-    castling::{self, CastleSide},
+    castling::CastleSide,
     square::Square,
 };
 
@@ -90,171 +89,6 @@ impl Move {
             },
         }
     }
-
-    /// Clones the bitboard, makes the move (captures if needed), and returns the new board. Does
-    /// not verify legality at all.
-    pub fn make(&self, board: &Board) -> Board {
-        let mut new = board.clone();
-        let color = board.determine_color(self.from).unwrap_or_else(|| {
-            panic!(
-                "Coudn't determine piece color while trying to make move: {}",
-                self
-            )
-        });
-
-        match &self.variant {
-            MoveType::Castle(side) => {
-                match &color {
-                    Color::White => {
-                        new.castling_rights.white_queenside = false;
-                        new.castling_rights.white_kingside = false;
-
-                        match side {
-                            CastleSide::Queenside => {
-                                new.white_kings =
-                                    new.white_kings ^ castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.white_rooks =
-                                    new.white_rooks ^ castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            }
-                            CastleSide::Kingside => {
-                                new.white_kings =
-                                    new.white_kings ^ castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                                new.white_rooks =
-                                    new.white_rooks ^ castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                            }
-                        }
-                    }
-
-                    Color::Black => {
-                        new.castling_rights.black_queenside = false;
-                        new.castling_rights.black_kingside = false;
-
-                        match side {
-                            CastleSide::Queenside => {
-                                new.black_kings =
-                                    new.black_kings ^ castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                                new.black_rooks =
-                                    new.black_rooks ^ castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
-                            }
-
-                            CastleSide::Kingside => {
-                                new.black_kings =
-                                    new.black_kings ^ castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                                new.black_rooks =
-                                    new.black_rooks ^ castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
-                            }
-                        }
-                    }
-                }
-
-                new.next_turn();
-                return new;
-            }
-
-            _ => {}
-        }
-
-        let (initial_piece, target_piece) = match &self.variant {
-            MoveType::Promotion(promotion_piece) => (PieceType::Pawn, promotion_piece.clone()),
-            _ => {
-                let piece = board.determine_piece(self.from).unwrap_or_else(|| {
-                    panic!("Tried to make move {}, but there is no piece to move", self)
-                });
-
-                (piece.clone(), piece.clone())
-            }
-        };
-
-        let initial = BitBoard::from_square(self.from);
-        let target = BitBoard::from_square(self.to);
-
-        // Update attack bitboards
-        match initial_piece {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
-                // HACK: Clone so that attack boards are not automatically updated for now
-                // TODO: Implement way to movegen withhout setting attack boards
-                let attack_board = *board.get_attacks(&color);
-                let check_ray_board = *board.get_check_rays(&color);
-                let moves = initial_piece.get_psuedo_legal_moves(&mut new, self.from);
-                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
-
-                *new.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
-                *new.get_check_rays_mut(&color) = check_ray_board;
-            }
-            PieceType::King => {
-                *new.get_check_rays_mut(&color.opponent()) = EMPTY;
-            }
-            _ => {}
-        }
-
-        // Remove the piece from its original square
-        new.set_occupied_bitboard(
-            &initial_piece,
-            &color,
-            new.get_occupied_bitboard(&initial_piece, &color) ^ initial,
-        );
-
-        // Add the (possibly different) piece to the target square
-        new.set_occupied_bitboard(
-            &target_piece,
-            &color,
-            new.get_occupied_bitboard(&target_piece, &color) | target,
-        );
-
-        // Capture any potential piece on the target square
-        if let Some(capture) = self.get_capture(board) {
-            let enemy_color = color.opponent();
-            new.set_occupied_bitboard(
-                &capture.0,
-                &enemy_color,
-                BitBoard::from_square(capture.1)
-                    ^ board.get_occupied_bitboard(&capture.0, &enemy_color),
-            );
-        }
-
-        // Revoke castling rights if something moves on a critical square
-        let mut revoke_rights = |square: &Square| match square {
-            &Square::E1 => {
-                new.castling_rights.white_kingside = false;
-                new.castling_rights.white_queenside = false;
-            }
-            &Square::A1 => new.castling_rights.white_queenside = false,
-            &Square::H1 => new.castling_rights.white_kingside = false,
-            &Square::E8 => {
-                new.castling_rights.black_kingside = false;
-                new.castling_rights.black_queenside = false;
-            }
-            &Square::A8 => new.castling_rights.black_queenside = false,
-            &Square::H8 => new.castling_rights.black_kingside = false,
-            _ => {}
-        };
-
-        revoke_rights(&self.from);
-        revoke_rights(&self.to);
-
-        // Set en passant rules and switch turn
-        new.next_turn();
-        if self.variant == MoveType::CreateEnPassant {
-            new.en_passant_target = self.to.backward(&color);
-        }
-
-        new
-    }
-
-    /// Gets the square and piece type of the captured piece
-    pub fn get_capture(&self, board: &Board) -> Option<Capture> {
-        let target = if self.variant == MoveType::CaptureEnPassant {
-            self.to
-                .backward(&board.turn)
-                .expect("Invalid en passant square")
-        } else {
-            self.to
-        };
-
-        board
-            .determine_piece(target)
-            .map(|piece| Capture(piece, target))
-    }
 }
 
 #[cfg(test)]
@@ -262,6 +96,7 @@ mod tests {
     use super::*;
     use crate::board::Color;
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
+    use crate::game::Game;
     use crate::movegen::pieces::king::King;
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::Piece;
@@ -269,46 +104,48 @@ mod tests {
 
     #[test]
     fn both_lose_castling_rights_by_moving_kings() {
-        let mut board =
+        let mut game = Game::from_position(
             Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap();
+                .unwrap(),
+        );
 
-        let black_moves = Move::new(Square::E8, Square::D7, &board);
-        board = black_moves.make(&board);
+        let black_moves = Move::new(Square::E8, Square::D7, &game.position);
+        game.play(&black_moves);
 
         compare_to_fen(
-            &board,
+            &game.position,
             "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 1 2",
         );
 
-        let white_moves = Move::new(Square::E1, Square::E2, &board);
-        board = white_moves.make(&board);
+        let white_moves = Move::new(Square::E1, Square::E2, &game.position);
+        game.play(&white_moves);
 
         compare_to_fen(
-            &board,
+            &game.position,
             "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP1KPPP/RNBQ1B1R b - - 2 2",
         );
     }
 
     #[test]
     fn both_lose_castling_rights_by_moving_rooks() {
-        let mut board =
+        let mut game = Game::from_position(
             Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap();
+                .unwrap(),
+        );
 
-        let black_moves = Move::new(Square::H8, Square::G8, &board);
-        board = black_moves.make(&board);
+        let black_moves = Move::new(Square::H8, Square::G8, &game.position);
+        game.play(&black_moves);
 
         compare_to_fen(
-            &board,
+            &game.position,
             "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQq - 1 2",
         );
 
-        let white_moves = Move::new(Square::H1, Square::G1, &board);
-        board = white_moves.make(&board);
+        let white_moves = Move::new(Square::H1, Square::G1, &game.position);
+        game.play(&white_moves);
 
         compare_to_fen(
-            &board,
+            &game.position,
             "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKBR1 b Qq - 2 2",
         );
     }
@@ -318,13 +155,13 @@ mod tests {
         let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/R3K1NR w KQkq - 6 7";
         let fen_after = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
         let to_play = &WHITE_CASTLES_QUEENSIDE;
-        let mut board = Board::from_fen(fen_before).unwrap();
+        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, to_play);
 
-        board = to_play.make(&board);
-        compare_to_fen(&board, fen_after);
+        game.play(to_play);
+        compare_to_fen(&game.position, fen_after);
     }
 
     #[test]
@@ -332,18 +169,18 @@ mod tests {
         let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
         let fen_after = "rn3rk1/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR w - - 8 8";
         let to_play = &BLACK_CASTLES_KINGSIDE;
-        let mut board = Board::from_fen(fen_before).unwrap();
+        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut board);
+        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, to_play);
 
-        board = to_play.make(&board);
-        compare_to_fen(&board, fen_after);
+        game.play(to_play);
+        compare_to_fen(&game.position, fen_after);
     }
 
     #[test]
     fn white_pawn_promotes_to_queen() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let looking_for = Move {
             from: Square::G7,
             to: Square::H8,
@@ -392,38 +229,38 @@ mod tests {
                 variant: MoveType::CreateEnPassant,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        assert_eq!(board.turn, Color::White);
+        assert_eq!(game.position.turn, Color::White);
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawns),
+            looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.to.in_bitboard(&board.black_rooks),
+            looking_for.to.in_bitboard(&game.position.black_rooks),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
             moves
         );
 
-        let after = looking_for.make(&board);
+        game.play(&looking_for);
 
-        assert_eq!(after.turn, Color::Black);
+        assert_eq!(game.position.turn, Color::Black);
         assert!(
-            Square::H8.in_bitboard(&after.white_queens),
+            Square::H8.in_bitboard(&game.position.white_queens),
             "Expected white queen at H8 after promotion"
         );
         assert!(
-            !Square::H8.in_bitboard(&after.white_pawns),
+            !Square::H8.in_bitboard(&game.position.white_pawns),
             "H8 incorrectly contains a white pawn after promotion"
         );
         assert!(
-            !looking_for.from.in_bitboard(&after.white_pawns),
+            !looking_for.from.in_bitboard(&game.position.white_pawns),
             "Original white pawn still present at {} after promotion",
             looking_for.from
         );
@@ -431,7 +268,8 @@ mod tests {
 
     #[test]
     fn make_moves() {
-        let original = Board::default();
+        let mut game = Game::default();
+        let original = game.position.clone();
 
         let pawn = Move {
             from: Square::C2,
@@ -449,9 +287,16 @@ mod tests {
             variant: MoveType::Normal,
         };
 
-        let after_pawn = pawn.make(&original);
-        let after_knight = knight.make(&original);
-        let after_king = king.make(&original);
+        game.play(&pawn);
+        let after_pawn = game.position.clone();
+
+        game = Game::default();
+        game.play(&knight);
+        let after_knight = game.position.clone();
+
+        game = Game::default();
+        game.play(&king);
+        let after_king = game.position.clone();
 
         assert!(pawn.from.in_bitboard(&original.white_pawns));
         assert!(!pawn.to.in_bitboard(&original.white_pawns));
@@ -471,14 +316,14 @@ mod tests {
 
     #[test]
     fn white_pawn_captures_black_pawn() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let capture = Move {
             from: Square::B4,
             to: Square::C5,
             variant: MoveType::Normal,
         };
-        let white_pawns_before = board.white_pawns.popcnt();
-        let black_pawns_before = board.black_pawns.popcnt();
+        let white_pawns_before = game.position.white_pawns.popcnt();
+        let black_pawns_before = game.position.black_pawns.popcnt();
 
         for m in [
             &Move {
@@ -493,26 +338,26 @@ mod tests {
             },
             &capture,
         ] {
-            board = m.make(&board);
+            game.play(m);
         }
 
-        let white_pawns_after = board.white_pawns.popcnt();
-        let black_pawns_after = board.black_pawns.popcnt();
+        let white_pawns_after = game.position.white_pawns.popcnt();
+        let black_pawns_after = game.position.black_pawns.popcnt();
 
         assert!(
-            !Square::B2.in_bitboard(&board.white_pawns),
+            !Square::B2.in_bitboard(&game.position.white_pawns),
             "White never moved"
         );
         assert!(
-            !capture.from.in_bitboard(&board.white_pawns),
+            !capture.from.in_bitboard(&game.position.white_pawns),
             "White moved but failed to capture"
         );
         assert!(
-            !capture.to.in_bitboard(&board.black_pawns),
+            !capture.to.in_bitboard(&game.position.black_pawns),
             "The black pawn is still standing"
         );
         assert!(
-            capture.to.in_bitboard(&board.white_pawns),
+            capture.to.in_bitboard(&game.position.white_pawns),
             "White isn't in the correct position"
         );
 
@@ -533,7 +378,7 @@ mod tests {
 
     #[test]
     fn black_pawn_takes_en_passant_target() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let capture = Move {
             from: Square::B4,
             to: Square::C3,
@@ -566,27 +411,27 @@ mod tests {
                 variant: MoveType::CreateEnPassant,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        assert_eq!(board.turn, Color::Black);
+        assert_eq!(game.position.turn, Color::Black);
         assert!(
-            capture.from.in_bitboard(&board.black_pawns),
+            capture.from.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"
         );
 
-        let moves = Pawn(capture.from).psuedo_legal_moves(&mut board);
+        let moves = Pawn(capture.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",
             format_pretty_list(&moves)
         );
 
-        let white_pawns_before = board.white_pawns.popcnt();
-        let black_pawns_before = board.black_pawns.popcnt();
-        board = capture.make(&board);
-        let white_pawns_after = board.white_pawns.popcnt();
-        let black_pawns_after = board.black_pawns.popcnt();
+        let white_pawns_before = game.position.white_pawns.popcnt();
+        let black_pawns_before = game.position.black_pawns.popcnt();
+        game.play(&capture);
+        let white_pawns_after = game.position.white_pawns.popcnt();
+        let black_pawns_after = game.position.black_pawns.popcnt();
 
         assert_eq!(black_pawns_before, black_pawns_after);
         assert_eq!(

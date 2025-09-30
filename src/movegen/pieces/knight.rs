@@ -1,5 +1,7 @@
 use crate::{
-    board::{Board, PieceType},
+    bitboard::BitBoard,
+    board::PieceType,
+    game::Game,
     movegen::moves::{Move, MoveType},
     square::Square,
 };
@@ -9,28 +11,29 @@ use super::piece::Piece;
 pub struct Knight(pub Square);
 
 impl Piece for Knight {
-    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
         let rank = self.0.get_rank();
         let file = self.0.get_file();
 
-        let color = board.turn;
-        let enemy = color.opponent();
-        let friendly = Some(color);
+        let friendly = game.position.turn;
+        let enemy = friendly.opponent();
 
         if rank.to_index() < 5 {
             let north = Square::make_square(rank.up().up(), file);
             for t in [north.left(), north.right()].into_iter().flatten() {
-                let attack_bitboard = board.get_attacks_mut(&color);
+                let tbb = BitBoard::from_square(t);
+                let attack_bitboard = game.get_attacks_mut(&friendly);
                 attack_bitboard.set(t);
 
-                if board.determine_color(t) == friendly {
-                    continue;
-                }
-
-                if board.determine_piece(t) == Some(PieceType::King) {
-                    let num_checks = board.get_num_checks_mut(&enemy);
-                    *num_checks += 1;
+                if let Some((piece, color)) = game.determine_piece(&tbb) {
+                    if color == friendly {
+                        continue;
+                    }
+                    if piece == PieceType::King {
+                        let num_checks = game.get_num_checks_mut(&enemy);
+                        *num_checks += 1;
+                    }
                 }
 
                 moves.push(Move {
@@ -44,16 +47,18 @@ impl Piece for Knight {
         if rank.to_index() > 1 {
             let south = Square::make_square(rank.down().down(), file);
             for t in [south.left(), south.right()].into_iter().flatten() {
-                let attack_bitboard = board.get_attacks_mut(&color);
+                let tbb = BitBoard::from_square(t);
+                let attack_bitboard = game.get_attacks_mut(&friendly);
                 attack_bitboard.set(t);
 
-                if board.determine_color(t) == friendly {
-                    continue;
-                }
-
-                if board.determine_piece(t) == Some(PieceType::King) {
-                    let num_checks = board.get_num_checks_mut(&enemy);
-                    *num_checks += 1;
+                if let Some((piece, color)) = game.determine_piece(&tbb) {
+                    if color == friendly {
+                        continue;
+                    }
+                    if piece == PieceType::King {
+                        let num_checks = game.get_num_checks_mut(&enemy);
+                        *num_checks += 1;
+                    }
                 }
 
                 moves.push(Move {
@@ -67,16 +72,18 @@ impl Piece for Knight {
         if file.to_index() < 5 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
-                let attack_bitboard = board.get_attacks_mut(&color);
+                let tbb = BitBoard::from_square(t);
+                let attack_bitboard = game.get_attacks_mut(&friendly);
                 attack_bitboard.set(t);
 
-                if board.determine_color(t) == friendly {
-                    continue;
-                }
-
-                if board.determine_piece(t) == Some(PieceType::King) {
-                    let num_checks = board.get_num_checks_mut(&enemy);
-                    *num_checks += 1;
+                if let Some((piece, color)) = game.determine_piece(&tbb) {
+                    if color == friendly {
+                        continue;
+                    }
+                    if piece == PieceType::King {
+                        let num_checks = game.get_num_checks_mut(&enemy);
+                        *num_checks += 1;
+                    }
                 }
 
                 moves.push(Move {
@@ -90,16 +97,18 @@ impl Piece for Knight {
         if file.to_index() > 1 {
             let west = Square::make_square(rank, file.left().left());
             for t in [west.up(), west.down()].into_iter().flatten() {
-                let attack_bitboard = board.get_attacks_mut(&color);
+                let tbb = BitBoard::from_square(t);
+                let attack_bitboard = game.get_attacks_mut(&friendly);
                 attack_bitboard.set(t);
 
-                if board.determine_color(t) == friendly {
-                    continue;
-                }
-
-                if board.determine_piece(t) == Some(PieceType::King) {
-                    let num_checks = board.get_num_checks_mut(&enemy);
-                    *num_checks += 1;
+                if let Some((piece, color)) = game.determine_piece(&tbb) {
+                    if color == friendly {
+                        continue;
+                    }
+                    if piece == PieceType::King {
+                        let num_checks = game.get_num_checks_mut(&enemy);
+                        *num_checks += 1;
+                    }
                 }
 
                 moves.push(Move {
@@ -122,7 +131,7 @@ mod tests {
 
     #[test]
     fn knight_cant_capture_en_passant() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let avoid = Move {
             from: Square::E5,
             to: Square::C6,
@@ -150,16 +159,16 @@ mod tests {
                 variant: MoveType::CreateEnPassant,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        let moves = Knight(avoid.from).psuedo_legal_moves(&mut board);
+        let moves = Knight(avoid.from).psuedo_legal_moves(&mut game);
         assert!(!moves.contains(&avoid));
     }
 
     #[test]
     fn white_knight_captures_black_pawn() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let capture = Move {
             from: Square::F5,
             to: Square::E7,
@@ -198,8 +207,8 @@ mod tests {
                 variant: MoveType::Normal,
             },
         ] {
-            if board.turn == Color::White {
-                let moves = Knight(m.from).psuedo_legal_moves(&mut board);
+            if game.position.turn == Color::White {
+                let moves = Knight(m.from).psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -207,10 +216,10 @@ mod tests {
                     format_pretty_list(&moves)
                 )
             }
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        let moves = Knight(capture.from).psuedo_legal_moves(&mut board);
+        let moves = Knight(capture.from).psuedo_legal_moves(&mut game);
 
         assert!(
             moves.contains(&capture),
@@ -218,11 +227,11 @@ mod tests {
             format_pretty_list(&moves)
         );
 
-        let knight_before = board.white_knights.popcnt();
-        let pawns_before = board.black_pawns.popcnt();
-        let board = capture.make(&board);
-        let knight_after = board.white_knights.popcnt();
-        let pawns_after = board.black_pawns.popcnt();
+        let knight_before = game.position.white_knights.popcnt();
+        let pawns_before = game.position.black_pawns.popcnt();
+        game.play(&capture);
+        let knight_after = game.position.white_knights.popcnt();
+        let pawns_after = game.position.black_pawns.popcnt();
 
         assert_eq!(knight_before, knight_after, "We lost the knight!");
         assert_eq!(
