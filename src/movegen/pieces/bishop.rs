@@ -31,17 +31,18 @@ mod tests {
     fn white_bishop_can_move_around() {
         let mut game = Game::default();
 
-        for m in [
-            Move::new(Square::G2, Square::G4, &game.position),
-            Move::new(Square::G8, Square::F6, &game.position),
-            Move::new(Square::F1, Square::G2, &game.position),
-            Move::new(Square::F6, Square::G8, &game.position),
-            Move::new(Square::G2, Square::C6, &game.position),
-            Move::new(Square::G8, Square::F6, &game.position),
-            Move::new(Square::C6, Square::G2, &game.position),
-            Move::new(Square::F6, Square::G8, &game.position),
-            Move::new(Square::G2, Square::F1, &game.position),
+        for (from, to) in [
+            (Square::G2, Square::G4),
+            (Square::G8, Square::F6),
+            (Square::F1, Square::G2),
+            (Square::F6, Square::G8),
+            (Square::G2, Square::C6),
+            (Square::G8, Square::F6),
+            (Square::C6, Square::G2),
+            (Square::F6, Square::G8),
+            (Square::G2, Square::F1),
         ] {
+            let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::Bishop, _))) {
                 let moves = Bishop(m.from).psuedo_legal_moves(&mut game);
