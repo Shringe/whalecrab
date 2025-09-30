@@ -1,6 +1,6 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::{Board, Color},
+    board::Color,
     castling,
     game::Game,
     movegen::moves::{Move, MoveType},
@@ -82,7 +82,7 @@ impl Piece for King {
 mod tests {
     use super::*;
     use crate::{
-        board::PieceType,
+        board::{Board, PieceType},
         test_utils::{should_generate, shouldnt_generate},
     };
 

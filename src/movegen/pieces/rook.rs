@@ -1,5 +1,4 @@
 use crate::{
-    board::Board,
     game::Game,
     movegen::moves::Move,
     square::{Direction, Square},
@@ -24,11 +23,7 @@ impl Piece for Rook {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        bitboard::BitBoard,
-        board::{self, PieceType},
-        test_utils::format_pretty_list,
-    };
+    use crate::{bitboard::BitBoard, board::PieceType, test_utils::format_pretty_list};
 
     use super::*;
 
