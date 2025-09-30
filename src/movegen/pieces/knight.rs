@@ -19,103 +19,60 @@ impl Piece for Knight {
         let friendly = game.position.turn;
         let enemy = friendly.opponent();
 
-        if rank.to_index() < 5 {
-            let north = Square::make_square(rank.up().up(), file);
-            for t in [north.left(), north.right()].into_iter().flatten() {
-                let tbb = BitBoard::from_square(t);
-                let attack_bitboard = game.get_attacks_mut(&friendly);
-                attack_bitboard.set(t);
+        let mut process_target = |t: Square| {
+            let tbb = BitBoard::from_square(t);
+            let attack_bitboard = game.get_attacks_mut(&friendly);
+            attack_bitboard.set(t);
 
-                if let Some((piece, color)) = game.determine_piece(&tbb) {
-                    if color == friendly {
-                        continue;
-                    }
-                    if piece == PieceType::King {
-                        let num_checks = game.get_num_checks_mut(&enemy);
-                        *num_checks += 1;
-                    }
+            if let Some((piece, color)) = game.determine_piece(&tbb) {
+                if color == friendly {
+                    return;
+                }
+
+                if piece == PieceType::King {
+                    let num_checks = game.get_num_checks_mut(&enemy);
+                    *num_checks += 1;
                 }
 
                 moves.push(Move {
                     from: self.0,
                     to: t,
+                    variant: MoveType::Capture(piece),
+                });
+            } else {
+                moves.push(Move {
+                    from: self.0,
+                    to: t,
                     variant: MoveType::Normal,
                 });
+            }
+        };
+
+        if rank.to_index() < 5 {
+            let north = Square::make_square(rank.up().up(), file);
+            for t in [north.left(), north.right()].into_iter().flatten() {
+                process_target(t);
             }
         }
 
         if rank.to_index() > 1 {
             let south = Square::make_square(rank.down().down(), file);
             for t in [south.left(), south.right()].into_iter().flatten() {
-                let tbb = BitBoard::from_square(t);
-                let attack_bitboard = game.get_attacks_mut(&friendly);
-                attack_bitboard.set(t);
-
-                if let Some((piece, color)) = game.determine_piece(&tbb) {
-                    if color == friendly {
-                        continue;
-                    }
-                    if piece == PieceType::King {
-                        let num_checks = game.get_num_checks_mut(&enemy);
-                        *num_checks += 1;
-                    }
-                }
-
-                moves.push(Move {
-                    from: self.0,
-                    to: t,
-                    variant: MoveType::Normal,
-                });
+                process_target(t);
             }
         }
 
         if file.to_index() < 5 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
-                let tbb = BitBoard::from_square(t);
-                let attack_bitboard = game.get_attacks_mut(&friendly);
-                attack_bitboard.set(t);
-
-                if let Some((piece, color)) = game.determine_piece(&tbb) {
-                    if color == friendly {
-                        continue;
-                    }
-                    if piece == PieceType::King {
-                        let num_checks = game.get_num_checks_mut(&enemy);
-                        *num_checks += 1;
-                    }
-                }
-
-                moves.push(Move {
-                    from: self.0,
-                    to: t,
-                    variant: MoveType::Normal,
-                });
+                process_target(t);
             }
         }
 
         if file.to_index() > 1 {
             let west = Square::make_square(rank, file.left().left());
             for t in [west.up(), west.down()].into_iter().flatten() {
-                let tbb = BitBoard::from_square(t);
-                let attack_bitboard = game.get_attacks_mut(&friendly);
-                attack_bitboard.set(t);
-
-                if let Some((piece, color)) = game.determine_piece(&tbb) {
-                    if color == friendly {
-                        continue;
-                    }
-                    if piece == PieceType::King {
-                        let num_checks = game.get_num_checks_mut(&enemy);
-                        *num_checks += 1;
-                    }
-                }
-
-                moves.push(Move {
-                    from: self.0,
-                    to: t,
-                    variant: MoveType::Normal,
-                });
+                process_target(t);
             }
         }
 
@@ -172,7 +129,7 @@ mod tests {
         let capture = Move {
             from: Square::F5,
             to: Square::E7,
-            variant: MoveType::Normal,
+            variant: MoveType::Capture(PieceType::Pawn),
         };
 
         for m in [

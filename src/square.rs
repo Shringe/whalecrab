@@ -338,11 +338,20 @@ impl Square {
             let attack_bitboard = game.get_attacks_mut(&color);
             *attack_bitboard |= ray;
             for sq in ray {
-                moves.push(Move {
-                    from: *self,
-                    to: sq,
-                    variant: MoveType::Normal,
-                });
+                let sqbb = BitBoard::from_square(sq);
+                if let Some((enemy, _)) = game.determine_piece(&sqbb) {
+                    moves.push(Move {
+                        from: *self,
+                        to: sq,
+                        variant: MoveType::Capture(enemy),
+                    });
+                } else {
+                    moves.push(Move {
+                        from: *self,
+                        to: sq,
+                        variant: MoveType::Normal,
+                    });
+                }
             }
         }
 
