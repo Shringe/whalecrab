@@ -8,7 +8,8 @@ use crate::{
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum MoveType {
-    Normal, // Includes regular captures
+    Normal,
+    Capture(PieceType),
     CreateEnPassant,
     CaptureEnPassant,
     Promotion(PieceType),
@@ -60,7 +61,9 @@ impl Move {
                     MoveType::Castle(CastleSide::Kingside)
                 }
                 _ => {
-                    if board.determine_piece(from) == Some(PieceType::Pawn) {
+                    if let Some(enemy) = board.determine_piece(to) {
+                        MoveType::Capture(enemy)
+                    } else if board.determine_piece(from) == Some(PieceType::Pawn) {
                         let color = board.determine_color(from).unwrap();
                         if Some(to) == board.en_passant_target {
                             MoveType::CaptureEnPassant

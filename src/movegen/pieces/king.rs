@@ -112,14 +112,15 @@ mod tests {
     fn double_bongcloud() {
         let mut game = Game::default();
 
-        for m in [
-            Move::new(Square::E2, Square::E4, &game.position),
-            Move::new(Square::E7, Square::E5, &game.position),
-            Move::new(Square::E1, Square::E2, &game.position),
-            Move::new(Square::E8, Square::E7, &game.position),
-            Move::new(Square::E2, Square::D3, &game.position),
-            Move::new(Square::E7, Square::F6, &game.position),
+        for (from, to) in [
+            (Square::E2, Square::E4),
+            (Square::E7, Square::E5),
+            (Square::E1, Square::E2),
+            (Square::E8, Square::E7),
+            (Square::E2, Square::D3),
+            (Square::E7, Square::F6),
         ] {
+            let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
                 let moves = King(m.from).psuedo_legal_moves(&mut game);
