@@ -2,8 +2,9 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::CastlingRights,
     file::File,
+    game::Game,
     movegen::{
-        moves::{get_targets, Move},
+        moves::Move,
         pieces::{
             bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
             rook::Rook,
@@ -12,7 +13,7 @@ use crate::{
     rank::Rank,
     square::Square,
 };
-use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
+use std::{fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -58,25 +59,25 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_psuedo_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
+    pub fn get_psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
-            PieceType::Pawn => Pawn(square).psuedo_legal_moves(board),
-            PieceType::Knight => Knight(square).psuedo_legal_moves(board),
-            PieceType::Bishop => Bishop(square).psuedo_legal_moves(board),
-            PieceType::Rook => Rook(square).psuedo_legal_moves(board),
-            PieceType::Queen => Queen(square).psuedo_legal_moves(board),
-            PieceType::King => King(square).psuedo_legal_moves(board),
+            PieceType::Pawn => Pawn(square).psuedo_legal_moves(game),
+            PieceType::Knight => Knight(square).psuedo_legal_moves(game),
+            PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
+            PieceType::Rook => Rook(square).psuedo_legal_moves(game),
+            PieceType::Queen => Queen(square).psuedo_legal_moves(game),
+            PieceType::King => King(square).psuedo_legal_moves(game),
         }
     }
 
-    pub fn get_legal_moves(&self, board: &mut Board, square: Square) -> Vec<Move> {
+    pub fn get_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
-            PieceType::Pawn => Pawn(square).legal_moves(board),
-            PieceType::Knight => Knight(square).legal_moves(board),
-            PieceType::Bishop => Bishop(square).legal_moves(board),
-            PieceType::Rook => Rook(square).legal_moves(board),
-            PieceType::Queen => Queen(square).legal_moves(board),
-            PieceType::King => King(square).legal_moves(board),
+            PieceType::Pawn => Pawn(square).legal_moves(game),
+            PieceType::Knight => Knight(square).legal_moves(game),
+            PieceType::Bishop => Bishop(square).legal_moves(game),
+            PieceType::Rook => Rook(square).legal_moves(game),
+            PieceType::Queen => Queen(square).legal_moves(game),
+            PieceType::King => King(square).legal_moves(game),
         }
     }
 
@@ -128,21 +129,9 @@ pub struct Board {
     pub castling_rights: CastlingRights,
     pub en_passant_target: Option<Square>,
     pub turn: Color,
-
-    pub transposition_table: HashMap<u64, f32>,
-    pub white_attacks: BitBoard,
-    pub black_attacks: BitBoard,
-    pub white_check_rays: BitBoard,
-    pub black_check_rays: BitBoard,
-    pub white_num_checks: u8,
-    pub black_num_checks: u8,
 }
 
 impl Board {
-    color_field_getters!(attacks, BitBoard);
-    color_field_getters!(check_rays, BitBoard);
-    color_field_getters!(num_checks, u8);
-
     pub fn empty() -> Self {
         Self {
             white_pawns: EMPTY,
@@ -159,30 +148,10 @@ impl Board {
             black_queens: EMPTY,
             black_kings: EMPTY,
 
+            castling_rights: CastlingRights::empty(),
             en_passant_target: None,
             turn: Color::White,
-
-            castling_rights: CastlingRights::empty(),
-            transposition_table: HashMap::new(),
-            white_attacks: EMPTY,
-            black_attacks: EMPTY,
-            white_check_rays: EMPTY,
-            black_check_rays: EMPTY,
-            white_num_checks: 0,
-            black_num_checks: 0,
         }
-    }
-
-    /// Reinitializes context of the board such as populating attack bitboards
-    /// This does not usually need to be called
-    pub fn initialize(&mut self) {
-        // Populate player's attack bitboard
-        self.generate_all_psuedo_legal_moves();
-
-        // Populate enemy's attack bitboard
-        self.turn = self.turn.opponent();
-        self.generate_all_psuedo_legal_moves();
-        self.turn = self.turn.opponent();
     }
 
     /// Takes a fen string, parses and converts it into a board position.
@@ -460,48 +429,6 @@ impl Board {
         self.turn = self.turn.opponent();
         self.en_passant_target = None;
     }
-
-    /// Determines whether the opponent's king is in check
-    pub fn is_king_in_check(&mut self) -> bool {
-        let targets =
-            BitBoard::from_square_vec(get_targets(self.generate_all_psuedo_legal_moves()));
-        let king = self.get_occupied_bitboard(&PieceType::King, &self.turn.opponent());
-        king & targets != EMPTY
-    }
-
-    /// Generates all psuedo legal moves for the current player
-    pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let occupied = match self.turn {
-            Color::White => self.occupied_white_bitboard(),
-            Color::Black => self.occupied_black_bitboard(),
-        };
-
-        for sq in occupied {
-            if let Some(piece) = self.determine_piece(sq) {
-                moves.extend(piece.get_psuedo_legal_moves(self, sq))
-            }
-        }
-
-        moves
-    }
-
-    /// Generates all legal moves for the current player
-    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let occupied = match self.turn {
-            Color::White => self.occupied_white_bitboard(),
-            Color::Black => self.occupied_black_bitboard(),
-        };
-
-        for sq in occupied {
-            if let Some(piece) = self.determine_piece(sq) {
-                moves.extend(piece.get_legal_moves(self, sq))
-            }
-        }
-
-        moves
-    }
 }
 
 impl Default for Board {
@@ -521,17 +448,9 @@ impl Default for Board {
             black_queens: BitBoard::INITIAL_BLACK_QUEEN,
             black_kings: BitBoard::INITIAL_BLACK_KING,
 
+            castling_rights: CastlingRights::default(),
             en_passant_target: None,
             turn: Color::White,
-
-            castling_rights: CastlingRights::default(),
-            transposition_table: HashMap::default(),
-            white_attacks: EMPTY,
-            black_attacks: EMPTY,
-            white_check_rays: EMPTY,
-            black_check_rays: EMPTY,
-            white_num_checks: 0,
-            black_num_checks: 0,
         }
     }
 }
@@ -588,21 +507,7 @@ impl Hash for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::compare_to_fen;
-
-    #[test]
-    fn white_king_in_check() {
-        let white_in_check = "rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
-        let mut board = Board::from_fen(white_in_check).unwrap();
-        assert!(board.is_king_in_check())
-    }
-
-    #[test]
-    fn black_king_in_check() {
-        let black_in_check = "rnbqkb1r/ppp2ppp/5n2/1B1pp3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1";
-        let mut board = Board::from_fen(black_in_check).unwrap();
-        assert!(board.is_king_in_check())
-    }
+    use crate::{game::Game, test_utils::compare_to_fen};
 
     #[test]
     fn to_fen() {
@@ -619,19 +524,19 @@ mod tests {
 
     #[test]
     fn en_passant_fen() {
-        let mut board = Board::default();
+        let mut game = Game::default();
 
         for m in [
-            Move::new(Square::E2, Square::E4, &board),
-            Move::new(Square::D7, Square::D5, &board),
-            Move::new(Square::E4, Square::E5, &board),
-            Move::new(Square::F7, Square::F5, &board),
+            Move::new(Square::E2, Square::E4, &game.position),
+            Move::new(Square::D7, Square::D5, &game.position),
+            Move::new(Square::E4, Square::E5, &game.position),
+            Move::new(Square::F7, Square::F5, &game.position),
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
         let fen = "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3";
-        compare_to_fen(&board, fen);
+        compare_to_fen(&game.position, fen);
     }
 
     #[test]
@@ -642,20 +547,20 @@ mod tests {
 
     #[test]
     fn complex_fen() {
-        let mut board = Board::default();
+        let mut game = Game::default();
 
         for m in [
-            Move::new(Square::E2, Square::E4, &board),
-            Move::new(Square::D7, Square::D5, &board),
-            Move::new(Square::E4, Square::D5, &board),
-            Move::new(Square::B8, Square::C6, &board),
-            Move::new(Square::F1, Square::B5, &board),
+            Move::new(Square::E2, Square::E4, &game.position),
+            Move::new(Square::D7, Square::D5, &game.position),
+            Move::new(Square::E4, Square::D5, &game.position),
+            Move::new(Square::B8, Square::C6, &game.position),
+            Move::new(Square::F1, Square::B5, &game.position),
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
         let fen = "r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3";
-        compare_to_fen(&board, fen);
+        compare_to_fen(&game.position, fen);
     }
 
     #[test]

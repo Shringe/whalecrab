@@ -1,5 +1,5 @@
 use crate::{
-    board::Board,
+    game::Game,
     movegen::moves::Move,
     square::{Direction, Square},
 };
@@ -9,7 +9,7 @@ use super::piece::Piece;
 pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
-    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
         let directions = [
             Direction::NorthEast,
             Direction::SouthEast,
@@ -17,33 +17,34 @@ impl Piece for Bishop {
             Direction::SouthWest,
         ];
 
-        self.0.rays(&directions, board)
+        self.0.rays(&directions, game)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{board::PieceType, test_utils::format_pretty_list};
+    use crate::{bitboard::BitBoard, board::PieceType, test_utils::format_pretty_list};
 
     use super::*;
 
     #[test]
     fn white_bishop_can_move_around() {
-        let mut board = Board::default();
+        let mut game = Game::default();
 
         for m in [
-            Move::new(Square::G2, Square::G4, &board),
-            Move::new(Square::G8, Square::F6, &board),
-            Move::new(Square::F1, Square::G2, &board),
-            Move::new(Square::F6, Square::G8, &board),
-            Move::new(Square::G2, Square::C6, &board),
-            Move::new(Square::G8, Square::F6, &board),
-            Move::new(Square::C6, Square::G2, &board),
-            Move::new(Square::F6, Square::G8, &board),
-            Move::new(Square::G2, Square::F1, &board),
+            Move::new(Square::G2, Square::G4, &game.position),
+            Move::new(Square::G8, Square::F6, &game.position),
+            Move::new(Square::F1, Square::G2, &game.position),
+            Move::new(Square::F6, Square::G8, &game.position),
+            Move::new(Square::G2, Square::C6, &game.position),
+            Move::new(Square::G8, Square::F6, &game.position),
+            Move::new(Square::C6, Square::G2, &game.position),
+            Move::new(Square::F6, Square::G8, &game.position),
+            Move::new(Square::G2, Square::F1, &game.position),
         ] {
-            if board.determine_piece(m.from) == Some(PieceType::Bishop) {
-                let moves = Bishop(m.from).psuedo_legal_moves(&mut board);
+            let frombb = BitBoard::from_square(m.from);
+            if matches!(game.determine_piece(&frombb), Some((PieceType::Bishop, _))) {
+                let moves = Bishop(m.from).psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",
@@ -51,7 +52,7 @@ mod tests {
                     format_pretty_list(&moves)
                 );
             }
-            board = m.make(&board);
+            game.play(&m);
         }
     }
 }

@@ -2,8 +2,9 @@ use std::fmt::{self, Display};
 use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
-use crate::board::{Board, Color, PieceType};
+use crate::board::{Color, PieceType};
 use crate::file::File;
+use crate::game::Game;
 use crate::movegen::moves::{Move, MoveType};
 use crate::rank::Rank;
 
@@ -270,17 +271,18 @@ impl Square {
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
     /// Gives back a bitboard of attack squares, a bitboard of checking rays, and whether or not
     /// the enemy king is attacked
-    pub fn ray(&self, direction: &Direction, board: &Board) -> (BitBoard, BitBoard, bool) {
+    pub fn ray(&self, direction: &Direction, game: &Game) -> (BitBoard, BitBoard, bool) {
         let mut ray = EMPTY;
         let mut check_ray = EMPTY;
-        let enemy = board.turn.opponent();
+        let enemy = game.position.turn.opponent();
 
         let mut current = *self;
         let mut is_check = false;
         let mut is_check_ray = false;
         while let Some(forward) = current.walk(direction) {
-            if let Some(color) = board.determine_color(forward) {
-                let is_king = board.determine_piece(forward) == Some(PieceType::King);
+            let forwardbb = BitBoard::from_square(forward);
+            if let Some((piece, color)) = game.determine_piece(&forwardbb) {
+                let is_king = piece == PieceType::King;
                 let is_enemy = color == enemy;
                 if is_enemy {
                     ray.set(forward);
@@ -291,7 +293,9 @@ impl Square {
                         is_check_ray = true;
                     } else if let Some(extra) = forward.walk(direction) {
                         check_ray.set(extra);
-                        is_check_ray = board.determine_piece(extra) == Some(PieceType::King);
+                        let extrabb = BitBoard::from_square(extra);
+                        is_check_ray =
+                            matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
                     }
                 }
 
@@ -314,27 +318,24 @@ impl Square {
     }
 
     /// Generates moves for ray pieces. Also populates attack bitboards appropiately
-    pub fn rays(&self, directions: &[Direction], board: &mut Board) -> Vec<Move> {
+    pub fn rays(&self, directions: &[Direction], game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
-        let color = board.turn;
+        let color = game.position.turn;
         let enemy = color.opponent();
 
         for direction in directions {
-            let (ray, check_ray, is_check) = self.ray(direction, board);
+            let (ray, check_ray, is_check) = self.ray(direction, game);
 
             if check_ray != EMPTY {
-                match color {
-                    Color::White => board.white_check_rays |= check_ray,
-                    Color::Black => board.black_check_rays |= check_ray,
-                }
+                *game.get_check_rays_mut(&color) |= check_ray;
             }
 
             if is_check {
-                let num_checks = board.get_num_checks_mut(&enemy);
+                let num_checks = game.get_num_checks_mut(&enemy);
                 *num_checks += 1;
             }
 
-            let attack_bitboard = board.get_attacks_mut(&color);
+            let attack_bitboard = game.get_attacks_mut(&color);
             *attack_bitboard |= ray;
             for sq in ray {
                 moves.push(Move {

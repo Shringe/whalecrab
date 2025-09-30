@@ -1,6 +1,7 @@
 use crate::{
     bitboard::BitBoard,
-    board::{Board, Color, PieceType},
+    board::{Color, PieceType},
+    game::Game,
     movegen::moves::{Move, MoveType},
     square::Square,
 };
@@ -14,24 +15,23 @@ impl Piece for Pawn {
     /// En_Passant is considered
     /// Promotion is considered (only for queen)
     /// King safety not considered
-    fn psuedo_legal_moves(&self, board: &mut Board) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
-        let color = board
-            .determine_color(self.0)
-            .expect("Couldn't determine piece color!");
-        let enemy_color = &color.opponent();
+        let friendly = game.position.turn;
+        let enemy_color = friendly.opponent();
 
-        let initial = match color {
+        let initial = match friendly {
             Color::White => BitBoard::INITIAL_WHITE_PAWN,
             Color::Black => BitBoard::INITIAL_BLACK_PAWN,
         };
 
-        let final_rank = color.final_rank();
+        let final_rank = friendly.final_rank();
 
         // Advances
-        if let Some(once) = self.0.forward(&color) {
-            if board.determine_piece(once).is_none() {
+        if let Some(once) = self.0.forward(&friendly) {
+            let oncebb = BitBoard::from_square(once);
+            if game.determine_piece(&oncebb).is_none() {
                 if once.get_rank() == final_rank {
                     // TODO: Add promotion for pieces other than queen
                     moves.push(Move {
@@ -50,8 +50,9 @@ impl Piece for Pawn {
 
             // If on initial rank
             if self.0.in_bitboard(&initial) {
-                let twice = once.forward(&color).unwrap();
-                if board.determine_piece(twice).is_none() {
+                let twice = once.forward(&friendly).unwrap();
+                let twicebb = BitBoard::from_square(twice);
+                if game.determine_piece(&twicebb).is_none() {
                     moves.push(Move {
                         from: self.0,
                         to: twice,
@@ -63,14 +64,15 @@ impl Piece for Pawn {
 
         // Captures
         // TODO: Add promotion for pieces other than queen
-        for diagnol in [self.0.fleft(&color), self.0.fright(&color)]
+        for diagnol in [self.0.fleft(&friendly), self.0.fright(&friendly)]
             .into_iter()
             .flatten()
         {
-            let attack_bitboard = board.get_attacks_mut(&color);
+            let diagnolbb = BitBoard::from_square(diagnol);
+            let attack_bitboard = game.get_attacks_mut(&friendly);
             attack_bitboard.set(diagnol);
-            if let Some(enemy) = board.determine_color(diagnol) {
-                if enemy == *enemy_color {
+            if let Some((piece, enemy)) = game.determine_piece(&diagnolbb) {
+                if enemy == enemy_color {
                     if diagnol.get_rank() == final_rank {
                         moves.push(Move {
                             from: self.0,
@@ -78,8 +80,8 @@ impl Piece for Pawn {
                             variant: MoveType::Promotion(PieceType::Queen),
                         });
                     } else {
-                        if board.determine_piece(diagnol) == Some(PieceType::King) {
-                            let num_checks = board.get_num_checks_mut(&enemy);
+                        if piece == PieceType::King {
+                            let num_checks = game.get_num_checks_mut(&enemy);
                             *num_checks += 1;
                         }
 
@@ -90,7 +92,7 @@ impl Piece for Pawn {
                         });
                     }
                 }
-            } else if let Some(target) = board.en_passant_target {
+            } else if let Some(target) = game.position.en_passant_target {
                 if diagnol == target {
                     moves.push(Move {
                         from: self.0,
@@ -113,7 +115,7 @@ mod tests {
 
     #[test]
     fn white_pawn_sees_black_target() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let looking_for = Move {
             from: Square::H4,
             to: Square::G5,
@@ -131,19 +133,19 @@ mod tests {
                 variant: MoveType::Normal,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        assert_eq!(board.turn, Color::White);
+        assert_eq!(game.position.turn, Color::White);
         assert!(
-            looking_for.to.in_bitboard(&board.black_pawns),
+            looking_for.to.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"
         );
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawns),
+            looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -153,7 +155,7 @@ mod tests {
 
     #[test]
     fn black_pawn_sees_white_target() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let looking_for = Move {
             from: Square::D5,
             to: Square::C4,
@@ -177,19 +179,19 @@ mod tests {
                 variant: MoveType::Normal,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        assert_eq!(board.turn, Color::Black);
+        assert_eq!(game.position.turn, Color::Black);
         assert!(
-            looking_for.to.in_bitboard(&board.white_pawns),
+            looking_for.to.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.from.in_bitboard(&board.black_pawns),
+            looking_for.from.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -199,7 +201,7 @@ mod tests {
 
     #[test]
     fn white_pawn_sees_queen_promotion() {
-        let mut board = Board::default();
+        let mut game = Game::default();
         let looking_for = Move {
             from: Square::G7,
             to: Square::H8,
@@ -248,19 +250,19 @@ mod tests {
                 variant: MoveType::CreateEnPassant,
             },
         ] {
-            board = m.make(&board);
+            game.play(&m);
         }
 
-        assert_eq!(board.turn, Color::White);
+        assert_eq!(game.position.turn, Color::White);
         assert!(
-            looking_for.from.in_bitboard(&board.white_pawns),
+            looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
         );
         assert!(
-            looking_for.to.in_bitboard(&board.black_rooks),
+            looking_for.to.in_bitboard(&game.position.black_rooks),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut board);
+        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
