@@ -2,7 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::PieceType,
     game::Game,
-    movegen::moves::{get_targets, Move},
+    movegen::moves::{get_targets, Move, MoveType},
     square::Square,
 };
 
@@ -34,14 +34,13 @@ pub trait Piece {
 
             let num_checks = game.get_num_checks(&color);
             let is_moving_king = piece == PieceType::King;
-            // let is_capturing = m.get_capture(&game.position).is_some();
+            let is_capturing = matches!(m.variant, MoveType::Capture(_));
             let is_blocking = game.get_check_rays(&color.opponent()) & tobb != EMPTY;
 
             // Handle being in check
             match *num_checks {
                 1 => {
-                    // if !(is_moving_king || is_capturing || is_blocking) {
-                    if !(is_moving_king || is_blocking) {
+                    if !(is_moving_king || is_capturing || is_blocking) {
                         continue;
                     }
                 }

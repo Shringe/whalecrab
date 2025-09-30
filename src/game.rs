@@ -64,6 +64,13 @@ impl Game {
         };
 
         game.refresh();
+
+        // HACK: populating check and attacks boards
+        game.generate_all_psuedo_legal_moves();
+        game.position.turn = game.position.turn.opponent();
+        game.generate_all_psuedo_legal_moves();
+        game.position.turn = game.position.turn.opponent();
+
         game
     }
 

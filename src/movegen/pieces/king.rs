@@ -16,21 +16,21 @@ impl Piece for King {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
-        let color = game.position.turn;
-        let enemy = color.opponent();
+        let friendly = game.position.turn;
+        let enemy = friendly.opponent();
 
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
                 let sqbb = BitBoard::from_square(sq);
-                let attack_bitboard = game.get_attacks_mut(&color);
+                let attack_bitboard = game.get_attacks_mut(&friendly);
                 attack_bitboard.set(sq);
 
-                if let Some(piece) = game.determine_color(&sqbb) {
-                    if piece == enemy {
+                if let Some((piece, color)) = game.determine_piece(&sqbb) {
+                    if color == enemy {
                         moves.push(Move {
                             from: self.0,
                             to: sq,
-                            variant: MoveType::Normal,
+                            variant: MoveType::Capture(piece),
                         })
                     }
                 } else {
