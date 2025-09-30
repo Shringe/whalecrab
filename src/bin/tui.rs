@@ -9,6 +9,8 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
+use whalecrab::bitboard::BitBoard;
+use whalecrab::game::Game;
 use whalecrab::rank::Rank;
 use whalecrab::square::Square;
 use whalecrab::test_utils::format_pretty_list;
@@ -238,7 +240,7 @@ enum Focus {
 struct App {
     highlighted_square: Square,
     selected_square: Option<Square>,
-    board: Board,
+    game: Game,
     ascii: Ascii,
     potential_targets: Vec<Square>,
 
@@ -261,7 +263,7 @@ impl App {
         Self {
             highlighted_square: Square::A1,
             selected_square: None,
-            board: Board::default(),
+            game: Game::default(),
             ascii: Ascii::default(),
             potential_targets: Vec::new(),
 
@@ -324,7 +326,7 @@ impl App {
             KeyCode::Esc | KeyCode::Char('m') => self.focus = Focus::Board,
             KeyCode::Enter => match self.menu_focus {
                 MenuFocus::Start => {
-                    self.board = Board::default();
+                    self.game = Game::default();
                     self.focus = Focus::Board;
                 }
                 MenuFocus::Resume => self.focus = Focus::Board,
@@ -342,14 +344,14 @@ impl App {
 
     /// Refreshes the board after playing a move and starts the next move
     fn play_move(&mut self, m: &Move) {
-        self.board = m.make(&self.board);
-        self.score = self.board.grade_position();
-        self.fen.input = self.board.to_fen();
-        if let Some(sm) = self.board.find_best_move() {
+        self.game.play(&m);
+        self.score = self.game.grade_position();
+        self.fen.input = self.game.position.to_fen();
+        if let Some(sm) = self.game.find_best_move() {
             self.suggested = Some(sm.0)
         }
 
-        let player = match self.board.turn {
+        let player = match self.game.position.turn {
             board::Color::White => &self.player_white,
             board::Color::Black => &self.player_black,
         };
@@ -369,7 +371,7 @@ impl App {
                 let m = Move::new(
                     self.selected_square.unwrap(),
                     self.highlighted_square,
-                    &self.board,
+                    &self.game.position,
                 );
 
                 self.play_move(&m);
@@ -377,10 +379,11 @@ impl App {
         } else {
             self.select(new);
 
-            if let Some(piece) = self.board.determine_piece(new) {
-                if self.board.turn == self.board.determine_color(new).unwrap() {
+            let newbb = BitBoard::from_square(new);
+            if let Some((piece, color)) = self.game.determine_piece(&newbb) {
+                if self.game.position.turn == color {
                     self.potential_targets =
-                        get_targets(piece.get_legal_moves(&mut self.board, new));
+                        get_targets(piece.get_legal_moves(&mut self.game, new));
                 }
             }
         }
@@ -389,7 +392,7 @@ impl App {
     /// Plays the top engine move and then passes the turn to the next player
     fn play_engine_move(&mut self) {
         let m = self
-            .board
+            .game
             .get_engine_move_minimax(3)
             .expect("Tried to play engine move, but there was no move to play");
 
@@ -434,7 +437,7 @@ impl App {
 
             KeyCode::Esc => self.unselect(),
             KeyCode::Enter => {
-                let player = match self.board.turn {
+                let player = match self.game.position.turn {
                     board::Color::White => &self.player_white,
                     board::Color::Black => &self.player_black,
                 };
@@ -465,7 +468,7 @@ impl App {
                 KeyCode::Backspace => self.fen.delete_char(),
                 KeyCode::Enter => {
                     if let Some(valid) = Board::from_fen(&self.fen.input) {
-                        self.board = valid;
+                        self.game = Game::from_position(valid);
                     }
                 }
                 _ => {}
@@ -651,7 +654,8 @@ impl App {
         }
 
         if let Some(sq) = self.selected_square {
-            if let Some(piece) = self.board.determine_piece(sq) {
+            let sqbb = BitBoard::from_square(sq);
+            if let Some(piece) = self.game.determine_piece(&sqbb) {
                 debug_text.push_str(&format!(
                     "
 Selected Square info:
@@ -663,7 +667,7 @@ Selected Square info:
 ",
                     sq,
                     piece,
-                    self.board.determine_color(sq).unwrap(),
+                    self.game.determine_color(&sqbb).unwrap(),
                     format_pretty_list(&self.potential_targets)
                 ));
             }
@@ -699,11 +703,12 @@ Selected Square info:
                 // Get square index
                 let file = File::from_index(f);
                 let square_index = Square::make_square(rank, file);
+                let square_indexbb = BitBoard::from_square(square_index);
 
                 // Get ascii art
-                let ascii = if let Some(piece) = self.board.determine_piece(square_index) {
-                    self.ascii
-                        .get(&piece, &self.board.determine_color(square_index).unwrap())
+                let ascii = if let Some((piece, color)) = self.game.determine_piece(&square_indexbb)
+                {
+                    self.ascii.get(&piece, &color)
                 } else {
                     ""
                 };

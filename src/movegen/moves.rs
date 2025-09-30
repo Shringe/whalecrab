@@ -6,9 +6,6 @@ use crate::{
     square::Square,
 };
 
-/// Provides information of what to remove from the game after a piece gets captured
-pub struct Capture(PieceType, Square);
-
 #[derive(PartialEq, Debug, Clone)]
 pub enum MoveType {
     Normal, // Includes regular captures
