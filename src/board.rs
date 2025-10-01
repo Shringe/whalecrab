@@ -111,6 +111,15 @@ macro_rules! color_field_getters {
 pub(crate) use color_field_getters;
 
 #[derive(Clone)]
+pub enum State {
+    InProgress,
+    Checkmate,
+    Stalemate,
+    Timeout,
+    Repetition,
+}
+
+#[derive(Clone)]
 pub struct Board {
     pub white_pawns: BitBoard,
     pub white_knights: BitBoard,
@@ -129,6 +138,11 @@ pub struct Board {
     pub castling_rights: CastlingRights,
     pub en_passant_target: Option<Square>,
     pub turn: Color,
+
+    /// For fifty move rule
+    pub half_move_timeout: usize,
+    pub half_move_clock: usize,
+    pub state: State,
 }
 
 impl Board {
@@ -151,6 +165,10 @@ impl Board {
             castling_rights: CastlingRights::empty(),
             en_passant_target: None,
             turn: Color::White,
+
+            half_move_timeout: 0,
+            half_move_clock: 0,
+            state: State::InProgress,
         }
     }
 
@@ -451,6 +469,10 @@ impl Default for Board {
             castling_rights: CastlingRights::default(),
             en_passant_target: None,
             turn: Color::White,
+
+            half_move_timeout: 0,
+            half_move_clock: 0,
+            state: State::InProgress,
         }
     }
 }
