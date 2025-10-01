@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::{color_field_getters, Board, Color, PieceType},
+    board::{color_field_getters, Board, Color, PieceType, State},
     castling::{self, CastleSide},
     movegen::moves::{get_targets, Move, MoveType},
     square::Square,
@@ -110,9 +110,25 @@ impl Game {
     }
 
     /// Finishes a turn
-    fn next_turn(&mut self) {
+    fn next_turn(&mut self, last_move: &Move) {
+        if matches!(last_move.variant, MoveType::Capture(_))
+            || matches!(
+                self.determine_piece(&BitBoard::from_square(last_move.to)),
+                Some((PieceType::Pawn, _))
+            )
+        {
+            self.position.half_move_timeout = 0;
+        } else {
+            self.position.half_move_timeout += 1;
+        }
+
+        if self.position.half_move_timeout == 50 {
+            self.position.state = State::Timeout;
+        }
+
         self.position.turn = self.position.turn.opponent();
         self.position.en_passant_target = None;
+        self.position.half_move_clock += 1;
         self.refresh();
     }
 
@@ -247,7 +263,7 @@ impl Game {
                 }
             }
 
-            self.next_turn();
+            self.next_turn(&m);
             return;
         }
 
@@ -317,7 +333,7 @@ impl Game {
         revoke_rights(&m.to);
 
         // Set en passant rules and switch turn
-        self.next_turn();
+        self.next_turn(&m);
         if m.variant == MoveType::CreateEnPassant {
             self.position.en_passant_target = m.to.backward(&color);
         }
