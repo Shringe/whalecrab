@@ -137,7 +137,9 @@ impl Game {
 
         // Update position state
         self.position.turn = self.position.turn.opponent();
-        self.position.half_move_clock += 1;
+        if self.position.turn == Color::Black {
+            self.position.full_move_clock += 1;
+        }
         self.refresh();
 
         // Repetition

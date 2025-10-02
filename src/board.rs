@@ -140,7 +140,7 @@ pub struct Board {
     pub turn: Color,
 
     pub half_move_timeout: usize,
-    pub half_move_clock: usize,
+    pub full_move_clock: usize,
     pub state: State,
     pub seen_positions: HashMap<u64, u8>,
     pub hash: u64,
@@ -168,7 +168,7 @@ impl Board {
             turn: Color::White,
 
             half_move_timeout: 0,
-            half_move_clock: 0,
+            full_move_clock: 0,
             state: State::InProgress,
             seen_positions: HashMap::new(),
             hash: 0,
@@ -474,7 +474,7 @@ impl Default for Board {
             turn: Color::White,
 
             half_move_timeout: 0,
-            half_move_clock: 0,
+            full_move_clock: 0,
             state: State::InProgress,
             seen_positions: HashMap::new(),
             hash: 0,
