@@ -148,7 +148,7 @@ impl Game {
             .expect("Position should be hashed!")
             == 3
         {
-            self.position.state = State::Repetition;
+            self.position.state = dbg!(State::Repetition);
         }
 
         // Half move timeout
@@ -164,7 +164,7 @@ impl Game {
         }
 
         if self.position.half_move_timeout == 100 {
-            self.position.state = State::Timeout;
+            self.position.state = dbg!(State::Timeout);
         }
     }
 
@@ -405,9 +405,9 @@ impl Game {
 
         if moves.is_empty() {
             self.position.state = if *self.get_num_checks(&self.position.turn) > 0 {
-                State::Checkmate
+                dbg!(State::Checkmate)
             } else {
-                State::Stalemate
+                dbg!(State::Stalemate)
             }
         }
 
@@ -781,7 +781,53 @@ mod tests {
         }
 
         game.reinitialize();
+        game.generate_all_legal_moves();
         assert_eq!(game.position.turn, Color::White);
         assert_eq!(game.position.state, State::Checkmate);
+    }
+
+    #[test]
+    fn black_gets_stalmated() {
+        let fen = "4k3/4P3/5K2/8/8/8/8/8 w - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let to_play = Move::new(Square::F6, Square::E6, &game.position);
+
+        assert_eq!(game.position.state, State::InProgress);
+        should_generate(&game.generate_all_legal_moves(), &to_play);
+        game.play(&to_play);
+        game.reinitialize();
+        game.generate_all_legal_moves();
+        assert_eq!(game.position.turn, Color::Black);
+        assert_eq!(game.position.state, State::Stalemate);
+    }
+
+    #[test]
+    fn draw_fifty_move_rule() {
+        todo!("Fen parsing needs to handle move count")
+    }
+
+    #[test]
+    fn draw_by_repitition() {
+        let mut game = Game::default();
+        let moves = [
+            (Square::G1, Square::F3),
+            (Square::B8, Square::C6),
+            (Square::F3, Square::G1),
+            (Square::C6, Square::B8),
+            (Square::G1, Square::F3),
+            (Square::B8, Square::C6),
+            (Square::F3, Square::G1),
+            (Square::C6, Square::B8),
+        ];
+
+        for (from, to) in moves {
+            assert_eq!(game.position.state, State::InProgress);
+            let m = Move::new(from, to, &game.position);
+            should_generate(&game.generate_all_legal_moves(), &m);
+            game.play(&m);
+        }
+
+        game.generate_all_legal_moves();
+        assert_eq!(game.position.state, State::Repetition);
     }
 }

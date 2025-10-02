@@ -48,7 +48,7 @@ impl Piece for Knight {
             }
         };
 
-        if rank.to_index() < 5 {
+        if rank.to_index() < 6 {
             let north = Square::make_square(rank.up().up(), file);
             for t in [north.left(), north.right()].into_iter().flatten() {
                 process_target(t);
@@ -62,7 +62,7 @@ impl Piece for Knight {
             }
         }
 
-        if file.to_index() < 5 {
+        if file.to_index() < 6 {
             let east = Square::make_square(rank, file.right().right());
             for t in [east.up(), east.down()].into_iter().flatten() {
                 process_target(t);
