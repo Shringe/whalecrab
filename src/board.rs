@@ -13,7 +13,7 @@ use crate::{
     rank::Rank,
     square::Square,
 };
-use std::{fmt, hash::Hash, str::FromStr};
+use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -110,7 +110,7 @@ macro_rules! color_field_getters {
 }
 pub(crate) use color_field_getters;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum State {
     InProgress,
     Checkmate,
@@ -139,10 +139,11 @@ pub struct Board {
     pub en_passant_target: Option<Square>,
     pub turn: Color,
 
-    /// For fifty move rule
     pub half_move_timeout: usize,
     pub half_move_clock: usize,
     pub state: State,
+    pub seen_positions: HashMap<u64, u8>,
+    pub hash: u64,
 }
 
 impl Board {
@@ -169,6 +170,8 @@ impl Board {
             half_move_timeout: 0,
             half_move_clock: 0,
             state: State::InProgress,
+            seen_positions: HashMap::new(),
+            hash: 0,
         }
     }
 
@@ -473,6 +476,8 @@ impl Default for Board {
             half_move_timeout: 0,
             half_move_clock: 0,
             state: State::InProgress,
+            seen_positions: HashMap::new(),
+            hash: 0,
         }
     }
 }
