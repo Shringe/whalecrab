@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
@@ -107,10 +110,43 @@ impl Game {
         self.white_occupied = white_pieces;
         self.black_occupied = black_pieces;
         self.occupied = pieces;
+
+        let mut hasher = DefaultHasher::new();
+        self.position.hash(&mut hasher);
+        self.position.hash = hasher.finish();
+        if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
+            *times_seen += 1;
+        } else {
+            self.position.seen_positions.insert(self.position.hash, 1);
+        }
     }
 
-    /// Finishes a turn
+    /// Finishes a turn and determines game state is possible
     fn next_turn(&mut self, last_move: &Move) {
+        // Handle en_passant
+        self.position.en_passant_target = if last_move.variant == MoveType::CreateEnPassant {
+            last_move.to.backward(&self.position.turn)
+        } else {
+            None
+        };
+
+        // Update position state
+        self.position.turn = self.position.turn.opponent();
+        self.position.half_move_clock += 1;
+        self.refresh();
+
+        // Repetition
+        if *self
+            .position
+            .seen_positions
+            .get(&self.position.hash)
+            .expect("Position should be hashed!")
+            == 3
+        {
+            self.position.state = State::Repetition;
+        }
+
+        // Half move timeout
         if matches!(last_move.variant, MoveType::Capture(_))
             || matches!(
                 self.determine_piece(&BitBoard::from_square(last_move.to)),
@@ -122,14 +158,9 @@ impl Game {
             self.position.half_move_timeout += 1;
         }
 
-        if self.position.half_move_timeout == 50 {
+        if self.position.half_move_timeout == 100 {
             self.position.state = State::Timeout;
         }
-
-        self.position.turn = self.position.turn.opponent();
-        self.position.en_passant_target = None;
-        self.position.half_move_clock += 1;
-        self.refresh();
     }
 
     /// Gets the bitboard of a colored piece
@@ -332,22 +363,31 @@ impl Game {
         revoke_rights(&m.from);
         revoke_rights(&m.to);
 
-        // Set en passant rules and switch turn
         self.next_turn(&m);
-        if m.variant == MoveType::CreateEnPassant {
-            self.position.en_passant_target = m.to.backward(&color);
-        }
     }
 
-    /// Generates all psuedo legal moves for the current player
+    /// Generates all psuedo legal moves for the current player. This also updates position state
+    /// for statemate or checkmate
     pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
+        if self.position.state != State::InProgress {
+            return moves;
+        }
+
         let occupied = self.get_occupied(&self.position.turn);
 
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
                 moves.extend(piece.get_psuedo_legal_moves(self, sq))
+            }
+        }
+
+        if moves.is_empty() {
+            self.position.state = if *self.get_num_checks(&self.position.turn) > 0 {
+                State::Checkmate
+            } else {
+                State::Stalemate
             }
         }
 
