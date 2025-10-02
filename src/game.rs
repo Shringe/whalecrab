@@ -366,9 +366,24 @@ impl Game {
         self.next_turn(&m);
     }
 
-    /// Generates all psuedo legal moves for the current player. This also updates position state
-    /// for statemate or checkmate
+    /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let occupied = self.get_occupied(&self.position.turn);
+
+        for sq in *occupied {
+            let sqbb = BitBoard::from_square(sq);
+            if let Some((piece, _)) = self.determine_piece(&sqbb) {
+                moves.extend(piece.get_psuedo_legal_moves(self, sq))
+            }
+        }
+
+        moves
+    }
+
+    /// Generates all legal moves for the current player. This also updates position state
+    /// for statemate or checkmate
+    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         if self.position.state != State::InProgress {
             return moves;
@@ -379,7 +394,7 @@ impl Game {
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.get_psuedo_legal_moves(self, sq))
+                moves.extend(piece.get_legal_moves(self, sq))
             }
         }
 
@@ -393,26 +408,11 @@ impl Game {
 
         moves
     }
-
-    /// Generates all legal moves for the current player
-    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let occupied = self.get_occupied(&self.position.turn);
-
-        for sq in *occupied {
-            let sqbb = BitBoard::from_square(sq);
-            if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.get_legal_moves(self, sq))
-            }
-        }
-
-        moves
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::board::{Board, Color, PieceType};
+    use crate::board::{Board, Color, PieceType, State};
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
@@ -762,5 +762,22 @@ mod tests {
             white_pawns_after,
             "The white target is still standing"
         );
+    }
+
+    #[test]
+    fn white_gets_checkmated() {
+        let fen = "2r5/8/8/8/8/8/5k2/7K w - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        assert_eq!(game.position.state, State::InProgress);
+        let moves = [(Square::H1, Square::H2), (Square::C8, Square::H8)];
+        for (from, to) in moves {
+            let m = Move::new(from, to, &game.position);
+            game.play(&m);
+        }
+
+        println!("{}", game.black_attacks);
+        println!("{:#?}", game.generate_all_legal_moves());
+        assert_eq!(game.position.turn, Color::White);
+        assert_eq!(game.position.state, State::Checkmate);
     }
 }
