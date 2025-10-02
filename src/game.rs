@@ -165,7 +165,7 @@ impl Game {
             self.position.half_move_timeout += 1;
         }
 
-        if self.position.half_move_timeout == 100 {
+        if self.position.half_move_timeout == 50 {
             self.position.state = dbg!(State::Timeout);
         }
     }
@@ -805,7 +805,13 @@ mod tests {
 
     #[test]
     fn draw_fifty_move_rule() {
-        todo!("Fen parsing needs to handle move count")
+        let fen = "4k3/8/8/8/8/8/1NNN1KN1/8 w - - 49 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        assert_eq!(game.position.state, State::InProgress);
+        let to_play = Move::new(Square::F2, Square::F3, &game.position);
+        should_generate(&game.generate_all_legal_moves(), &to_play);
+        game.play(&to_play);
+        assert_eq!(game.position.state, State::Timeout);
     }
 
     #[test]
