@@ -191,6 +191,8 @@ impl Board {
         let turn_fen = split_fen.next()?;
         let castling_fen = split_fen.next()?;
         let en_passant_fen = split_fen.next()?;
+        let half_move_fen = split_fen.next()?;
+        let full_move_fen = split_fen.next()?;
 
         let rows = body_fen.split('/');
         let mut new = Board::empty();
@@ -246,6 +248,14 @@ impl Board {
 
         if let Ok(sq) = Square::from_str(en_passant_fen) {
             new.en_passant_target = Some(sq);
+        }
+
+        if let Ok(half_moves) = half_move_fen.parse() {
+            new.half_move_timeout = half_moves;
+        }
+
+        if let Ok(half_moves) = full_move_fen.parse() {
+            new.full_move_clock = half_moves;
         }
 
         Some(new)
@@ -340,7 +350,7 @@ impl Board {
         }
 
         // Placeholder as the Halfmove and Fullmove clock are not implemented
-        fen.push_str(" 0 0");
+        fen.push_str(format!(" {} {}", self.half_move_timeout, self.full_move_clock).as_str());
 
         fen
     }
