@@ -66,14 +66,7 @@ impl Game {
             kings: EMPTY,
         };
 
-        game.refresh();
-
-        // HACK: populating check and attacks boards
-        game.generate_all_psuedo_legal_moves();
-        game.position.turn = game.position.turn.opponent();
-        game.generate_all_psuedo_legal_moves();
-        game.position.turn = game.position.turn.opponent();
-
+        game.reinitialize();
         game
     }
 
@@ -119,6 +112,18 @@ impl Game {
         } else {
             self.position.seen_positions.insert(self.position.hash, 1);
         }
+    }
+
+    /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
+    /// move before playing it through self.generate(_psuedo)_legal_moves()
+    pub fn reinitialize(&mut self) {
+        self.refresh();
+
+        // HACK: populating check and attacks boards
+        self.generate_all_psuedo_legal_moves();
+        self.position.turn = self.position.turn.opponent();
+        self.generate_all_psuedo_legal_moves();
+        self.position.turn = self.position.turn.opponent();
     }
 
     /// Finishes a turn and determines game state is possible
@@ -775,8 +780,7 @@ mod tests {
             game.play(&m);
         }
 
-        println!("{}", game.black_attacks);
-        println!("{:#?}", game.generate_all_legal_moves());
+        game.reinitialize();
         assert_eq!(game.position.turn, Color::White);
         assert_eq!(game.position.state, State::Checkmate);
     }
