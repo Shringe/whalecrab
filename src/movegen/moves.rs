@@ -91,6 +91,15 @@ impl Move {
             },
         }
     }
+
+    /// Formats the move in uci notation, such as e2e4
+    pub fn to_uci(&self) -> String {
+        format!(
+            "{}{}",
+            self.from.to_string().to_lowercase(),
+            self.to.to_string().to_lowercase()
+        )
+    }
 }
 
 #[cfg(test)]
