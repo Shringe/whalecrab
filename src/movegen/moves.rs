@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use crate::{
     board::{Board, Color, PieceType},
@@ -100,6 +100,15 @@ impl Move {
             self.to.to_string().to_lowercase()
         )
     }
+
+    /// Returns a move from a uci string
+    pub fn from_uci(uci: &str, position: &Board) -> Result<Self, ()> {
+        Ok(Move::new(
+            Square::from_str(dbg!(&uci[..2]))?,
+            Square::from_str(dbg!(&uci[2..]))?,
+            position,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -112,6 +121,31 @@ mod tests {
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::Piece;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
+
+    #[test]
+    fn to_uci() {
+        let uci = "e2e4";
+        let m = Move {
+            from: Square::E2,
+            to: Square::E4,
+            variant: MoveType::Normal,
+        };
+
+        assert_eq!(m.to_uci(), uci.to_owned());
+    }
+
+    #[test]
+    fn from_uci() {
+        let game = Game::default();
+        let uci = "e2e4";
+        let m = Move {
+            from: Square::E2,
+            to: Square::E4,
+            variant: MoveType::CreateEnPassant,
+        };
+
+        assert_eq!(Move::from_uci(uci, &game.position).unwrap(), m);
+    }
 
     #[test]
     fn both_lose_castling_rights_by_moving_kings() {
