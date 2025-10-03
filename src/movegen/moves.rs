@@ -104,8 +104,8 @@ impl Move {
     /// Returns a move from a uci string
     pub fn from_uci(uci: &str, position: &Board) -> Result<Self, ()> {
         Ok(Move::new(
-            Square::from_str(dbg!(&uci[..2]))?,
-            Square::from_str(dbg!(&uci[2..]))?,
+            Square::from_str(&uci[..2])?,
+            Square::from_str(&uci[2..])?,
             position,
         ))
     }
