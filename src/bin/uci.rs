@@ -2,6 +2,7 @@ use std::io;
 use std::io::BufRead;
 
 use whalecrab::game::Game;
+use whalecrab::movegen::moves::Move;
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
@@ -37,6 +38,7 @@ fn parse_time_param(param: Option<&str>, name: &str) -> Result<u64, String> {
 fn main() {
     let stdin = io::stdin();
     let mut game = None;
+    let mut last_move_uci = None;
 
     for line in stdin.lock().lines() {
         let line = match line {
@@ -64,9 +66,54 @@ fn main() {
 
             "isready" => uci_send!("readyok"),
             "ucinewgame" => {}
+
             "position" => {
                 // TODO, accept positions other than startpos
-                game = Some(Game::default());
+                // < position startpos moves e2e4 e7e5
+                let mut full_cmd = line.split(' ');
+                let _ = full_cmd.next();
+                let _ = full_cmd.next();
+                let wants_init = full_cmd.next();
+
+                if wants_init == Some("moves") {
+                    let game: &mut Game = match &mut game {
+                        Some(game) => game,
+                        None => {
+                            eprintln!("Can't accept moves when game is not uninitialized");
+                            continue;
+                        }
+                    };
+
+                    let mut uci_played = None;
+                    let mut found_last_move = false;
+                    for uci_move in full_cmd {
+                        if found_last_move {
+                            uci_played = Some(uci_move);
+                            break;
+                        } else if Some(uci_move.to_string()) == last_move_uci {
+                            found_last_move = true;
+                        }
+                    }
+
+                    let move_played = match uci_played {
+                        Some(uci) => match Move::from_uci(uci, &game.position) {
+                            Ok(m) => m,
+                            Err(e) => {
+                                eprintln!("Failed to parse the played uci move: {:?}", e);
+                                continue;
+                            }
+                        },
+                        None => {
+                            eprintln!("Couldn't find the move played by uci");
+                            continue;
+                        }
+                    };
+
+                    game.generate_all_legal_moves();
+                    game.play(&move_played);
+                } else {
+                    game = Some(Game::default());
+                }
             }
 
             "go" => {
@@ -123,7 +170,10 @@ fn main() {
                             }
                         };
 
-                        uci_send!("bestmove {}", best_move.to_uci());
+                        game.play(&best_move);
+                        let best_move_uci = best_move.to_uci();
+                        last_move_uci = Some(best_move_uci.clone());
+                        uci_send!("bestmove {}", best_move_uci);
                     }
                     None => {
                         eprintln!("Tried to find best move but game is uninitialized");
