@@ -38,7 +38,6 @@ fn parse_time_param(param: Option<&str>, name: &str) -> Result<u64, String> {
 fn main() {
     let stdin = io::stdin();
     let mut game = None;
-    let mut last_move_uci = None;
 
     for line in stdin.lock().lines() {
         let line = match line {
@@ -65,7 +64,7 @@ fn main() {
             }
 
             "isready" => uci_send!("readyok"),
-            "ucinewgame" => {}
+            "ucinewgame" => game = Some(Game::default()),
 
             "position" => {
                 // TODO, accept positions other than startpos
@@ -73,47 +72,35 @@ fn main() {
                 let mut full_cmd = line.split(' ');
                 let _ = full_cmd.next();
                 let _ = full_cmd.next();
-                let wants_init = full_cmd.next();
+                let _ = full_cmd.next();
 
-                if wants_init == Some("moves") {
-                    let game: &mut Game = match &mut game {
-                        Some(game) => game,
-                        None => {
-                            eprintln!("Can't accept moves when game is not uninitialized");
-                            continue;
-                        }
-                    };
-
-                    let mut uci_played = None;
-                    let mut found_last_move = false;
-                    for uci_move in full_cmd {
-                        if found_last_move {
-                            uci_played = Some(uci_move);
-                            break;
-                        } else if Some(uci_move.to_string()) == last_move_uci {
-                            found_last_move = true;
-                        }
+                let game: &mut Game = match &mut game {
+                    Some(game) => game,
+                    None => {
+                        eprintln!("Can't accept moves when game is not uninitialized");
+                        continue;
                     }
+                };
 
-                    let move_played = match uci_played {
-                        Some(uci) => match Move::from_uci(uci, &game.position) {
-                            Ok(m) => m,
-                            Err(e) => {
-                                eprintln!("Failed to parse the played uci move: {:?}", e);
-                                continue;
-                            }
-                        },
-                        None => {
-                            eprintln!("Couldn't find the move played by uci");
+                let uci_moves: Vec<&str> = full_cmd.collect();
+                let uci_played = uci_moves.get(game.position.half_move_clock);
+                let move_played = match uci_played {
+                    Some(uci) => match Move::from_uci(uci, &game.position) {
+                        Ok(m) => m,
+                        Err(e) => {
+                            eprintln!("Failed to parse the played uci move: {:?}", e);
                             continue;
                         }
-                    };
+                    },
+                    None => {
+                        eprintln!("Couldn't find the move played by uci");
+                        continue;
+                    }
+                };
 
-                    game.generate_all_legal_moves();
-                    game.play(&move_played);
-                } else {
-                    game = Some(Game::default());
-                }
+                game.generate_all_legal_moves();
+                eprintln!("Playing move from uci opponent: {}", &move_played);
+                game.play(&move_played);
             }
 
             "go" => {
@@ -144,7 +131,7 @@ fn main() {
                     }
                 };
 
-                let _white_time_ms = match parse_time_param(white_time, "wink") {
+                let _white_time_ms = match parse_time_param(white_increment, "wink") {
                     Ok(ms) => ms,
                     Err(e) => {
                         eprintln!("{}", e);
@@ -152,7 +139,7 @@ fn main() {
                     }
                 };
 
-                let _black_time_ms = match parse_time_param(black_time, "bink") {
+                let _black_time_ms = match parse_time_param(black_increment, "bink") {
                     Ok(ms) => ms,
                     Err(e) => {
                         eprintln!("{}", e);
@@ -172,7 +159,7 @@ fn main() {
 
                         game.play(&best_move);
                         let best_move_uci = best_move.to_uci();
-                        last_move_uci = Some(best_move_uci.clone());
+                        eprintln!("Playing engine move: {}", best_move);
                         uci_send!("bestmove {}", best_move_uci);
                     }
                     None => {
