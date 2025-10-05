@@ -46,7 +46,7 @@ fn main() {
     // TODO, allow setoption for depth
     let mut uci = UciInterface {
         game: None,
-        depth: 5,
+        depth: 4,
     };
 
     let stdin = io::stdin();
@@ -115,6 +115,7 @@ fn main() {
 
                 game.generate_all_legal_moves();
                 log!("Playing move from uci opponent: {}", &move_played);
+                log!("Fen before playing the move: {}", game.position.to_fen());
                 game.play(&move_played);
             }
 
@@ -128,10 +129,11 @@ fn main() {
                         }
                     };
 
-                    game.play(&best_move);
                     let best_move_uci = best_move.to_uci();
                     log!("Playing engine move: {}", best_move);
+                    log!("Fen before playing the move: {}", game.position.to_fen());
                     uci_send!("bestmove {}", best_move_uci);
+                    game.play(&best_move);
                 }
                 None => {
                     log!("Tried to find best move but game is uninitialized");
