@@ -1,4 +1,6 @@
+use std::fmt;
 use std::io::{BufRead, BufWriter, Write};
+use std::str::FromStr;
 use std::{fs::File, io};
 
 use whalecrab_lib::{game::Game, movegen::moves::Move};
@@ -6,27 +8,50 @@ use whalecrab_lib::{game::Game, movegen::moves::Move};
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
 
-/// Tries to parse milliseconds from uci parameter
-fn parse_time_param(param: Option<&str>, name: &str) -> Result<u64, String> {
-    let time = param.ok_or_else(|| format!("Missing value for {}", name))?;
-    time.parse()
-        .map_err(|e| format!("Couldn't parse {} into milliseconds: {}", name, e))
+enum UciCommand {
+    UciNewGame,
+    Uci,
+    Quit,
+    IsReady,
+    Position,
+    Go,
 }
 
-// Example uci game for now:
-// < uci
-// > id name MyEngine
-// > id author Me
-// > uciok
-// < isready
-// > readyok
-// < ucinewgame
-// < position startpos
-// < go wtime 300000 btime 300000 winc 0 binc 0
-// > bestmove e2e4
-// < position startpos moves e2e4 e7e5
-// < go wtime 298000 btime 298000 winc 0 binc 0
-// > bestmove g1f3
+#[derive(Debug)]
+enum UciError {
+    UnrecognizedCommand(String),
+}
+
+impl fmt::Display for UciError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
+        }
+    }
+}
+
+impl FromStr for UciCommand {
+    type Err = UciError;
+
+    /// Parses Self from a line of recieved uci
+    fn from_str(line: &str) -> Result<Self, UciError> {
+        let cmd = match line.split_once(' ') {
+            Some(split) => split.0,
+            None => line,
+        };
+
+        match cmd {
+            "ucinewgame" => Ok(Self::UciNewGame),
+            "uci" => Ok(Self::Uci),
+            "quit" => Ok(Self::Quit),
+            "isready" => Ok(Self::IsReady),
+            "position" => Ok(Self::Position),
+            "go" => Ok(Self::Go),
+            _ => Err(UciError::UnrecognizedCommand(cmd.to_string())),
+        }
+    }
+}
+
 fn main() {
     let logfile = File::create("/tmp/whalecrab_uci.log");
     let mut writer = match logfile {
@@ -38,24 +63,24 @@ fn main() {
     };
 
     macro_rules! log {
-        ($($arg:tt)*) => {{
-            let msg = format!($($arg)*) + "\n";
-            eprint!("{}", msg);
-            if let Some(writer) = &mut writer {
-                if let Err(e) = writer.write_all(msg.as_bytes()) {
-                    eprintln!("Couldn't write to log buffer: {}", e);
+            ($($arg:tt)*) => {{
+                let msg = format!($($arg)*) + "\n";
+                eprint!("{}", msg);
+                if let Some(writer) = &mut writer {
+                    if let Err(e) = writer.write_all(msg.as_bytes()) {
+                        eprintln!("Couldn't write to log buffer: {}", e);
+                    }
                 }
-            }
-        }};
-    }
+            }};
+        }
 
     macro_rules! uci_send {
-        ($($arg:tt)*) => {{
-            let msg = format!($($arg)*);
-            log!("Sent: {}", msg);
-            println!("{}", msg);
-        }};
-    }
+            ($($arg:tt)*) => {{
+                let msg = format!($($arg)*);
+                log!("Sent: {}", msg);
+                println!("{}", msg);
+            }};
+        }
 
     let stdin = io::stdin();
     let mut game = None;
@@ -71,23 +96,26 @@ fn main() {
             }
         };
 
-        let cmd = match line.split_once(' ') {
-            Some(split) => split.0,
-            None => line.as_str(),
+        let cmd = match UciCommand::from_str(&line) {
+            Ok(cmd) => cmd,
+            Err(e) => {
+                log!("Failed to parse uci: {}", e);
+                continue;
+            }
         };
 
         match cmd {
-            "quit" => break,
-            "uci" => {
+            UciCommand::UciNewGame => game = Some(Game::default()),
+            UciCommand::Quit => break,
+            UciCommand::IsReady => uci_send!("readyok"),
+
+            UciCommand::Uci => {
                 uci_send!("id name {ID_NAME}");
                 uci_send!("id author {ID_AUTHOR}");
                 uci_send!("uciok");
             }
 
-            "isready" => uci_send!("readyok"),
-            "ucinewgame" => game = Some(Game::default()),
-
-            "position" => {
+            UciCommand::Position => {
                 // TODO, accept positions other than startpos
                 // < position startpos moves e2e4 e7e5
                 let mut full_cmd = line.split(' ');
@@ -124,7 +152,7 @@ fn main() {
                 game.play(&move_played);
             }
 
-            "go" => match &mut game {
+            UciCommand::Go => match &mut game {
                 Some(game) => {
                     let best_move = match game.get_engine_move_minimax(3) {
                         Some(m) => m,
@@ -144,10 +172,6 @@ fn main() {
                     continue;
                 }
             },
-
-            _ => {
-                log!("Failed to recognize: {}", line);
-            }
         }
     }
 
