@@ -8,6 +8,13 @@ use whalecrab_lib::{game::Game, movegen::moves::Move};
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
 
+/// Stores the state of the uci interface
+struct UciInterface {
+    game: Option<Game>,
+    depth: u16,
+}
+
+/// Enum of supported uci commands to recieve
 enum UciCommand {
     UciNewGame,
     Uci,
@@ -82,8 +89,12 @@ fn main() {
             }};
         }
 
+    let mut uci = UciInterface {
+        game: None,
+        depth: 5,
+    };
+
     let stdin = io::stdin();
-    let mut game = None;
     for line in stdin.lock().lines() {
         let line = match line {
             Ok(line) => {
@@ -105,7 +116,7 @@ fn main() {
         };
 
         match cmd {
-            UciCommand::UciNewGame => game = Some(Game::default()),
+            UciCommand::UciNewGame => uci.game = Some(Game::default()),
             UciCommand::Quit => break,
             UciCommand::IsReady => uci_send!("readyok"),
 
@@ -123,7 +134,7 @@ fn main() {
                 let _ = full_cmd.next();
                 let _ = full_cmd.next();
 
-                let game: &mut Game = match &mut game {
+                let game: &mut Game = match &mut uci.game {
                     Some(game) => game,
                     None => {
                         log!("Can't accept moves when game is not uninitialized");
@@ -152,9 +163,9 @@ fn main() {
                 game.play(&move_played);
             }
 
-            UciCommand::Go => match &mut game {
+            UciCommand::Go => match &mut uci.game {
                 Some(game) => {
-                    let best_move = match game.get_engine_move_minimax(3) {
+                    let best_move = match game.get_engine_move_minimax(uci.depth) {
                         Some(m) => m,
                         None => {
                             log!("No engine move found. Maybe the game is finished?");
