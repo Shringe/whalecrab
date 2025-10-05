@@ -51,8 +51,9 @@ fn main() {
 
     macro_rules! uci_send {
         ($($arg:tt)*) => {{
-            log!("Sent: {}", format!($($arg)*));
-            println!($($arg)*);
+            let msg = format!($($arg)*);
+            log!("Sent: {}", msg);
+            println!("{}", msg);
         }};
     }
 
