@@ -2,7 +2,6 @@
 members = ["lib", "uci", "tui"]
 resolver = "2"
 
-# Shared across project
 [workspace.dependencies]
 paste = "1.0.15"
 rand = "0.9.2"
