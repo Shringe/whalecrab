@@ -1,0 +1,29 @@
+[package]
+name = "whalecrab_lib"
+version = "0.8.0"
+edition = "2021"
+
+[lib]
+name = "whalecrab_lib"
+
+[[bench]]
+name = "evaluation"
+harness = false
+
+[[bench]]
+name = "movegen"
+harness = false
+
+[[bench]]
+name = "movemaking"
+harness = false
+
+[[bench]]
+name = "scoring"
+harness = false
+
+[dependencies]
+paste = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }

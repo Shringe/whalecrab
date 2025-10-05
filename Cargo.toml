@@ -1,29 +1,11 @@
-[package]
-name = "whalecrab"
-version = "0.8.0"
-edition = "2021"
+[workspace]
+members = ["lib", "uci", "tui"]
+resolver = "2"
 
-[[bench]]
-name = "evaluation"
-harness = false
-
-[[bench]]
-name = "movegen"
-harness = false
-
-[[bench]]
-name = "movemaking"
-harness = false
-
-[[bench]]
-name = "scoring"
-harness = false
-
-[dev-dependencies]
-criterion = { version = "0.7.0", features = ["html_reports"] }
-
-[dependencies]
-crossterm = "0.29.0"
+# Shared across project
+[workspace.dependencies]
 paste = "1.0.15"
 rand = "0.9.2"
+crossterm = "0.29.0"
 ratatui = "0.29.0"
+criterion = { version = "0.7.0", features = ["html_reports"] }
