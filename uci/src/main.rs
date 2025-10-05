@@ -1,17 +1,10 @@
-use std::io;
-use std::io::BufRead;
+use std::io::{BufRead, BufWriter, Write};
+use std::{fs::File, io};
 
 use whalecrab_lib::{game::Game, movegen::moves::Move};
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
-
-macro_rules! uci_send {
-    ($($arg:tt)*) => {{
-        eprintln!("Sent: {}", format!($($arg)*));
-        println!($($arg)*);
-    }};
-}
 
 /// Tries to parse milliseconds from uci parameter
 fn parse_time_param(param: Option<&str>, name: &str) -> Result<u64, String> {
@@ -35,17 +28,44 @@ fn parse_time_param(param: Option<&str>, name: &str) -> Result<u64, String> {
 // < go wtime 298000 btime 298000 winc 0 binc 0
 // > bestmove g1f3
 fn main() {
+    let logfile = File::create("/tmp/whalecrab_uci.log");
+    let mut writer = match logfile {
+        Ok(f) => Some(BufWriter::new(f)),
+        Err(e) => {
+            eprintln!("Can't log to file: {}", e);
+            None
+        }
+    };
+
+    macro_rules! log {
+        ($($arg:tt)*) => {{
+            let msg = format!($($arg)*) + "\n";
+            eprint!("{}", msg);
+            if let Some(writer) = &mut writer {
+                if let Err(e) = writer.write_all(msg.as_bytes()) {
+                    eprintln!("Couldn't write to log buffer: {}", e);
+                }
+            }
+        }};
+    }
+
+    macro_rules! uci_send {
+        ($($arg:tt)*) => {{
+            log!("Sent: {}", format!($($arg)*));
+            println!($($arg)*);
+        }};
+    }
+
     let stdin = io::stdin();
     let mut game = None;
-
     for line in stdin.lock().lines() {
         let line = match line {
             Ok(line) => {
-                eprintln!("Recieved: {}", line);
+                log!("Recieved: {}", line);
                 line
             }
             Err(e) => {
-                eprintln!("Failed to read stdin: {}", e);
+                log!("Failed to read stdin: {}", e);
                 continue;
             }
         };
@@ -56,6 +76,7 @@ fn main() {
         };
 
         match cmd {
+            "quit" => break,
             "uci" => {
                 uci_send!("id name {ID_NAME}");
                 uci_send!("id author {ID_AUTHOR}");
@@ -76,7 +97,7 @@ fn main() {
                 let game: &mut Game = match &mut game {
                     Some(game) => game,
                     None => {
-                        eprintln!("Can't accept moves when game is not uninitialized");
+                        log!("Can't accept moves when game is not uninitialized");
                         continue;
                     }
                 };
@@ -87,18 +108,18 @@ fn main() {
                     Some(uci) => match Move::from_uci(uci, &game.position) {
                         Ok(m) => m,
                         Err(e) => {
-                            eprintln!("Failed to parse the played uci move: {:?}", e);
+                            log!("Failed to parse the played uci move: {:?}", e);
                             continue;
                         }
                     },
                     None => {
-                        eprintln!("Couldn't find the move played by uci");
+                        log!("Couldn't find the move played by uci");
                         continue;
                     }
                 };
 
                 game.generate_all_legal_moves();
-                eprintln!("Playing move from uci opponent: {}", &move_played);
+                log!("Playing move from uci opponent: {}", &move_played);
                 game.play(&move_played);
             }
 
@@ -117,7 +138,7 @@ fn main() {
                 let _white_time_ms = match parse_time_param(white_time, "wtime") {
                     Ok(ms) => ms,
                     Err(e) => {
-                        eprintln!("{}", e);
+                        log!("{}", e);
                         continue;
                     }
                 };
@@ -125,7 +146,7 @@ fn main() {
                 let _black_time_ms = match parse_time_param(black_time, "btime") {
                     Ok(ms) => ms,
                     Err(e) => {
-                        eprintln!("{}", e);
+                        log!("{}", e);
                         continue;
                     }
                 };
@@ -133,7 +154,7 @@ fn main() {
                 let _white_time_ms = match parse_time_param(white_increment, "wink") {
                     Ok(ms) => ms,
                     Err(e) => {
-                        eprintln!("{}", e);
+                        log!("{}", e);
                         continue;
                     }
                 };
@@ -141,7 +162,7 @@ fn main() {
                 let _black_time_ms = match parse_time_param(black_increment, "bink") {
                     Ok(ms) => ms,
                     Err(e) => {
-                        eprintln!("{}", e);
+                        log!("{}", e);
                         continue;
                     }
                 };
@@ -151,26 +172,33 @@ fn main() {
                         let best_move = match game.get_engine_move_minimax(3) {
                             Some(m) => m,
                             None => {
-                                eprintln!("No engine move found. Maybe the game is finished?");
+                                log!("No engine move found. Maybe the game is finished?");
                                 continue;
                             }
                         };
 
                         game.play(&best_move);
                         let best_move_uci = best_move.to_uci();
-                        eprintln!("Playing engine move: {}", best_move);
+                        log!("Playing engine move: {}", best_move);
                         uci_send!("bestmove {}", best_move_uci);
                     }
                     None => {
-                        eprintln!("Tried to find best move but game is uninitialized");
+                        log!("Tried to find best move but game is uninitialized");
                         continue;
                     }
                 }
             }
 
             _ => {
-                eprintln!("Failed to recognize: {}", line);
+                log!("Failed to recognize: {}", line);
             }
+        }
+    }
+
+    if let Some(writer) = &mut writer {
+        match writer.flush() {
+            Ok(_) => eprintln!("Log flushed successfully"),
+            Err(e) => eprintln!("Failed to flush log file: {}", e),
         }
     }
 }

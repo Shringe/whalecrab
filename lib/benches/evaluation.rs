@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use whalecrab::game::Game;
+use whalecrab_lib::game::Game;
 
 fn bench(c: &mut Criterion) {
     let mut game = Game::default();

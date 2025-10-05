@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use whalecrab::{board::Board, game::Game};
+use whalecrab_lib::{board::Board, game::Game};
 
 pub const EARLYGAME_FEN: &str = "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2";
 pub const MIDGAME_FEN: &str = "r1bq1rk1/ppp2ppp/2n2n2/2bp4/2B1P3/3P1N2/PPP2PPP/RNBQR1K1 w - - 0 8";
