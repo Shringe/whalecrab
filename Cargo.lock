@@ -907,6 +907,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tui"
+version = "0.8.0"
+dependencies = [
+ "crossterm 0.29.0",
+ "ratatui",
+ "whalecrab_lib",
+]
+
+[[package]]
+name = "uci"
+version = "0.8.0"
+dependencies = [
+ "whalecrab_lib",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1058,22 +1074,6 @@ version = "0.8.0"
 dependencies = [
  "criterion",
  "paste",
-]
-
-[[package]]
-name = "whalecrab_tui"
-version = "0.8.0"
-dependencies = [
- "crossterm 0.29.0",
- "ratatui",
- "whalecrab_lib",
-]
-
-[[package]]
-name = "whalecrab_uci"
-version = "0.8.0"
-dependencies = [
- "whalecrab_lib",
 ]
 
 [[package]]

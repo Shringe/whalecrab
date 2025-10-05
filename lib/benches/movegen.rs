@@ -1,7 +1,7 @@
 mod common;
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::time::Duration;
-use whalecrab::{
+use whalecrab_lib::{
     game::Game,
     movegen::pieces::{
         bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
