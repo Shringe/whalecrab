@@ -20,7 +20,7 @@ name = "scoring"
 harness = false
 
 [dependencies]
-paste = { workspace = true }
+paste = "1.0.15"
 
 [dev-dependencies]
-criterion = { workspace = true }
+criterion = { version = "0.7.0", features = ["html_reports"] }

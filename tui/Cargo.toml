@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 whalecrab_lib = { path = "../lib" }
-crossterm = { workspace = true }
-ratatui = { workspace = true }
+crossterm = "0.29.0"
+ratatui = "0.29.0"
