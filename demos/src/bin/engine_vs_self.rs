@@ -1,4 +1,4 @@
-use whalecrab::game::Game;
+use whalecrab_lib::game::Game;
 
 fn main() {
     let mut game = Game::default();
