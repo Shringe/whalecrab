@@ -3,9 +3,5 @@ name = "whalecrab_uci"
 version = "0.8.0"
 edition = "2021"
 
-[[bin]]
-name = "whalecrab_uci"
-path = "src/main.rs"
-
 [dependencies]
 whalecrab_lib = { path = "../lib" }

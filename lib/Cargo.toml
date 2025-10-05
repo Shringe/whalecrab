@@ -3,9 +3,6 @@ name = "whalecrab_lib"
 version = "0.8.0"
 edition = "2021"
 
-[lib]
-name = "whalecrab_lib"
-
 [[bench]]
 name = "evaluation"
 harness = false
