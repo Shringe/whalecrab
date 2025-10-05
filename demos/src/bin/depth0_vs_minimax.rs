@@ -1,4 +1,4 @@
-use whalecrab::{board::Color, game::Game};
+use whalecrab_lib::{board::Color, game::Game};
 
 fn main() {
     let mut game = Game::default();
