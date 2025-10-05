@@ -124,71 +124,26 @@ fn main() {
                 game.play(&move_played);
             }
 
-            "go" => {
-                let mut full_cmd = line.split(' ');
-                let _ = full_cmd.next();
-                let _ = full_cmd.next();
-                let white_time = full_cmd.next();
-                let _ = full_cmd.next();
-                let black_time = full_cmd.next();
-                let _ = full_cmd.next();
-                let white_increment = full_cmd.next();
-                let _ = full_cmd.next();
-                let black_increment = full_cmd.next();
+            "go" => match &mut game {
+                Some(game) => {
+                    let best_move = match game.get_engine_move_minimax(3) {
+                        Some(m) => m,
+                        None => {
+                            log!("No engine move found. Maybe the game is finished?");
+                            continue;
+                        }
+                    };
 
-                let _white_time_ms = match parse_time_param(white_time, "wtime") {
-                    Ok(ms) => ms,
-                    Err(e) => {
-                        log!("{}", e);
-                        continue;
-                    }
-                };
-
-                let _black_time_ms = match parse_time_param(black_time, "btime") {
-                    Ok(ms) => ms,
-                    Err(e) => {
-                        log!("{}", e);
-                        continue;
-                    }
-                };
-
-                let _white_time_ms = match parse_time_param(white_increment, "wink") {
-                    Ok(ms) => ms,
-                    Err(e) => {
-                        log!("{}", e);
-                        continue;
-                    }
-                };
-
-                let _black_time_ms = match parse_time_param(black_increment, "bink") {
-                    Ok(ms) => ms,
-                    Err(e) => {
-                        log!("{}", e);
-                        continue;
-                    }
-                };
-
-                match &mut game {
-                    Some(game) => {
-                        let best_move = match game.get_engine_move_minimax(3) {
-                            Some(m) => m,
-                            None => {
-                                log!("No engine move found. Maybe the game is finished?");
-                                continue;
-                            }
-                        };
-
-                        game.play(&best_move);
-                        let best_move_uci = best_move.to_uci();
-                        log!("Playing engine move: {}", best_move);
-                        uci_send!("bestmove {}", best_move_uci);
-                    }
-                    None => {
-                        log!("Tried to find best move but game is uninitialized");
-                        continue;
-                    }
+                    game.play(&best_move);
+                    let best_move_uci = best_move.to_uci();
+                    log!("Playing engine move: {}", best_move);
+                    uci_send!("bestmove {}", best_move_uci);
                 }
-            }
+                None => {
+                    log!("Tried to find best move but game is uninitialized");
+                    continue;
+                }
+            },
 
             _ => {
                 log!("Failed to recognize: {}", line);
