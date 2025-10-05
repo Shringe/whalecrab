@@ -1,5 +1,5 @@
 [package]
-name = "whalecrab_tui"
+name = "tui"
 version.workspace = true
 edition.workspace = true
 
