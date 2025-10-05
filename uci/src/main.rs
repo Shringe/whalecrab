@@ -1,63 +1,17 @@
-use std::fmt;
+mod command;
+mod interface;
+
 use std::io::{BufRead, BufWriter, Write};
 use std::str::FromStr;
 use std::{fs::File, io};
 
 use whalecrab_lib::{game::Game, movegen::moves::Move};
 
+use crate::command::UciCommand;
+use crate::interface::UciInterface;
+
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
-
-/// Stores the state of the uci interface
-struct UciInterface {
-    game: Option<Game>,
-    depth: u16,
-}
-
-/// Enum of supported uci commands to recieve
-enum UciCommand {
-    UciNewGame,
-    Uci,
-    Quit,
-    IsReady,
-    Position,
-    Go,
-}
-
-#[derive(Debug)]
-enum UciError {
-    UnrecognizedCommand(String),
-}
-
-impl fmt::Display for UciError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
-        }
-    }
-}
-
-impl FromStr for UciCommand {
-    type Err = UciError;
-
-    /// Parses Self from a line of recieved uci
-    fn from_str(line: &str) -> Result<Self, UciError> {
-        let cmd = match line.split_once(' ') {
-            Some(split) => split.0,
-            None => line,
-        };
-
-        match cmd {
-            "ucinewgame" => Ok(Self::UciNewGame),
-            "uci" => Ok(Self::Uci),
-            "quit" => Ok(Self::Quit),
-            "isready" => Ok(Self::IsReady),
-            "position" => Ok(Self::Position),
-            "go" => Ok(Self::Go),
-            _ => Err(UciError::UnrecognizedCommand(cmd.to_string())),
-        }
-    }
-}
 
 fn main() {
     let logfile = File::create("/tmp/whalecrab_uci.log");
@@ -89,6 +43,7 @@ fn main() {
             }};
         }
 
+    // TODO, allow setoption for depth
     let mut uci = UciInterface {
         game: None,
         depth: 5,
