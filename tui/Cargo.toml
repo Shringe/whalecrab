@@ -1,0 +1,13 @@
+[package]
+name = "whalecrab_tui"
+version = "0.8.0"
+edition = "2021"
+
+[[bin]]
+name = "whalecrab_tui"
+path = "src/main.rs"
+
+[dependencies]
+whalecrab_lib = { path = "../lib" }
+crossterm = { workspace = true }
+ratatui = { workspace = true }

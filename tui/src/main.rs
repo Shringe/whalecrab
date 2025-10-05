@@ -9,15 +9,15 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
-use whalecrab::bitboard::BitBoard;
-use whalecrab::game::Game;
-use whalecrab::rank::Rank;
-use whalecrab::square::Square;
-use whalecrab::test_utils::format_pretty_list;
-use whalecrab::{board::Board, file::File};
-use whalecrab::{
-    board::{self},
+use whalecrab_lib::{
+    bitboard::BitBoard,
+    board::{self, Board},
+    file::File,
+    game::Game,
     movegen::moves::{get_targets, Move},
+    rank::Rank,
+    square::Square,
+    test_utils::format_pretty_list,
 };
 
 pub struct Ascii {

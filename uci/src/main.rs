@@ -1,8 +1,7 @@
 use std::io;
 use std::io::BufRead;
 
-use whalecrab::game::Game;
-use whalecrab::movegen::moves::Move;
+use whalecrab_lib::{game::Game, movegen::moves::Move};
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
