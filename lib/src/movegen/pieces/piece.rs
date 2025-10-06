@@ -2,19 +2,12 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::PieceType,
     game::Game,
-    movegen::moves::{get_targets, Move, MoveType},
-    square::Square,
+    movegen::moves::{Move, MoveType},
 };
 
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move>;
-
-    /// Generates psuedo legal targets. Useful for highlighting squares in the TUI.
-    fn psuedo_legal_targets(&self, game: &mut Game) -> Vec<Square> {
-        let moves = self.psuedo_legal_moves(game);
-        get_targets(moves)
-    }
 
     /// Generates legal moves considering king safety.
     fn legal_moves(&self, game: &mut Game) -> Vec<Move> {
@@ -69,12 +62,6 @@ pub trait Piece {
 
         legal
     }
-
-    /// Generates legal targets. Useful for highlighting squares in the TUI.
-    fn legal_targets(&self, game: &mut Game) -> Vec<Square> {
-        let moves = self.legal_moves(game);
-        get_targets(moves)
-    }
 }
 
 #[cfg(test)]
@@ -83,6 +70,8 @@ mod tests {
 
     use crate::{
         board::Board,
+        movegen::moves::get_targets,
+        square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
     };
 
