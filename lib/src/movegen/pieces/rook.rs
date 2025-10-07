@@ -4,20 +4,24 @@ use crate::{
     square::{Direction, Square},
 };
 
-use super::piece::Piece;
+use super::piece::{Piece, PieceMoveInfo};
+
+const DIRECTIONS: [Direction; 4] = [
+    Direction::North,
+    Direction::South,
+    Direction::East,
+    Direction::West,
+];
 
 pub struct Rook(pub Square);
 
 impl Piece for Rook {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
-        let directions = [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-        ];
+        self.0.ray_moves(&DIRECTIONS, game)
+    }
 
-        self.0.ray_moves(&directions, game)
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+        self.0.rays(&DIRECTIONS, game)
     }
 }
 
