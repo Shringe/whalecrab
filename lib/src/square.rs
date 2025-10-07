@@ -6,6 +6,7 @@ use crate::board::{Color, PieceType};
 use crate::file::File;
 use crate::game::Game;
 use crate::movegen::moves::{Move, MoveType};
+use crate::movegen::pieces::piece::PieceMoveInfo;
 use crate::rank::Rank;
 
 pub enum Direction {
@@ -271,7 +272,7 @@ impl Square {
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
     /// Gives back a bitboard of attack squares, a bitboard of checking rays, and whether or not
     /// the enemy king is attacked
-    pub fn ray(&self, direction: &Direction, game: &Game) -> (BitBoard, BitBoard, bool) {
+    pub fn ray_old(&self, direction: &Direction, game: &Game) -> (BitBoard, BitBoard, bool) {
         let mut ray = EMPTY;
         let mut check_ray = EMPTY;
         let enemy = game.position.turn.opponent();
@@ -318,13 +319,13 @@ impl Square {
     }
 
     /// Generates moves for ray pieces. Also populates attack bitboards appropiately
-    pub fn rays(&self, directions: &[Direction], game: &mut Game) -> Vec<Move> {
+    pub fn ray_moves(&self, directions: &[Direction], game: &mut Game) -> Vec<Move> {
         let mut moves = Vec::new();
         let color = game.position.turn;
         let enemy = color.opponent();
 
         for direction in directions {
-            let (ray, check_ray, is_check) = self.ray(direction, game);
+            let (ray, check_ray, is_check) = self.ray_old(direction, game);
 
             if check_ray != EMPTY {
                 *game.get_check_rays_mut(&color) |= check_ray;
@@ -356,6 +357,76 @@ impl Square {
         }
 
         moves
+    }
+
+    /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
+    /// or it ends right on an enemy piece. Used for ray pieces in move generation.
+    /// Gives back a bitboard of attack squares, a bitboard of checking rays, and whether or not
+    /// the enemy king is attacked
+    pub fn ray(&self, direction: &Direction, game: &Game) -> PieceMoveInfo {
+        let mut moveinfo = PieceMoveInfo::default();
+        // let mut ray = EMPTY;
+        // let mut check_ray = EMPTY;
+        let enemy = game.position.turn.opponent();
+
+        let mut current = *self;
+        let mut is_check = false;
+        while let Some(forward) = current.walk(direction) {
+            let forwardbb = BitBoard::from_square(forward);
+            if let Some((piece, color)) = game.determine_piece(&forwardbb) {
+                let is_king = piece == PieceType::King;
+                let is_enemy = color == enemy;
+
+                moveinfo.attacks |= forwardbb;
+                moveinfo.check_rays |= forwardbb;
+
+                if is_enemy {
+                    moveinfo.targets |= forwardbb;
+
+                    if is_king {
+                        is_check = true;
+                    } else if let Some(extra) = forward.walk(direction) {
+                        let extrabb = BitBoard::from_square(extra);
+                        moveinfo.check_rays |= extrabb;
+                        is_check =
+                            matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
+                    }
+                }
+
+                if !(is_king && is_enemy) {
+                    break;
+                }
+            } else {
+                moveinfo.targets |= forwardbb;
+                moveinfo.attacks |= forwardbb;
+                moveinfo.check_rays |= forwardbb;
+                // ray.set(forward);
+                // check_ray.set(forward);
+            }
+
+            current = forward;
+        }
+
+        if !is_check {
+            moveinfo.check_rays = EMPTY;
+        }
+
+        moveinfo
+    }
+
+    /// Generates moveinfo for ray pieces
+    pub fn rays(&self, directions: &[Direction], game: &Game) -> PieceMoveInfo {
+        let mut moveinfo = PieceMoveInfo::default();
+
+        for direction in directions {
+            let raymoveinfo = self.ray(direction, game);
+
+            moveinfo.targets |= raymoveinfo.targets;
+            moveinfo.attacks |= raymoveinfo.attacks;
+            moveinfo.check_rays |= raymoveinfo.check_rays;
+        }
+
+        moveinfo
     }
 }
 

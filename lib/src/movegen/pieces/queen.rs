@@ -21,7 +21,7 @@ impl Piece for Queen {
             Direction::SouthWest,
         ];
 
-        self.0.rays(&directions, game)
+        self.0.ray_moves(&directions, game)
     }
 }
 

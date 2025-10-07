@@ -17,7 +17,7 @@ impl Piece for Rook {
             Direction::West,
         ];
 
-        self.0.rays(&directions, game)
+        self.0.ray_moves(&directions, game)
     }
 }
 
