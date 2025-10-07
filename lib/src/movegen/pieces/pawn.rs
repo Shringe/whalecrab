@@ -2,7 +2,10 @@ use crate::{
     bitboard::BitBoard,
     board::{Color, PieceType},
     game::Game,
-    movegen::moves::{Move, MoveType},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::piece::PieceMoveInfo,
+    },
     square::Square,
 };
 
@@ -104,6 +107,58 @@ impl Piece for Pawn {
         }
 
         moves
+    }
+
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+        let mut moveinfo = PieceMoveInfo::default();
+
+        let enemy_color = game.position.turn.opponent();
+
+        let initial = match game.position.turn {
+            Color::White => BitBoard::INITIAL_WHITE_PAWN,
+            Color::Black => BitBoard::INITIAL_BLACK_PAWN,
+        };
+
+        // Advances
+        if let Some(once) = self.0.forward(&game.position.turn) {
+            let oncebb = BitBoard::from_square(once);
+            if game.determine_piece(&oncebb).is_none() {
+                moveinfo.targets |= oncebb;
+
+                // If on initial rank
+                if self.0.in_bitboard(&initial) {
+                    let twice = once.forward(&game.position.turn).unwrap();
+                    let twicebb = BitBoard::from_square(twice);
+                    if game.determine_piece(&twicebb).is_none() {
+                        moveinfo.targets |= twicebb;
+                    }
+                }
+            }
+        }
+
+        // Captures
+        // TODO: Add promotion for pieces other than queen
+        for diagnol in [
+            self.0.fleft(&game.position.turn),
+            self.0.fright(&game.position.turn),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            let diagnolbb = BitBoard::from_square(diagnol);
+            moveinfo.attacks |= diagnolbb;
+            if let Some(enemy) = game.determine_color(&diagnolbb) {
+                if enemy == enemy_color {
+                    moveinfo.targets |= diagnolbb;
+                }
+            } else if let Some(target) = game.position.en_passant_target {
+                if diagnol == target {
+                    moveinfo.targets |= diagnolbb;
+                }
+            }
+        }
+
+        moveinfo
     }
 }
 
