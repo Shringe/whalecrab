@@ -172,6 +172,22 @@ impl Game {
         }
     }
 
+    /// Reverses turn color and full_move_clock to the last turn
+    pub fn previous_turn(&mut self, last_move: &Move) {
+        self.position.turn = self.position.turn.opponent();
+        self.position.en_passant_target = if last_move.variant == MoveType::CaptureEnPassant {
+            last_move.from.forward(&self.position.turn)
+        } else {
+            None
+        };
+
+        if self.position.turn == Color::White {
+            self.position.full_move_clock -= 1;
+        }
+
+        self.refresh();
+    }
+
     /// Gets the bitboard of a colored piece
     pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &Color) -> &mut BitBoard {
         match color {

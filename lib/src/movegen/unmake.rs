@@ -159,10 +159,10 @@ impl Move {
     /// Some stuff still needs to be restored.
     /// What we will need a lookup table for:
     /// - [ ] Castling rights
+    /// - [ ] Halfmove timeout
     ///
     /// What should be possible to restore:
     /// - [ ] En passant target
-    /// - [ ] Halfmove timeout
     /// - [ ] Fullmove clock
     /// - [ ] Turn color
     pub fn unplay(&self, game: &mut Game) {
@@ -174,6 +174,8 @@ impl Move {
             MoveType::Promotion(piece_type) => self.unplay_promotion(game, piece_type),
             MoveType::Castle(castle_side) => self.unplay_castle(game, castle_side),
         }
+
+        game.previous_turn(self);
     }
 }
 
