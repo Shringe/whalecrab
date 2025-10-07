@@ -84,6 +84,7 @@ impl Move {
         self.restore_attack_boards(game, &piece, &color);
     }
 
+    // TODO, either seperate promotion and captures, or somehow restore a potential captured piece on promotion
     fn unplay_promotion(&self, game: &mut Game, promoted_piece: &PieceType) {
         let frombb = BitBoard::from_square(self.from);
         let tobb = BitBoard::from_square(self.to);
@@ -176,6 +177,7 @@ impl Move {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::board::Board;
     use crate::square::Square;
 
     macro_rules! play_unplay_with_game {
@@ -225,6 +227,9 @@ mod tests {
         };
     }
 
+    test_play_unplay!(unplay_normal, [(Square::G1, Square::F3)]);
+    test_play_unplay!(unplay_create_en_passant, [(Square::E2, Square::E4)]);
+
     test_play_unplay!(
         play_unplay_large_sequence,
         [
@@ -237,5 +242,27 @@ mod tests {
         ]
     );
 
-    test_play_unplay!(unplay_normal, [(Square::E2, Square::E4)]);
+    test_play_unplay!(
+        unplay_capture,
+        "rnbqkb1r/pppppp2/8/8/8/8/PPPPP3/RNBQK2R b KQkq - 0 1",
+        [(Square::H8, Square::H1)]
+    );
+
+    test_play_unplay!(
+        unplay_capture_en_passant,
+        "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2",
+        [(Square::E5, Square::F6)]
+    );
+
+    test_play_unplay!(
+        unplay_promotion,
+        "8/8/8/8/8/8/5Kpk/8 b - - 0 1",
+        [(Square::G2, Square::G1)]
+    );
+
+    test_play_unplay!(
+        unplay_castle,
+        "rnbqkbnr/pppppppp/8/8/2BPPB2/P1N2N1P/1PPQ1PP1/R3K2R w KQkq - 0 1",
+        [(Square::E1, Square::C1)]
+    );
 }
