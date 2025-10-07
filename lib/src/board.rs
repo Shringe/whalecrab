@@ -510,13 +510,14 @@ mod tests {
     fn complex_fen() {
         let mut game = Game::default();
 
-        for m in [
-            Move::new(Square::E2, Square::E4, &game.position),
-            Move::new(Square::D7, Square::D5, &game.position),
-            Move::new(Square::E4, Square::D5, &game.position),
-            Move::new(Square::B8, Square::C6, &game.position),
-            Move::new(Square::F1, Square::B5, &game.position),
+        for (from, to) in [
+            (Square::E2, Square::E4),
+            (Square::D7, Square::D5),
+            (Square::E4, Square::D5),
+            (Square::B8, Square::C6),
+            (Square::F1, Square::B5),
         ] {
+            let m = Move::new(from, to, &game.position);
             game.play(&m);
         }
 
