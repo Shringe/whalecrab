@@ -316,7 +316,7 @@ impl Game {
                 // TODO: Implement way to movegen withhout setting attack boards
                 let attack_board = *self.get_attacks(&color);
                 let check_ray_board = *self.get_check_rays(&color);
-                let moves = piece.get_psuedo_legal_moves(self, m.from);
+                let moves = piece.psuedo_legal_moves(self, m.from);
                 let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
 
                 *self.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
@@ -380,12 +380,16 @@ impl Game {
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_fast(&self) -> Vec<Move> {
         let mut moves = Vec::new();
-        let occupied = self.get_occupied(&self.position.turn);
+        let color = &self.position.turn;
+        let occupied = self.get_occupied(color);
 
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                // moves.extend(piece.get_psuedo_legal_targets_fast(self, sq))
+                let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
+                for t in moveinfo.targets {
+                    moves.push(Move::new(sq, t, &self.position));
+                }
             }
         }
 
@@ -400,7 +404,7 @@ impl Game {
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.get_psuedo_legal_moves(self, sq))
+                moves.extend(piece.psuedo_legal_moves(self, sq))
             }
         }
 
@@ -420,7 +424,7 @@ impl Game {
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.get_legal_moves(self, sq))
+                moves.extend(piece.legal_moves(self, sq))
             }
         }
 

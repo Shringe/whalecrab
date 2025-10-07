@@ -12,7 +12,7 @@ use std::str::FromStr;
 use whalecrab_lib::movegen::pieces::piece;
 use whalecrab_lib::{
     bitboard::BitBoard,
-    board::{self, Board},
+    board::Board,
     file::File,
     game::Game,
     movegen::moves::{get_targets, Move},
@@ -383,8 +383,7 @@ impl App {
             let newbb = BitBoard::from_square(new);
             if let Some((piece, color)) = self.game.determine_piece(&newbb) {
                 if self.game.position.turn == color {
-                    self.potential_targets =
-                        get_targets(piece.legal_moves(&mut self.game, new));
+                    self.potential_targets = get_targets(piece.legal_moves(&mut self.game, new));
                 }
             }
         }
