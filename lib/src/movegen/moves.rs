@@ -112,138 +112,215 @@ impl Move {
             position,
         ))
     }
+
+    fn play_normal(&self, game: &mut Game) {
+        let frombb = BitBoard::from_square(self.from);
+        let tobb = BitBoard::from_square(self.to);
+        let (piece, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+
+        self.update_attack_boards(game, &piece, &color);
+        self.move_piece(game, &piece, &color, frombb, tobb);
+        self.revoke_castling_rights(game);
+        game.next_turn(&self);
+    }
+
+    fn play_capture(&self, game: &mut Game, piece_type: &PieceType) {
+        let frombb = BitBoard::from_square(self.from);
+        let tobb = BitBoard::from_square(self.to);
+        let (piece, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+        let enemy_color = color.opponent();
+
+        self.update_attack_boards(game, &piece, &color);
+        self.move_piece(game, &piece, &color, frombb, tobb);
+
+        // Capture the enemy piece
+        let enemy_pieces = game.get_pieces_mut(piece_type, &enemy_color);
+        *enemy_pieces ^= tobb;
+
+        self.revoke_castling_rights(game);
+        game.next_turn(&self);
+    }
+
+    fn play_create_en_passant(&self, game: &mut Game) {
+        let frombb = BitBoard::from_square(self.from);
+        let tobb = BitBoard::from_square(self.to);
+        let (piece, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+
+        self.update_attack_boards(game, &piece, &color);
+        self.move_piece(game, &piece, &color, frombb, tobb);
+        self.revoke_castling_rights(game);
+        game.next_turn(&self);
+    }
+
+    fn play_capture_en_passant(&self, game: &mut Game) {
+        let frombb = BitBoard::from_square(self.from);
+        let tobb = BitBoard::from_square(self.to);
+        let (piece, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+        let enemy_color = color.opponent();
+
+        self.update_attack_boards(game, &piece, &color);
+        self.move_piece(game, &piece, &color, frombb, tobb);
+
+        // Capture the pawn en passant
+        let en_passant_bb = BitBoard::from_square(
+            self.to
+                .backward(&color)
+                .expect("Can't find pawn in front of en_passant_target!"),
+        );
+        let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
+        *enemy_pawns ^= en_passant_bb;
+
+        self.revoke_castling_rights(game);
+        game.next_turn(&self);
+    }
+
+    fn play_promotion(&self, game: &mut Game, promoted_piece: &PieceType) {
+        let frombb = BitBoard::from_square(self.from);
+        let tobb = BitBoard::from_square(self.to);
+        let (piece, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+
+        self.update_attack_boards(game, &piece, &color);
+
+        // Remove pawn from original square
+        let pieces = game.get_pieces_mut(&piece, &color);
+        *pieces ^= frombb;
+
+        // Add promoted piece to new square
+        let promoted_pieces = game.get_pieces_mut(promoted_piece, &color);
+        *promoted_pieces |= tobb;
+
+        self.revoke_castling_rights(game);
+        game.next_turn(&self);
+    }
+
+    fn play_castle(&self, game: &mut Game, castle_side: &CastleSide) {
+        let frombb = BitBoard::from_square(self.from);
+        let (_, color) = game
+            .determine_piece(&frombb)
+            .expect("Couldn't find piece to move!");
+
+        match &color {
+            Color::White => {
+                game.position.castling_rights.white_queenside = false;
+                game.position.castling_rights.white_kingside = false;
+
+                match castle_side {
+                    CastleSide::Queenside => {
+                        game.position.white_kings ^= castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                        game.position.white_rooks ^= castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                    }
+                    CastleSide::Kingside => {
+                        game.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                        game.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                    }
+                }
+            }
+
+            Color::Black => {
+                game.position.castling_rights.black_queenside = false;
+                game.position.castling_rights.black_kingside = false;
+
+                match castle_side {
+                    CastleSide::Queenside => {
+                        game.position.black_kings ^= castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                        game.position.black_rooks ^= castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                    }
+                    CastleSide::Kingside => {
+                        game.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                        game.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                    }
+                }
+            }
+        }
+
+        game.next_turn(&self);
+    }
+
+    /// Helper method to update attack boards
+    fn update_attack_boards(&self, game: &mut Game, piece: &PieceType, color: &Color) {
+        let enemy_color = color.opponent();
+
+        match piece {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
+                // HACK
+                let attack_board = *game.get_attacks(&color);
+                let check_ray_board = *game.get_check_rays(&color);
+                let moves = piece.psuedo_legal_moves(game, self.from);
+                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
+
+                *game.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
+                *game.get_check_rays_mut(&color) = check_ray_board;
+            }
+            PieceType::King => {
+                *game.get_check_rays_mut(&enemy_color) = EMPTY;
+            }
+            _ => {}
+        }
+    }
+
+    /// Helper method to move a piece from one square to another
+    fn move_piece(
+        &self,
+        game: &mut Game,
+        piece: &PieceType,
+        color: &Color,
+        frombb: BitBoard,
+        tobb: BitBoard,
+    ) {
+        let pieces = game.get_pieces_mut(piece, color);
+        *pieces ^= frombb;
+        *pieces |= tobb;
+    }
+
+    /// Helper method to revoke castling rights based on move squares
+    fn revoke_castling_rights(&self, game: &mut Game) {
+        let mut revoke_rights = |square: &Square| match square {
+            &Square::E1 => {
+                game.position.castling_rights.white_kingside = false;
+                game.position.castling_rights.white_queenside = false;
+            }
+            &Square::A1 => game.position.castling_rights.white_queenside = false,
+            &Square::H1 => game.position.castling_rights.white_kingside = false,
+            &Square::E8 => {
+                game.position.castling_rights.black_kingside = false;
+                game.position.castling_rights.black_queenside = false;
+            }
+            &Square::A8 => game.position.castling_rights.black_queenside = false,
+            &Square::H8 => game.position.castling_rights.black_kingside = false,
+            _ => {}
+        };
+
+        revoke_rights(&self.from);
+        revoke_rights(&self.to);
+    }
+
+    /// Plays a move on the board
+    pub fn play(&self, game: &mut Game) {
+        match &self.variant {
+            MoveType::Normal => self.play_normal(game),
+            MoveType::Capture(piece_type) => self.play_capture(game, piece_type),
+            MoveType::CreateEnPassant => self.play_create_en_passant(game),
+            MoveType::CaptureEnPassant => self.play_capture_en_passant(game),
+            MoveType::Promotion(piece_type) => self.play_promotion(game, piece_type),
+            MoveType::Castle(castle_side) => self.play_castle(game, castle_side),
+        }
+    }
 }
 
 impl Game {
     /// Plays a move on the board, updating the position and engine values
     pub fn play(&mut self, m: &Move) {
-        let frombb = BitBoard::from_square(m.from);
-        let tobb = BitBoard::from_square(m.to);
-        let (piece, color) = self
-            .determine_piece(&frombb)
-            .expect("Couldn't find piece to move!");
-        let (enemy_piece, enemy_color) = match self.determine_piece(&tobb) {
-            Some((piece, color)) => (Some(piece), color),
-            None => {
-                let enemy_piece = if m.variant == MoveType::CaptureEnPassant {
-                    Some(PieceType::Pawn)
-                } else {
-                    None
-                };
-
-                (enemy_piece, color.opponent())
-            }
-        };
-
-        if let MoveType::Castle(side) = &m.variant {
-            match &color {
-                Color::White => {
-                    self.position.castling_rights.white_queenside = false;
-                    self.position.castling_rights.white_kingside = false;
-
-                    match side {
-                        CastleSide::Queenside => {
-                            self.position.white_kings ^=
-                                castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                            self.position.white_rooks ^=
-                                castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                        }
-                        CastleSide::Kingside => {
-                            self.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                            self.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                        }
-                    }
-                }
-
-                Color::Black => {
-                    self.position.castling_rights.black_queenside = false;
-                    self.position.castling_rights.black_kingside = false;
-
-                    match side {
-                        CastleSide::Queenside => {
-                            self.position.black_kings ^=
-                                castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                            self.position.black_rooks ^=
-                                castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
-                        }
-                        CastleSide::Kingside => {
-                            self.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                            self.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
-                        }
-                    }
-                }
-            }
-
-            self.next_turn(&m);
-            return;
-        }
-
-        // Update attack bitboards
-        match piece {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
-                // HACK: Clone so that attack boards are not automatically updated for now
-                // TODO: Implement way to movegen withhout setting attack boards
-                let attack_board = *self.get_attacks(&color);
-                let check_ray_board = *self.get_check_rays(&color);
-                let moves = piece.psuedo_legal_moves(self, m.from);
-                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
-
-                *self.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
-                *self.get_check_rays_mut(&color) = check_ray_board;
-            }
-            PieceType::King => {
-                *self.get_check_rays_mut(&enemy_color) = EMPTY;
-            }
-            _ => {}
-        }
-
-        // Remove the piece from its original square
-        let pieces = self.get_pieces_mut(&piece, &color);
-        *pieces ^= frombb;
-
-        // Add the piece to the new square
-        if let MoveType::Promotion(piece) = &m.variant {
-            let pieces = self.get_pieces_mut(piece, &color);
-            *pieces |= tobb;
-        } else {
-            *pieces |= tobb;
-        }
-
-        // Capture if available
-        if let Some(piece) = &enemy_piece {
-            let pieces = self.get_pieces_mut(piece, &enemy_color);
-            if m.variant == MoveType::CaptureEnPassant {
-                let en_passant_bb = BitBoard::from_square(
-                    m.to.backward(&color)
-                        .expect("Can't find pawn in front of en_passant_target!"),
-                );
-                *pieces ^= en_passant_bb;
-            } else {
-                *pieces ^= tobb;
-            }
-        }
-
-        // Revoke castling rights if something moves on a critical square
-        let mut revoke_rights = |square: &Square| match square {
-            &Square::E1 => {
-                self.position.castling_rights.white_kingside = false;
-                self.position.castling_rights.white_queenside = false;
-            }
-            &Square::A1 => self.position.castling_rights.white_queenside = false,
-            &Square::H1 => self.position.castling_rights.white_kingside = false,
-            &Square::E8 => {
-                self.position.castling_rights.black_kingside = false;
-                self.position.castling_rights.black_queenside = false;
-            }
-            &Square::A8 => self.position.castling_rights.black_queenside = false,
-            &Square::H8 => self.position.castling_rights.black_kingside = false,
-            _ => {}
-        };
-
-        revoke_rights(&m.from);
-        revoke_rights(&m.to);
-
-        self.next_turn(&m);
+        m.play(self);
     }
 }
 
@@ -497,29 +574,16 @@ mod tests {
     #[test]
     fn white_pawn_captures_black_pawn() {
         let mut game = Game::default();
-        let capture = Move {
-            from: Square::B4,
-            to: Square::C5,
-            variant: MoveType::Normal,
-        };
         let white_pawns_before = game.position.white_pawns.popcnt();
         let black_pawns_before = game.position.black_pawns.popcnt();
 
-        for m in [
-            &Move {
-                from: Square::B2,
-                to: Square::B4,
-                variant: MoveType::Normal,
-            },
-            &Move {
-                from: Square::C7,
-                to: Square::C5,
-                variant: MoveType::Normal,
-            },
-            &capture,
-        ] {
-            game.play(m);
+        for (from, to) in [(Square::B2, Square::B4), (Square::C7, Square::C5)] {
+            let m = Move::new(from, to, &game.position);
+            game.play(&m);
         }
+
+        let capture = Move::new(Square::B4, Square::C5, &game.position);
+        game.play(&capture);
 
         let white_pawns_after = game.position.white_pawns.popcnt();
         let black_pawns_after = game.position.black_pawns.popcnt();
