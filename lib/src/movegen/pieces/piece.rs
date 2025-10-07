@@ -107,6 +107,7 @@ pub trait Piece {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move>;
 
     /// Generates the attack and target board for a piece without updating game
+    /// Warning: Highly expiremental
     fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo;
 
     /// Generates legal moves considering king safety.
