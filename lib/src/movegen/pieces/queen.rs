@@ -1,31 +1,20 @@
 use crate::{
     game::Game,
     movegen::{moves::Move, pieces::piece::PieceMoveInfo},
-    square::{Direction, Square},
+    square::{Square, ALL_DIRECTIONS},
 };
 
 use super::piece::Piece;
-
-const DIRECTIONS: [Direction; 8] = [
-    Direction::North,
-    Direction::South,
-    Direction::East,
-    Direction::West,
-    Direction::NorthEast,
-    Direction::SouthEast,
-    Direction::NorthWest,
-    Direction::SouthWest,
-];
 
 pub struct Queen(pub Square);
 
 impl Piece for Queen {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
-        self.0.ray_moves(&DIRECTIONS, game)
+        self.0.ray_moves(&ALL_DIRECTIONS, game)
     }
 
     fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
-        self.0.rays(&DIRECTIONS, game)
+        self.0.rays(&ALL_DIRECTIONS, game)
     }
 }
 
