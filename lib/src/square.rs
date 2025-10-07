@@ -400,8 +400,6 @@ impl Square {
                 moveinfo.targets |= forwardbb;
                 moveinfo.attacks |= forwardbb;
                 moveinfo.check_rays |= forwardbb;
-                // ray.set(forward);
-                // check_ray.set(forward);
             }
 
             current = forward;

@@ -2,7 +2,10 @@ use crate::{
     bitboard::BitBoard,
     board::PieceType,
     game::Game,
-    movegen::moves::{Move, MoveType},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::piece::PieceMoveInfo,
+    },
     square::Square,
 };
 
@@ -77,6 +80,58 @@ impl Piece for Knight {
         }
 
         moves
+    }
+
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+        let mut moveinfo = PieceMoveInfo::default();
+
+        let rank = self.0.get_rank();
+        let file = self.0.get_file();
+
+        let enemy = game.position.turn.opponent();
+
+        let mut process_target = |t: Square| {
+            let tbb = BitBoard::from_square(t);
+            moveinfo.attacks |= tbb;
+
+            if let Some(color) = game.determine_color(&tbb) {
+                if color == enemy {
+                    moveinfo.targets |= tbb;
+                }
+            } else {
+                moveinfo.targets |= tbb;
+            }
+        };
+
+        if rank.to_index() < 6 {
+            let north = Square::make_square(rank.up().up(), file);
+            for t in [north.left(), north.right()].into_iter().flatten() {
+                process_target(t);
+            }
+        }
+
+        if rank.to_index() > 1 {
+            let south = Square::make_square(rank.down().down(), file);
+            for t in [south.left(), south.right()].into_iter().flatten() {
+                process_target(t);
+            }
+        }
+
+        if file.to_index() < 6 {
+            let east = Square::make_square(rank, file.right().right());
+            for t in [east.up(), east.down()].into_iter().flatten() {
+                process_target(t);
+            }
+        }
+
+        if file.to_index() > 1 {
+            let west = Square::make_square(rank, file.left().left());
+            for t in [west.up(), west.down()].into_iter().flatten() {
+                process_target(t);
+            }
+        }
+
+        moveinfo
     }
 }
 

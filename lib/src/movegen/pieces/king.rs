@@ -7,7 +7,7 @@ use crate::{
     square::{Square, ALL_DIRECTIONS},
 };
 
-use super::piece::Piece;
+use super::piece::{Piece, PieceMoveInfo};
 
 pub struct King(pub Square);
 
@@ -75,6 +75,29 @@ impl Piece for King {
         }
 
         moves
+    }
+
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+        let mut moveinfo = PieceMoveInfo::default();
+
+        let enemy = game.position.turn.opponent();
+
+        for d in ALL_DIRECTIONS {
+            if let Some(sq) = self.0.walk(&d) {
+                let sqbb = BitBoard::from_square(sq);
+                moveinfo.attacks |= sqbb;
+
+                if let Some(color) = game.determine_color(&sqbb) {
+                    if color == enemy {
+                        moveinfo.targets |= sqbb;
+                    }
+                } else {
+                    moveinfo.targets |= sqbb;
+                }
+            }
+        }
+
+        moveinfo
     }
 }
 
