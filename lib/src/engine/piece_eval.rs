@@ -1,5 +1,5 @@
 use crate::{
-    board::{Color, PieceType},
+    movegen::pieces::piece::{Color, PieceType},
     square::Square,
 };
 

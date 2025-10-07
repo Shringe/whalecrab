@@ -2,11 +2,10 @@ use std::fmt::{self, Display};
 use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
-use crate::board::{Color, PieceType};
 use crate::file::File;
 use crate::game::Game;
 use crate::movegen::moves::{Move, MoveType};
-use crate::movegen::pieces::piece::PieceMoveInfo;
+use crate::movegen::pieces::piece::{Color, PieceMoveInfo, PieceType};
 use crate::rank::Rank;
 
 pub enum Direction {

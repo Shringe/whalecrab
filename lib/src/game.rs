@@ -5,9 +5,12 @@ use std::{
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::{color_field_getters, Board, Color, PieceType, State},
+    board::{color_field_getters, Board, State},
     castling::{self, CastleSide},
-    movegen::moves::{get_targets, Move, MoveType},
+    movegen::{
+        moves::{get_targets, Move, MoveType},
+        pieces::piece::{Color, PieceType},
+    },
     square::Square,
 };
 
@@ -375,6 +378,21 @@ impl Game {
     }
 
     /// Generates all psuedo legal moves for the current player
+    pub fn generate_all_psuedo_legal_fast(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let occupied = self.get_occupied(&self.position.turn);
+
+        for sq in *occupied {
+            let sqbb = BitBoard::from_square(sq);
+            if let Some((piece, _)) = self.determine_piece(&sqbb) {
+                // moves.extend(piece.get_psuedo_legal_targets_fast(self, sq))
+            }
+        }
+
+        moves
+    }
+
+    /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
         let mut moves = Vec::new();
         let occupied = self.get_occupied(&self.position.turn);
@@ -420,13 +438,13 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::{Board, Color, PieceType, State};
+    use crate::board::{Board, State};
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
     use crate::movegen::pieces::king::King;
     use crate::movegen::pieces::pawn::Pawn;
-    use crate::movegen::pieces::piece::Piece;
+    use crate::movegen::pieces::piece::{Color, Piece, PieceType};
     use crate::square::Square;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 

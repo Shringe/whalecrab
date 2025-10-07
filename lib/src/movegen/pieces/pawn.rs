@@ -1,10 +1,9 @@
 use crate::{
     bitboard::BitBoard,
-    board::{Color, PieceType},
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::PieceMoveInfo,
+        pieces::piece::{Color, PieceMoveInfo, PieceType},
     },
     square::Square,
 };
@@ -109,7 +108,7 @@ impl Piece for Pawn {
         moves
     }
 
-    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let enemy_color = game.position.turn.opponent();
