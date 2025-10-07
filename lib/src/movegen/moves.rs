@@ -1,8 +1,9 @@
 use std::{fmt, str::FromStr};
 
 use crate::{
-    board::{Board, Color, PieceType},
+    board::Board,
     castling::CastleSide,
+    movegen::pieces::piece::{Color, PieceType},
     square::Square,
 };
 
@@ -114,7 +115,6 @@ impl Move {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::board::Color;
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::pieces::king::King;

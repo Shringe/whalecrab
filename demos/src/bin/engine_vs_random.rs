@@ -1,5 +1,5 @@
 use rand::Rng;
-use whalecrab_lib::{board::Color, game::Game};
+use whalecrab_lib::{game::Game, movegen::pieces::piece::Color};
 
 fn main() {
     let mut game = Game::default();

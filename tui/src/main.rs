@@ -9,6 +9,7 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
+use whalecrab_lib::movegen::pieces::piece;
 use whalecrab_lib::{
     bitboard::BitBoard,
     board::{self, Board},
@@ -81,23 +82,23 @@ impl Ascii {
         }
     }
 
-    pub fn get(&self, piece: &board::PieceType, color: &board::Color) -> &String {
+    pub fn get(&self, piece: &piece::PieceType, color: &piece::Color) -> &String {
         match color {
-            board::Color::White => match piece {
-                board::PieceType::Pawn => &self.white_pawn,
-                board::PieceType::Knight => &self.white_knight,
-                board::PieceType::Bishop => &self.white_bishop,
-                board::PieceType::Rook => &self.white_rook,
-                board::PieceType::Queen => &self.white_queen,
-                board::PieceType::King => &self.white_king,
+            piece::Color::White => match piece {
+                piece::PieceType::Pawn => &self.white_pawn,
+                piece::PieceType::Knight => &self.white_knight,
+                piece::PieceType::Bishop => &self.white_bishop,
+                piece::PieceType::Rook => &self.white_rook,
+                piece::PieceType::Queen => &self.white_queen,
+                piece::PieceType::King => &self.white_king,
             },
-            board::Color::Black => match piece {
-                board::PieceType::Pawn => &self.black_pawn,
-                board::PieceType::Knight => &self.black_knight,
-                board::PieceType::Bishop => &self.black_bishop,
-                board::PieceType::Rook => &self.black_rook,
-                board::PieceType::Queen => &self.black_queen,
-                board::PieceType::King => &self.black_king,
+            piece::Color::Black => match piece {
+                piece::PieceType::Pawn => &self.black_pawn,
+                piece::PieceType::Knight => &self.black_knight,
+                piece::PieceType::Bishop => &self.black_bishop,
+                piece::PieceType::Rook => &self.black_rook,
+                piece::PieceType::Queen => &self.black_queen,
+                piece::PieceType::King => &self.black_king,
             },
         }
     }
@@ -352,8 +353,8 @@ impl App {
         }
 
         let player = match self.game.position.turn {
-            board::Color::White => &self.player_white,
-            board::Color::Black => &self.player_black,
+            piece::Color::White => &self.player_white,
+            piece::Color::Black => &self.player_black,
         };
 
         match player {
@@ -438,8 +439,8 @@ impl App {
             KeyCode::Esc => self.unselect(),
             KeyCode::Enter => {
                 let player = match self.game.position.turn {
-                    board::Color::White => &self.player_white,
-                    board::Color::Black => &self.player_black,
+                    piece::Color::White => &self.player_white,
+                    piece::Color::Black => &self.player_black,
                 };
 
                 match player {

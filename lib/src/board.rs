@@ -2,19 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::CastlingRights,
     file::File,
-    game::Game,
-    movegen::{
-        moves::Move,
-        pieces::{
-            bishop::Bishop,
-            king::King,
-            knight::Knight,
-            pawn::Pawn,
-            piece::{Color, Piece, PieceType},
-            queen::Queen,
-            rook::Rook,
-        },
-    },
+    movegen::pieces::piece::{Color, PieceType},
     rank::Rank,
     square::Square,
 };
@@ -480,7 +468,7 @@ impl Hash for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{game::Game, test_utils::compare_to_fen};
+    use crate::{game::Game, movegen::moves::Move, test_utils::compare_to_fen};
 
     #[test]
     fn to_fen() {
