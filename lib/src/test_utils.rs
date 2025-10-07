@@ -70,7 +70,7 @@ mod tests {
 
         assert_eq!(
             format_pretty_list(&with_trait),
-            "whalecrab::square::Square list [
+            "whalecrab_lib::square::Square list [
   A1,
   F5,
   H3,
@@ -82,7 +82,7 @@ mod tests {
 
         assert_eq!(
             format_pretty_list(&empty),
-            "whalecrab::square::Square list [];"
+            "whalecrab_lib::square::Square list [];"
         );
     }
 
