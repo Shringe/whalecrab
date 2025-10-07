@@ -5,9 +5,23 @@ use crate::{
     movegen::moves::{Move, MoveType},
 };
 
+/// Stores where a piece could move to and what squares it currently defends
+#[derive(Default)]
+pub struct PieceMoveInfo {
+    /// The possible squares a piece can move to
+    pub targets: BitBoard,
+    /// The squares a piece attacks/defends
+    pub attacks: BitBoard,
+    /// Pins for ray pieces. Empty if not a ray piece
+    pub check_rays: BitBoard,
+}
+
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move>;
+
+    /// Generates the attack and target board for a piece without updating game
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo;
 
     /// Generates legal moves considering king safety.
     fn legal_moves(&self, game: &mut Game) -> Vec<Move> {

@@ -4,12 +4,23 @@ use crate::{
     square::{Direction, Square},
 };
 
-use super::piece::Piece;
+use super::piece::{Piece, PieceMoveInfo};
 
 pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+        let directions = [
+            Direction::NorthEast,
+            Direction::SouthEast,
+            Direction::NorthWest,
+            Direction::SouthWest,
+        ];
+
+        self.0.ray_moves(&directions, game)
+    }
+
+    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         let directions = [
             Direction::NorthEast,
             Direction::SouthEast,
