@@ -317,7 +317,7 @@ mod tests {
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::{Color, Piece, PieceType};
     use crate::square::Square;
-    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
+    use crate::test_utils::{compare_to_fen, should_generate};
 
     #[test]
     fn both_lose_castling_rights_by_moving_kings() {
