@@ -4,7 +4,11 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-use crate::{bitboard::BitBoard, board::Color, game::Game, movegen::moves::Move};
+use crate::{
+    bitboard::BitBoard,
+    game::Game,
+    movegen::{moves::Move, pieces::piece::Color},
+};
 
 #[derive(Clone)]
 pub struct ScoredMove(pub Move, f32);

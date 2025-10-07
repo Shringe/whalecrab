@@ -6,7 +6,12 @@ use crate::{
     movegen::{
         moves::Move,
         pieces::{
-            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
+            bishop::Bishop,
+            king::King,
+            knight::Knight,
+            pawn::Pawn,
+            piece::{Color, Piece, PieceType},
+            queen::Queen,
             rook::Rook,
         },
     },
@@ -17,92 +22,20 @@ use std::{collections::HashMap, fmt, hash::Hash, str::FromStr};
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, PartialEq, Clone, Hash, Copy)]
-pub enum Color {
-    White,
-    Black,
-}
-
-impl Color {
-    pub fn opponent(&self) -> Color {
-        match &self {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-        }
-    }
-
-    pub fn final_rank(&self) -> Rank {
-        match &self {
-            Color::White => Rank::Eighth,
-            Color::Black => Rank::First,
-        }
-    }
-}
-
-pub const ALL_PIECE_TYPES: [PieceType; 6] = [
-    PieceType::Pawn,
-    PieceType::Knight,
-    PieceType::Bishop,
-    PieceType::Rook,
-    PieceType::Queen,
-    PieceType::King,
-];
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum PieceType {
-    Pawn,
-    Knight,
-    Bishop,
-    Rook,
-    Queen,
-    King,
-}
-
-impl PieceType {
-    pub fn get_psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
-        match self {
-            PieceType::Pawn => Pawn(square).psuedo_legal_moves(game),
-            PieceType::Knight => Knight(square).psuedo_legal_moves(game),
-            PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
-            PieceType::Rook => Rook(square).psuedo_legal_moves(game),
-            PieceType::Queen => Queen(square).psuedo_legal_moves(game),
-            PieceType::King => King(square).psuedo_legal_moves(game),
-        }
-    }
-
-    pub fn get_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
-        match self {
-            PieceType::Pawn => Pawn(square).legal_moves(game),
-            PieceType::Knight => Knight(square).legal_moves(game),
-            PieceType::Bishop => Bishop(square).legal_moves(game),
-            PieceType::Rook => Rook(square).legal_moves(game),
-            PieceType::Queen => Queen(square).legal_moves(game),
-            PieceType::King => King(square).legal_moves(game),
-        }
-    }
-
-    pub fn is_ray_piece(&self) -> bool {
-        match self {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => true,
-            _ => false,
-        }
-    }
-}
-
 macro_rules! color_field_getters {
     ($field_name:ident, $return_type:ty) => {
         paste::paste! {
-            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::board::Color) -> &mut $return_type {
+            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::movegen::pieces::piece::Color) -> &mut $return_type {
                 match color {
-                    crate::board::Color::White => &mut self.[<white_ $field_name>],
-                    crate::board::Color::Black => &mut self.[<black_ $field_name>],
+                    crate::movegen::pieces::piece::Color::White => &mut self.[<white_ $field_name>],
+                    crate::movegen::pieces::piece::Color::Black => &mut self.[<black_ $field_name>],
                 }
             }
 
-            pub fn [<get_ $field_name>](&self, color: &crate::board::Color) -> &$return_type {
+            pub fn [<get_ $field_name>](&self, color: &crate::movegen::pieces::piece::Color) -> &$return_type {
                 match color {
-                    crate::board::Color::White => &self.[<white_ $field_name>],
-                    crate::board::Color::Black => &self.[<black_ $field_name>],
+                    crate::movegen::pieces::piece::Color::White => &self.[<white_ $field_name>],
+                    crate::movegen::pieces::piece::Color::Black => &self.[<black_ $field_name>],
                 }
             }
         }

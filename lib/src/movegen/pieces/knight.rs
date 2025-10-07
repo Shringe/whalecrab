@@ -1,10 +1,9 @@
 use crate::{
     bitboard::BitBoard,
-    board::PieceType,
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::PieceMoveInfo,
+        pieces::piece::{PieceMoveInfo, PieceType},
     },
     square::Square,
 };
@@ -82,7 +81,7 @@ impl Piece for Knight {
         moves
     }
 
-    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let rank = self.0.get_rank();
@@ -137,7 +136,8 @@ impl Piece for Knight {
 
 #[cfg(test)]
 mod tests {
-    use crate::{board::Color, test_utils::format_pretty_list};
+    use crate::movegen::pieces::piece::Color;
+    use crate::test_utils::format_pretty_list;
 
     use super::*;
 

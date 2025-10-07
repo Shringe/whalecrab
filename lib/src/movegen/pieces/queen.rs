@@ -13,14 +13,16 @@ impl Piece for Queen {
         self.0.ray_moves(&ALL_DIRECTIONS, game)
     }
 
-    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         self.0.rays(&ALL_DIRECTIONS, game)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{bitboard::BitBoard, board::PieceType, test_utils::format_pretty_list};
+    use crate::{
+        bitboard::BitBoard, movegen::pieces::piece::PieceType, test_utils::format_pretty_list,
+    };
 
     use super::*;
 

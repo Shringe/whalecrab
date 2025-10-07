@@ -1,9 +1,87 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::PieceType,
     game::Game,
-    movegen::moves::{Move, MoveType},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::{
+            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, queen::Queen, rook::Rook,
+        },
+    },
+    rank::Rank,
+    square::Square,
 };
+
+#[derive(Debug, PartialEq, Clone, Hash, Copy)]
+pub enum Color {
+    White,
+    Black,
+}
+
+impl Color {
+    pub fn opponent(&self) -> Color {
+        match &self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+
+    pub fn final_rank(&self) -> Rank {
+        match &self {
+            Color::White => Rank::Eighth,
+            Color::Black => Rank::First,
+        }
+    }
+}
+
+pub const ALL_PIECE_TYPES: [PieceType; 6] = [
+    PieceType::Pawn,
+    PieceType::Knight,
+    PieceType::Bishop,
+    PieceType::Rook,
+    PieceType::Queen,
+    PieceType::King,
+];
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum PieceType {
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
+}
+
+impl PieceType {
+    pub fn get_psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).psuedo_legal_moves(game),
+            PieceType::Knight => Knight(square).psuedo_legal_moves(game),
+            PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
+            PieceType::Rook => Rook(square).psuedo_legal_moves(game),
+            PieceType::Queen => Queen(square).psuedo_legal_moves(game),
+            PieceType::King => King(square).psuedo_legal_moves(game),
+        }
+    }
+
+    pub fn get_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).legal_moves(game),
+            PieceType::Knight => Knight(square).legal_moves(game),
+            PieceType::Bishop => Bishop(square).legal_moves(game),
+            PieceType::Rook => Rook(square).legal_moves(game),
+            PieceType::Queen => Queen(square).legal_moves(game),
+            PieceType::King => King(square).legal_moves(game),
+        }
+    }
+
+    pub fn is_ray_piece(&self) -> bool {
+        match self {
+            PieceType::Bishop | PieceType::Rook | PieceType::Queen => true,
+            _ => false,
+        }
+    }
+}
 
 /// Stores where a piece could move to and what squares it currently defends
 #[derive(Default)]
@@ -21,7 +99,7 @@ pub trait Piece {
     fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move>;
 
     /// Generates the attack and target board for a piece without updating game
-    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo;
+    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo;
 
     /// Generates legal moves considering king safety.
     fn legal_moves(&self, game: &mut Game) -> Vec<Move> {

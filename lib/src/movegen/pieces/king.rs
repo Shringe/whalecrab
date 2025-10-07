@@ -1,9 +1,11 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::Color,
     castling,
     game::Game,
-    movegen::moves::{Move, MoveType},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::piece::Color,
+    },
     square::{Square, ALL_DIRECTIONS},
 };
 
@@ -77,7 +79,7 @@ impl Piece for King {
         moves
     }
 
-    fn psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let enemy = game.position.turn.opponent();
@@ -105,7 +107,8 @@ impl Piece for King {
 mod tests {
     use super::*;
     use crate::{
-        board::{Board, PieceType},
+        board::Board,
+        movegen::pieces::piece::PieceType,
         test_utils::{should_generate, shouldnt_generate},
     };
 
