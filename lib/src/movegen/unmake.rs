@@ -20,8 +20,6 @@ impl Move {
         let pieces = game.get_pieces_mut(&piece, &color);
         *pieces ^= tobb;
         *pieces |= frombb;
-
-        self.restore_attack_boards(game, &piece, &color);
     }
 
     fn unplay_capture(&self, game: &mut Game, piece_type: &PieceType) {
@@ -40,8 +38,6 @@ impl Move {
         // Restore captured enemy piece
         let enemy_pieces = game.get_pieces_mut(piece_type, &enemy_color);
         *enemy_pieces |= tobb;
-
-        self.restore_attack_boards(game, &piece, &color);
     }
 
     fn unplay_create_en_passant(&self, game: &mut Game) {
@@ -55,8 +51,6 @@ impl Move {
         let pieces = game.get_pieces_mut(&piece, &color);
         *pieces ^= tobb;
         *pieces |= frombb;
-
-        self.restore_attack_boards(game, &piece, &color);
     }
 
     fn unplay_capture_en_passant(&self, game: &mut Game) {
@@ -80,8 +74,6 @@ impl Move {
         );
         let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
         *enemy_pawns |= en_passant_bb;
-
-        self.restore_attack_boards(game, &piece, &color);
     }
 
     // TODO, either seperate promotion and captures, or somehow restore a potential captured piece on promotion
@@ -99,14 +91,12 @@ impl Move {
         // Restore original pawn
         let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
         *pawns |= frombb;
-
-        self.restore_attack_boards(game, &PieceType::Pawn, &color);
     }
 
     fn unplay_castle(&self, game: &mut Game, castle_side: &CastleSide) {
-        let frombb = BitBoard::from_square(self.from);
+        let to = BitBoard::from_square(self.to);
         let color = game
-            .determine_color(&frombb)
+            .determine_color(&to)
             .expect("Couldn't find king to unmove!");
 
         match &color {
@@ -131,27 +121,6 @@ impl Move {
                     game.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
                 }
             },
-        }
-    }
-
-    /// Helper method to restore attack boards when unmaking a move
-    fn restore_attack_boards(&self, game: &mut Game, piece: &PieceType, color: &Color) {
-        let enemy_color = color.opponent();
-
-        match piece {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
-                let attack_board = *game.get_attacks(&color);
-                let check_ray_board = *game.get_check_rays(&color);
-                let moves = piece.psuedo_legal_moves(game, self.from);
-                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
-
-                *game.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
-                *game.get_check_rays_mut(&color) = check_ray_board;
-            }
-            PieceType::King => {
-                *game.get_check_rays_mut(&enemy_color) = EMPTY;
-            }
-            _ => {}
         }
     }
 
