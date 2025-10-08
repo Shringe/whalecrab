@@ -6,6 +6,7 @@ use crate::{
         moves::{get_targets, Move, MoveType},
         pieces::piece::{Color, PieceType},
     },
+    square::Square,
 };
 
 impl Move {
@@ -124,6 +125,16 @@ impl Move {
         }
     }
 
+    /// Restores unrestorable information
+    fn restore(&self, game: &mut Game) {
+        let last_position = game
+            .last_position
+            .take()
+            .expect("Tried to unmake a move, but the required information is not present");
+        game.position.castling_rights = last_position.castling_rights;
+        game.position.half_move_timeout = last_position.half_move_timeout;
+    }
+
     /// Unplays a move on the board.
     /// Bugs are still present.
     /// Some stuff still needs to be restored.
@@ -145,6 +156,7 @@ impl Move {
             MoveType::Castle(castle_side) => self.unplay_castle(game, castle_side),
         }
 
+        self.restore(game);
         game.previous_turn(self);
     }
 }

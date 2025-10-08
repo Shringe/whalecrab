@@ -6,11 +6,19 @@ use std::{
 use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, State},
+    castling::CastlingRights,
     movegen::{
         moves::{Move, MoveType},
         pieces::piece::{Color, PieceType},
     },
 };
+
+/// Non-restoreable information needed to undo a move
+#[derive(Clone)]
+pub struct UnRestoreable {
+    pub castling_rights: CastlingRights,
+    pub half_move_timeout: usize,
+}
 
 #[derive(Clone)]
 pub struct Game {
@@ -32,6 +40,7 @@ pub struct Game {
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
+    pub last_position: Option<UnRestoreable>,
 }
 
 impl Default for Game {
@@ -65,6 +74,7 @@ impl Game {
             rooks: EMPTY,
             queens: EMPTY,
             kings: EMPTY,
+            last_position: None,
         };
 
         game.reinitialize();
