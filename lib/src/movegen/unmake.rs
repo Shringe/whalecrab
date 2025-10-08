@@ -156,15 +156,16 @@ impl Move {
     }
 
     /// Unplays a move on the board.
+    /// Bugs are still present.
     /// Some stuff still needs to be restored.
     /// What we will need a lookup table for:
     /// - [ ] Castling rights
     /// - [ ] Halfmove timeout
     ///
     /// What should be possible to restore:
-    /// - [ ] En passant target
-    /// - [ ] Fullmove clock
-    /// - [ ] Turn color
+    /// - [x] En passant target
+    /// - [x] Fullmove clock
+    /// - [x] Turn color
     pub fn unplay(&self, game: &mut Game) {
         match &self.variant {
             MoveType::Normal => self.unplay_normal(game),
