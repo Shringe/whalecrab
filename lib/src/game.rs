@@ -14,13 +14,13 @@ use crate::{
 };
 
 /// Non-restoreable information needed to undo a move
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Game {
     pub position: Board,
     pub white_occupied: BitBoard,

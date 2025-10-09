@@ -2,6 +2,7 @@ use std::any::type_name;
 use std::fmt::Display;
 
 use crate::board::Board;
+use crate::game::Game;
 use crate::movegen::moves::Move;
 
 /// Formats the items in the vector neatly with their native display methods
@@ -21,6 +22,66 @@ pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
     lines.push(end);
 
     lines.join("\n")
+}
+
+/// Adds an error message to the vector if the field of the two structs are found to be different
+macro_rules! assert_push {
+    ($vec: expr, $expected: expr, $actual: expr, $field: ident, $fmt: tt) => {{
+        if $expected.$field != $actual.$field {
+            $vec.push(format!(
+                concat!(
+                    "{} has changed:\nExpected:\n",
+                    $fmt,
+                    "\nFound:\n",
+                    $fmt,
+                    "\n"
+                ),
+                stringify!($field),
+                $expected.$field,
+                $actual.$field
+            ));
+        }
+    }};
+    ($vec: expr, $expected: expr, $actual: expr, $field: ident) => {{
+        assert_push!($vec, $expected, $actual, $field, "{}");
+    }};
+}
+
+/// Compares two games thoroughly and panics if any differences are found
+#[track_caller]
+pub fn compare_games(before: &Game, after: &Game) {
+    let mut differences = Vec::new();
+
+    assert_push!(differences, before, after, position, "{:?}");
+
+    assert_push!(differences, before, after, white_occupied);
+    assert_push!(differences, before, after, black_occupied);
+    assert_push!(differences, before, after, occupied);
+
+    assert_push!(differences, before, after, pawns);
+    assert_push!(differences, before, after, knights);
+    assert_push!(differences, before, after, bishops);
+    assert_push!(differences, before, after, rooks);
+    assert_push!(differences, before, after, queens);
+    assert_push!(differences, before, after, kings);
+
+    assert_push!(differences, before, after, white_num_checks);
+    assert_push!(differences, before, after, black_num_checks);
+    assert_push!(differences, before, after, white_attacks);
+    assert_push!(differences, before, after, black_attacks);
+    assert_push!(differences, before, after, white_check_rays);
+    assert_push!(differences, before, after, black_check_rays);
+
+    assert_push!(differences, before, after, position_history, "{:?}");
+    assert_push!(differences, before, after, transposition_table, "{:?}");
+
+    if !differences.is_empty() {
+        panic!(
+            "Games differ in {} field(s):\n{}",
+            differences.len(),
+            differences.join("\n")
+        );
+    }
 }
 
 /// Compares and actual board to one generated from a fen

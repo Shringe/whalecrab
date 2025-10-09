@@ -155,11 +155,12 @@ mod tests {
     use super::*;
     use crate::board::Board;
     use crate::square::Square;
+    use crate::test_utils::compare_games;
 
     macro_rules! play_unplay_with_game {
         ($game:expr, $sequence:expr) => {{
             let mut game = $game;
-            let before = game.position.clone();
+            let before = game.clone();
             let mut has_played = Vec::new();
             for (from, to) in $sequence {
                 let m = Move::new(from, to, &game.position);
@@ -172,8 +173,7 @@ mod tests {
                 m.unplay(&mut game);
             }
 
-            let after = game.position;
-            assert_eq!(before, after);
+            compare_games(&before, &game);
         }};
     }
 
