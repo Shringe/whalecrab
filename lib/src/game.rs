@@ -81,6 +81,25 @@ impl Game {
         game
     }
 
+    /// Restores the essential data from the previous position
+    pub fn restore_position(&mut self) {
+        let last_position = self
+            .last_position
+            .take()
+            .expect("Tried to unmake a move, but the required information is not present");
+        self.position.castling_rights = last_position.castling_rights;
+        self.position.half_move_timeout = last_position.half_move_timeout;
+    }
+
+    /// Captures essential position information to be restored later
+    pub fn capture_position(&mut self) {
+        let last_position = UnRestoreable {
+            castling_rights: self.position.castling_rights.clone(),
+            half_move_timeout: self.position.half_move_timeout.clone(),
+        };
+        self.last_position = Some(last_position);
+    }
+
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
     fn refresh(&mut self) {
