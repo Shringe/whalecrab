@@ -203,6 +203,7 @@ impl Move {
 
     /// Plays a move on the board
     pub fn play(&self, game: &mut Game) {
+        game.capture_position();
         match &self.variant {
             MoveType::Normal => self.play_normal(game),
             MoveType::Capture(piece_type) => self.play_capture(game, piece_type),

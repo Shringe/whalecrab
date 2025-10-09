@@ -125,16 +125,6 @@ impl Move {
         }
     }
 
-    /// Restores unrestorable information
-    fn restore(&self, game: &mut Game) {
-        let last_position = game
-            .last_position
-            .take()
-            .expect("Tried to unmake a move, but the required information is not present");
-        game.position.castling_rights = last_position.castling_rights;
-        game.position.half_move_timeout = last_position.half_move_timeout;
-    }
-
     /// Unplays a move on the board.
     /// Bugs are still present.
     /// Some stuff still needs to be restored.
@@ -156,7 +146,7 @@ impl Move {
             MoveType::Castle(castle_side) => self.unplay_castle(game, castle_side),
         }
 
-        self.restore(game);
+        game.restore_position();
         game.previous_turn(self);
     }
 }
@@ -172,19 +162,39 @@ mod tests {
             let mut game = $game;
             let before = game.position.clone();
             let mut has_played = Vec::new();
-            for (from, to) in $sequence {
-                let m = Move::new(from, to, &game.position);
+
+            println!("=== Starting play_unplay_with_game test ===");
+            println!("Initial position: {:?}", before);
+
+            for (i, (from, to)) in $sequence.iter().enumerate() {
+                let m = Move::new(*from, *to, &game.position);
+                println!("\n[Play {}] Move: {} -> {}", i, from, to);
+                println!("  Before play: {:?}", game.position);
                 m.play(&mut game);
+                println!("  After play: {:?}", game.position);
                 has_played.push(m);
             }
 
+            println!("\n=== Beginning unplay sequence ===");
             has_played.reverse();
-            for m in has_played {
+            for (i, m) in has_played.iter().enumerate() {
+                println!("\n[Unplay {}] Move: {:?}", i, m);
+                println!("  Before unplay: {:?}", game.position);
                 m.unplay(&mut game);
+                println!("  After unplay: {:?}", game.position);
             }
 
             let after = game.position;
-            assert_eq!(before, after);
+            println!("\n=== Final comparison ===");
+            println!("Before:  {:?}", before);
+            println!("After:   {:?}", after);
+            println!("Match: {}", before == after);
+
+            assert_eq!(
+                before, after,
+                "\nPosition mismatch!\nExpected: {:?}\nGot: {:?}",
+                before, after
+            );
         }};
     }
 
