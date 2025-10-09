@@ -1,12 +1,11 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY},
+    bitboard::BitBoard,
     castling::{self, CastleSide},
     game::Game,
     movegen::{
-        moves::{get_targets, Move, MoveType},
+        moves::{Move, MoveType},
         pieces::piece::{Color, PieceType},
     },
-    square::Square,
 };
 
 impl Move {
@@ -162,39 +161,19 @@ mod tests {
             let mut game = $game;
             let before = game.position.clone();
             let mut has_played = Vec::new();
-
-            println!("=== Starting play_unplay_with_game test ===");
-            println!("Initial position: {:?}", before);
-
-            for (i, (from, to)) in $sequence.iter().enumerate() {
-                let m = Move::new(*from, *to, &game.position);
-                println!("\n[Play {}] Move: {} -> {}", i, from, to);
-                println!("  Before play: {:?}", game.position);
+            for (from, to) in $sequence {
+                let m = Move::new(from, to, &game.position);
                 m.play(&mut game);
-                println!("  After play: {:?}", game.position);
                 has_played.push(m);
             }
 
-            println!("\n=== Beginning unplay sequence ===");
             has_played.reverse();
-            for (i, m) in has_played.iter().enumerate() {
-                println!("\n[Unplay {}] Move: {:?}", i, m);
-                println!("  Before unplay: {:?}", game.position);
+            for m in has_played {
                 m.unplay(&mut game);
-                println!("  After unplay: {:?}", game.position);
             }
 
             let after = game.position;
-            println!("\n=== Final comparison ===");
-            println!("Before:  {:?}", before);
-            println!("After:   {:?}", after);
-            println!("Match: {}", before == after);
-
-            assert_eq!(
-                before, after,
-                "\nPosition mismatch!\nExpected: {:?}\nGot: {:?}",
-                before, after
-            );
+            assert_eq!(before, after);
         }};
     }
 
