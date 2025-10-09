@@ -40,7 +40,7 @@ pub struct Game {
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
-    pub last_position: Option<UnRestoreable>,
+    pub position_history: Vec<UnRestoreable>,
 }
 
 impl Default for Game {
@@ -74,7 +74,7 @@ impl Game {
             rooks: EMPTY,
             queens: EMPTY,
             kings: EMPTY,
-            last_position: None,
+            position_history: Vec::new(),
         };
 
         game.reinitialize();
@@ -84,8 +84,8 @@ impl Game {
     /// Restores the essential data from the previous position
     pub fn restore_position(&mut self) {
         let last_position = self
-            .last_position
-            .take()
+            .position_history
+            .pop()
             .expect("Tried to unmake a move, but the required information is not present");
         self.position.castling_rights = last_position.castling_rights;
         self.position.half_move_timeout = last_position.half_move_timeout;
@@ -97,7 +97,7 @@ impl Game {
             castling_rights: self.position.castling_rights.clone(),
             half_move_timeout: self.position.half_move_timeout.clone(),
         };
-        self.last_position = Some(last_position);
+        self.position_history.push(last_position);
     }
 
     /// Recalculates certain cached values regarding the position
