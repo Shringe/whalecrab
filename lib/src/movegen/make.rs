@@ -145,6 +145,8 @@ impl Move {
 
     /// Helper method to update attack boards
     fn update_attack_boards(&self, game: &mut Game, piece: &PieceType, color: &Color) {
+        return;
+
         let enemy_color = color.opponent();
 
         match piece {
