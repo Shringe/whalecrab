@@ -24,8 +24,8 @@ impl Piece for King {
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.0.walk(&d) {
                 let sqbb = BitBoard::from_square(sq);
-                let attack_bitboard = game.get_attacks_mut(&friendly);
-                attack_bitboard.set(sq);
+                // let attack_bitboard = game.get_attacks_mut(&friendly);
+                // attack_bitboard.set(sq);
 
                 if let Some((piece, color)) = game.determine_piece(&sqbb) {
                     if color == enemy {

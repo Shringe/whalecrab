@@ -71,8 +71,8 @@ impl Piece for Pawn {
             .flatten()
         {
             let diagnolbb = BitBoard::from_square(diagnol);
-            let attack_bitboard = game.get_attacks_mut(&friendly);
-            attack_bitboard.set(diagnol);
+            // let attack_bitboard = game.get_attacks_mut(&friendly);
+            // attack_bitboard.set(diagnol);
             if let Some((piece, enemy)) = game.determine_piece(&diagnolbb) {
                 if enemy == enemy_color {
                     if diagnol.get_rank() == final_rank {

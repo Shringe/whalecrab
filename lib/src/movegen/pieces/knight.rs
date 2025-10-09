@@ -23,8 +23,8 @@ impl Piece for Knight {
 
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
-            let attack_bitboard = game.get_attacks_mut(&friendly);
-            attack_bitboard.set(t);
+            // let attack_bitboard = game.get_attacks_mut(&friendly);
+            // attack_bitboard.set(t);
 
             if let Some((piece, color)) = game.determine_piece(&tbb) {
                 if color == friendly {

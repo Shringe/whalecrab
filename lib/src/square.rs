@@ -335,8 +335,8 @@ impl Square {
                 *num_checks += 1;
             }
 
-            let attack_bitboard = game.get_attacks_mut(&color);
-            *attack_bitboard |= ray;
+            // let attack_bitboard = game.get_attacks_mut(&color);
+            // *attack_bitboard |= ray;
             for sq in ray {
                 let sqbb = BitBoard::from_square(sq);
                 if let Some((enemy, _)) = game.determine_piece(&sqbb) {

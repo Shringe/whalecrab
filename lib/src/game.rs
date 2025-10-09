@@ -142,13 +142,17 @@ impl Game {
         } else {
             self.position.seen_positions.insert(self.position.hash, 1);
         }
+
+        self.update_attacks();
     }
+
+    /// Updates attack bitboards
+    fn update_attacks(&mut self) {}
 
     /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
     /// move before playing it through self.generate(_psuedo)_legal_moves()
     pub fn reinitialize(&mut self) {
         self.refresh();
-
         // HACK: populating check and attacks boards
         self.generate_all_psuedo_legal_moves();
         self.position.turn = self.position.turn.opponent();
