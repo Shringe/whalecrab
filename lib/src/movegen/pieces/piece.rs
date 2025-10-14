@@ -119,6 +119,10 @@ pub trait Piece {
         let attack_board = game.get_attacks(&enemy);
         let check_ray_board = game.get_check_rays(&enemy);
 
+        let kingbb = game.get_pieces(&PieceType::King, &game.position.turn);
+        let king = kingbb.to_square();
+        let num_checks = game.num_attackers(king);
+
         for m in psuedo_legal {
             let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
@@ -126,13 +130,14 @@ pub trait Piece {
                 .determine_piece(&frombb)
                 .expect("Can't move nonexisting piece!");
 
-            let num_checks = game.get_num_checks(&color);
             let is_moving_king = piece == PieceType::King;
             let is_capturing = matches!(m.variant, MoveType::Capture(_));
-            let is_blocking = game.get_check_rays(&color.opponent()) & tobb != EMPTY;
+            let checks = game.get_check_rays(&enemy);
+            let is_blocking = checks & tobb != EMPTY;
+            println!("{:?}\n{}\n{}", piece, checks, tobb);
 
             // Handle being in check
-            match *num_checks {
+            match num_checks {
                 1 => {
                     if !(is_moving_king || is_capturing || is_blocking) {
                         continue;
