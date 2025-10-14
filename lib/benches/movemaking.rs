@@ -7,7 +7,8 @@ fn bench(c: &mut Criterion) {
     c.bench_function("Make/Unmake all legal moves", |b| {
         b.iter(|| {
             for m in &moves {
-                game.play(&m);
+                m.play(&mut game);
+                m.unplay(&mut game);
             }
         });
     });
