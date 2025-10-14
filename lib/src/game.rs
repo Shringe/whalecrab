@@ -15,7 +15,7 @@ use crate::{
 };
 
 /// Non-restoreable information needed to undo a move
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: usize,
@@ -95,8 +95,8 @@ impl Game {
     /// Captures essential position information to be restored later
     pub fn capture_position(&mut self) {
         let last_position = UnRestoreable {
-            castling_rights: self.position.castling_rights.clone(),
-            half_move_timeout: self.position.half_move_timeout.clone(),
+            castling_rights: self.position.castling_rights,
+            half_move_timeout: self.position.half_move_timeout,
         };
         self.position_history.push(last_position);
     }
