@@ -102,7 +102,7 @@ impl Game {
 
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
-    fn refresh(&mut self) {
+    pub fn refresh(&mut self) {
         let white_pieces = self.position.white_pawns
             | self.position.white_knights
             | self.position.white_bishops
@@ -160,18 +160,20 @@ impl Game {
         attacks
     }
 
-    /// Updates attack bitboard for the current player
+    /// Updates attack bitboard for the both players
     fn update_attacks(&mut self) {
         let color = self.position.turn;
+        let enemy = color.opponent();
         *self.get_attacks_mut(&color) = self.calculate_attacks(&color);
+        *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
     }
 
     /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
     /// move before playing it through self.generate(_psuedo)_legal_moves()
     pub fn reinitialize(&mut self) {
         self.refresh();
-        let enemy = self.position.turn.opponent();
-        *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
+        // let enemy = self.position.turn;
+        // *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
 
         // HACK: populating check and attacks boards
         // self.generate_all_psuedo_legal_moves();
