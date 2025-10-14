@@ -9,7 +9,7 @@ use crate::{
     castling::CastlingRights,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceType},
+        pieces::piece::{Color, PieceMoveInfo, PieceType},
     },
 };
 
@@ -146,18 +146,38 @@ impl Game {
         self.update_attacks();
     }
 
-    /// Updates attack bitboards
-    fn update_attacks(&mut self) {}
+    /// Calculates the attack bitboard for the given player
+    fn calculate_attacks(&self, color: &Color) -> BitBoard {
+        let mut attacks = EMPTY;
+
+        for sq in *self.get_occupied(color) {
+            let sqbb = BitBoard::from_square(sq);
+            let (piece, _) = self.determine_piece(&sqbb).unwrap();
+            let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
+            attacks |= moveinfo.attacks;
+        }
+
+        attacks
+    }
+
+    /// Updates attack bitboard for the current player
+    fn update_attacks(&mut self) {
+        let color = self.position.turn;
+        *self.get_attacks_mut(&color) = self.calculate_attacks(&color);
+    }
 
     /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
     /// move before playing it through self.generate(_psuedo)_legal_moves()
     pub fn reinitialize(&mut self) {
         self.refresh();
+        let enemy = self.position.turn.opponent();
+        *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
+
         // HACK: populating check and attacks boards
-        self.generate_all_psuedo_legal_moves();
-        self.position.turn = self.position.turn.opponent();
-        self.generate_all_psuedo_legal_moves();
-        self.position.turn = self.position.turn.opponent();
+        // self.generate_all_psuedo_legal_moves();
+        // self.position.turn = self.position.turn.opponent();
+        // self.generate_all_psuedo_legal_moves();
+        // self.position.turn = self.position.turn.opponent();
     }
 
     /// Finishes a turn and determines game state is possible
