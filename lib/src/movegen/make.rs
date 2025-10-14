@@ -1,9 +1,9 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY},
+    bitboard::BitBoard,
     castling::{self, CastleSide},
     game::Game,
     movegen::{
-        moves::{get_targets, Move, MoveType},
+        moves::{Move, MoveType},
         pieces::piece::{Color, PieceType},
     },
     square::Square,
@@ -17,7 +17,6 @@ impl Move {
             .determine_piece(&frombb)
             .expect("Couldn't find piece to move!");
 
-        self.update_attack_boards(game, &piece, &color);
         self.move_piece(game, &piece, &color, frombb, tobb);
         self.revoke_castling_rights(game);
         game.next_turn(&self);
@@ -31,7 +30,6 @@ impl Move {
             .expect("Couldn't find piece to move!");
         let enemy_color = color.opponent();
 
-        self.update_attack_boards(game, &piece, &color);
         self.move_piece(game, &piece, &color, frombb, tobb);
 
         // Capture the enemy piece
@@ -49,7 +47,6 @@ impl Move {
             .determine_piece(&frombb)
             .expect("Couldn't find piece to move!");
 
-        self.update_attack_boards(game, &piece, &color);
         self.move_piece(game, &piece, &color, frombb, tobb);
         self.revoke_castling_rights(game);
         game.next_turn(&self);
@@ -63,7 +60,6 @@ impl Move {
             .expect("Couldn't find piece to move!");
         let enemy_color = color.opponent();
 
-        self.update_attack_boards(game, &piece, &color);
         self.move_piece(game, &piece, &color, frombb, tobb);
 
         // Capture the pawn en passant
@@ -85,8 +81,6 @@ impl Move {
         let (piece, color) = game
             .determine_piece(&frombb)
             .expect("Couldn't find piece to move!");
-
-        self.update_attack_boards(game, &piece, &color);
 
         // Remove pawn from original square
         let pieces = game.get_pieces_mut(&piece, &color);
@@ -141,30 +135,6 @@ impl Move {
         }
 
         game.next_turn(&self);
-    }
-
-    /// Helper method to update attack boards
-    fn update_attack_boards(&self, game: &mut Game, piece: &PieceType, color: &Color) {
-        return;
-
-        let enemy_color = color.opponent();
-
-        match piece {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => {
-                // HACK
-                let attack_board = *game.get_attacks(&color);
-                let check_ray_board = *game.get_check_rays(&color);
-                let moves = piece.psuedo_legal_moves(game, self.from);
-                let initial_check_ray = BitBoard::from_square_vec(get_targets(moves));
-
-                *game.get_attacks_mut(&color) = attack_board ^ initial_check_ray;
-                *game.get_check_rays_mut(&color) = check_ray_board;
-            }
-            PieceType::King => {
-                *game.get_check_rays_mut(&enemy_color) = EMPTY;
-            }
-            _ => {}
-        }
     }
 
     /// Helper method to move a piece from one square to another

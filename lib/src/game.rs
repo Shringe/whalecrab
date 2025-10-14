@@ -9,7 +9,7 @@ use crate::{
     castling::CastlingRights,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceMoveInfo, PieceType, ALL_PIECE_TYPES},
+        pieces::piece::{Color, PieceType, ALL_PIECE_TYPES},
     },
     square::Square,
 };
@@ -440,7 +440,6 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::bitboard::BitBoard;
     use crate::board::{Board, State};
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
