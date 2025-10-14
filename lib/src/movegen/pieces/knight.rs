@@ -3,7 +3,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{PieceMoveInfo, PieceType},
+        pieces::piece::PieceMoveInfo,
     },
     square::Square,
 };
@@ -19,21 +19,13 @@ impl Piece for Knight {
         let file = self.0.get_file();
 
         let friendly = game.position.turn;
-        let enemy = friendly.opponent();
 
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
-            // let attack_bitboard = game.get_attacks_mut(&friendly);
-            // attack_bitboard.set(t);
 
             if let Some((piece, color)) = game.determine_piece(&tbb) {
                 if color == friendly {
                     return;
-                }
-
-                if piece == PieceType::King {
-                    // let num_checks = game.get_num_checks_mut(&enemy);
-                    // *num_checks += 1;
                 }
 
                 moves.push(Move {
@@ -136,7 +128,7 @@ impl Piece for Knight {
 
 #[cfg(test)]
 mod tests {
-    use crate::movegen::pieces::piece::Color;
+    use crate::movegen::pieces::piece::{Color, PieceType};
     use crate::test_utils::format_pretty_list;
 
     use super::*;
