@@ -147,25 +147,35 @@ impl Game {
     }
 
     /// Calculates the attack bitboard for the given player
-    fn calculate_attacks(&self, color: &Color) -> BitBoard {
+    fn calculate_attacks(&self, color: &Color) -> (BitBoard, BitBoard) {
         let mut attacks = EMPTY;
+        let mut check_rays = EMPTY;
 
         for sq in *self.get_occupied(color) {
             let sqbb = BitBoard::from_square(sq);
             let (piece, _) = self.determine_piece(&sqbb).unwrap();
             let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
             attacks |= moveinfo.attacks;
+            check_rays |= moveinfo.check_rays;
         }
 
-        attacks
+        (attacks, check_rays)
     }
 
     /// Updates attack bitboard for the both players
     fn update_attacks(&mut self) {
         let color = self.position.turn;
         let enemy = color.opponent();
-        *self.get_attacks_mut(&color) = self.calculate_attacks(&color);
-        *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
+
+        (
+            *self.get_attacks_mut(&color),
+            *self.get_check_rays_mut(&color),
+        ) = self.calculate_attacks(&color);
+
+        (
+            *self.get_attacks_mut(&enemy),
+            *self.get_check_rays_mut(&enemy),
+        ) = self.calculate_attacks(&enemy);
     }
 
     /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
