@@ -126,7 +126,7 @@ pub trait Piece {
         for m in psuedo_legal {
             let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
-            let (piece, color) = game
+            let (piece, _) = game
                 .determine_piece(&frombb)
                 .expect("Can't move nonexisting piece!");
 
@@ -134,7 +134,6 @@ pub trait Piece {
             let is_capturing = matches!(m.variant, MoveType::Capture(_));
             let checks = game.get_check_rays(&enemy);
             let is_blocking = checks & tobb != EMPTY;
-            println!("{:?}\n{}\n{}", piece, checks, tobb);
 
             // Handle being in check
             match num_checks {

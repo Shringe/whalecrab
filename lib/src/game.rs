@@ -156,7 +156,6 @@ impl Game {
             let sqbb = BitBoard::from_square(sq);
             let (piece, _) = self.determine_piece(&sqbb).unwrap();
             let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
-            println!("rays: {}", moveinfo.check_rays);
             attacks |= moveinfo.attacks;
             check_rays |= moveinfo.check_rays;
         }
@@ -425,7 +424,10 @@ impl Game {
         }
 
         if moves.is_empty() {
-            self.position.state = if *self.get_num_checks(&self.position.turn) > 0 {
+            self.position.state = if self
+                .get_attacks(&self.position.turn.opponent())
+                .has_square(self.get_pieces(&PieceType::King, &self.position.turn))
+            {
                 dbg!(State::Checkmate)
             } else {
                 dbg!(State::Stalemate)
@@ -447,7 +449,7 @@ mod tests {
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::{Color, Piece, PieceType};
     use crate::square::Square;
-    use crate::test_utils::{compare_to_fen, should_generate};
+    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
     #[test]
     fn both_lose_castling_rights_by_moving_kings() {
@@ -690,8 +692,12 @@ mod tests {
         assert_eq!(game.position.state, State::InProgress);
         should_generate(&game.generate_all_legal_moves(), &to_play);
         game.play(&to_play);
-        game.reinitialize();
-        game.generate_all_legal_moves();
+        let moves = game.generate_all_legal_moves();
+        println!(
+            "white:\n{}\nblack:\n{}",
+            game.white_attacks, game.black_attacks
+        );
+        assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
         assert_eq!(game.position.turn, Color::Black);
         assert_eq!(game.position.state, State::Stalemate);
     }

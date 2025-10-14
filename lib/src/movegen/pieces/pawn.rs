@@ -111,7 +111,10 @@ impl Piece for Pawn {
     fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
-        let enemy_color = game.position.turn.opponent();
+        let friendly = game
+            .determine_color(&BitBoard::from_square(self.0))
+            .unwrap();
+        let enemy_color = friendly.opponent();
 
         let initial = match game.position.turn {
             Color::White => BitBoard::INITIAL_WHITE_PAWN,
@@ -119,14 +122,14 @@ impl Piece for Pawn {
         };
 
         // Advances
-        if let Some(once) = self.0.forward(&game.position.turn) {
+        if let Some(once) = self.0.forward(&friendly) {
             let oncebb = BitBoard::from_square(once);
             if game.determine_piece(&oncebb).is_none() {
                 moveinfo.targets |= oncebb;
 
                 // If on initial rank
                 if self.0.in_bitboard(&initial) {
-                    let twice = once.forward(&game.position.turn).unwrap();
+                    let twice = once.forward(&friendly).unwrap();
                     let twicebb = BitBoard::from_square(twice);
                     if game.determine_piece(&twicebb).is_none() {
                         moveinfo.targets |= twicebb;
@@ -137,12 +140,9 @@ impl Piece for Pawn {
 
         // Captures
         // TODO: Add promotion for pieces other than queen
-        for diagnol in [
-            self.0.fleft(&game.position.turn),
-            self.0.fright(&game.position.turn),
-        ]
-        .into_iter()
-        .flatten()
+        for diagnol in [self.0.fleft(&friendly), self.0.fright(&friendly)]
+            .into_iter()
+            .flatten()
         {
             let diagnolbb = BitBoard::from_square(diagnol);
             moveinfo.attacks |= diagnolbb;
