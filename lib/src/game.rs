@@ -9,8 +9,9 @@ use crate::{
     castling::CastlingRights,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceMoveInfo, PieceType},
+        pieces::piece::{Color, PieceMoveInfo, PieceType, ALL_PIECE_TYPES},
     },
+    square::Square,
 };
 
 /// Non-restoreable information needed to undo a move
@@ -192,6 +193,30 @@ impl Game {
         // self.position.turn = self.position.turn.opponent();
     }
 
+    /// Determines how many pieces are attacking a piece
+    pub fn num_attackers(&self, sq: Square) -> u8 {
+        let mut attackers = 0;
+        let sqbb = BitBoard::from_square(sq);
+        let color = if let Some(color) = self.determine_color(&sqbb) {
+            color
+        } else {
+            return attackers;
+        };
+
+        let enemy = color.opponent();
+        if !self.get_attacks(&enemy).has_square(&sqbb) {
+            return attackers;
+        }
+
+        for piece in ALL_PIECE_TYPES {
+            let moveinfo = piece.psuedo_legal_targets_fast(self, sq);
+            let potential_enemy = self.get_pieces(&piece, &enemy);
+            attackers += (moveinfo.attacks & potential_enemy).popcnt() as u8;
+        }
+
+        attackers
+    }
+
     /// Finishes a turn and determines game state is possible
     pub fn next_turn(&mut self, last_move: &Move) {
         // Handle en_passant
@@ -251,6 +276,28 @@ impl Game {
         }
 
         self.refresh();
+    }
+
+    /// Gets the bitboard of a colored piece
+    pub fn get_pieces(&self, piece: &PieceType, color: &Color) -> &BitBoard {
+        match color {
+            Color::White => match piece {
+                PieceType::Pawn => &self.position.white_pawns,
+                PieceType::Knight => &self.position.white_knights,
+                PieceType::Bishop => &self.position.white_bishops,
+                PieceType::Rook => &self.position.white_rooks,
+                PieceType::Queen => &self.position.white_queens,
+                PieceType::King => &self.position.white_kings,
+            },
+            Color::Black => match piece {
+                PieceType::Pawn => &self.position.black_pawns,
+                PieceType::Knight => &self.position.black_knights,
+                PieceType::Bishop => &self.position.black_bishops,
+                PieceType::Rook => &self.position.black_rooks,
+                PieceType::Queen => &self.position.black_queens,
+                PieceType::King => &self.position.black_kings,
+            },
+        }
     }
 
     /// Gets the bitboard of a colored piece
@@ -390,6 +437,7 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
+    use crate::bitboard::BitBoard;
     use crate::board::{Board, State};
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
@@ -681,5 +729,13 @@ mod tests {
 
         game.generate_all_legal_moves();
         assert_eq!(game.position.state, State::Repetition);
+    }
+
+    #[test]
+    fn num_attackers() {
+        let fen = "kr2r3/pp6/8/2N5/4pK2/8/2B1R1B1/8 w - - 0 1";
+        let game = Game::from_position(Board::from_fen(fen).unwrap());
+        let black_pawnbb = Square::E4;
+        assert_eq!(game.num_attackers(black_pawnbb), 5);
     }
 }
