@@ -9,7 +9,7 @@ use super::piece::Piece;
 pub struct Queen(pub Square);
 
 impl Piece for Queen {
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         self.0.ray_moves(&ALL_DIRECTIONS, game)
     }
 

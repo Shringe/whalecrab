@@ -104,14 +104,14 @@ pub struct PieceMoveInfo {
 
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move>;
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move>;
 
     /// Generates the attack and target board for a piece without updating game
     /// Warning: Highly expiremental
     fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo;
 
     /// Generates legal moves considering king safety.
-    fn legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn legal_moves(&self, game: &Game) -> Vec<Move> {
         let psuedo_legal = self.psuedo_legal_moves(game);
         let mut legal = Vec::new();
 

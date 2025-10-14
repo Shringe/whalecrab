@@ -13,7 +13,7 @@ use super::piece::Piece;
 pub struct Knight(pub Square);
 
 impl Piece for Knight {
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
         let rank = self.0.get_rank();
         let file = self.0.get_file();
@@ -32,8 +32,8 @@ impl Piece for Knight {
                 }
 
                 if piece == PieceType::King {
-                    let num_checks = game.get_num_checks_mut(&enemy);
-                    *num_checks += 1;
+                    // let num_checks = game.get_num_checks_mut(&enemy);
+                    // *num_checks += 1;
                 }
 
                 moves.push(Move {

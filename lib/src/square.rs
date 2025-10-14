@@ -318,7 +318,7 @@ impl Square {
     }
 
     /// Generates moves for ray pieces. Also populates attack bitboards appropiately
-    pub fn ray_moves(&self, directions: &[Direction], game: &mut Game) -> Vec<Move> {
+    pub fn ray_moves(&self, directions: &[Direction], game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
         let color = game.position.turn;
         let enemy = color.opponent();
@@ -327,12 +327,12 @@ impl Square {
             let (ray, check_ray, is_check) = self.ray_old(direction, game);
 
             if check_ray != EMPTY {
-                *game.get_check_rays_mut(&color) |= check_ray;
+                // *game.get_check_rays_mut(&color) |= check_ray;
             }
 
             if is_check {
-                let num_checks = game.get_num_checks_mut(&enemy);
-                *num_checks += 1;
+                // let num_checks = game.get_num_checks_mut(&enemy);
+                // *num_checks += 1;
             }
 
             // let attack_bitboard = game.get_attacks_mut(&color);

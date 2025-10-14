@@ -17,7 +17,7 @@ impl Piece for Pawn {
     /// En_Passant is considered
     /// Promotion is considered (only for queen)
     /// King safety not considered
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let friendly = game.position.turn;
@@ -83,8 +83,8 @@ impl Piece for Pawn {
                         });
                     } else {
                         if piece == PieceType::King {
-                            let num_checks = game.get_num_checks_mut(&enemy);
-                            *num_checks += 1;
+                            // let num_checks = game.get_num_checks_mut(&enemy);
+                            // *num_checks += 1;
                         }
 
                         moves.push(Move {
