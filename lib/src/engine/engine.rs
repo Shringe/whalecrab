@@ -285,6 +285,7 @@ mod tests {
         let moves = game.generate_all_legal_moves();
         let mut scored = ScoredMove::from_moves(&mut game, moves);
         scored.sort();
+        println!("State: {:?}", game.position.state);
         println!("Available moves: {:#?}", scored);
         assert_eq!(result, looking_for);
     }
