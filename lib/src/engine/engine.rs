@@ -158,9 +158,9 @@ impl Game {
 
         let mut max = f32::NEG_INFINITY;
         for m in self.generate_all_legal_moves() {
-            let mut potential = self.clone();
-            potential.play(&m);
-            let score = potential.mini(alpha, beta, depth - 1);
+            m.play(self);
+            let score = self.mini(alpha, beta, depth - 1);
+            m.unplay(self);
             if score > max {
                 max = score;
                 if score > alpha {
@@ -183,9 +183,9 @@ impl Game {
 
         let mut min = f32::INFINITY;
         for m in self.generate_all_legal_moves() {
-            let mut potential = self.clone();
-            potential.play(&m);
-            let score = potential.maxi(alpha, beta, depth - 1);
+            m.play(self);
+            let score = self.maxi(alpha, beta, depth - 1);
+            m.unplay(self);
             if score < min {
                 min = score;
                 if score < beta {
