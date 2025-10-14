@@ -113,10 +113,10 @@ impl Piece for Pawn {
 
         let friendly = game
             .determine_color(&BitBoard::from_square(self.0))
-            .unwrap();
+            .expect("Tried to move non existent pawn");
         let enemy_color = friendly.opponent();
 
-        let initial = match game.position.turn {
+        let initial = match friendly {
             Color::White => BitBoard::INITIAL_WHITE_PAWN,
             Color::Black => BitBoard::INITIAL_BLACK_PAWN,
         };
