@@ -242,7 +242,7 @@ impl Game {
             .expect("Position should be hashed!")
             == 3
         {
-            self.position.state = dbg!(State::Repetition);
+            self.position.state = State::Repetition;
         }
 
         // Half move timeout
@@ -258,7 +258,7 @@ impl Game {
         }
 
         if self.position.half_move_timeout == 50 {
-            self.position.state = dbg!(State::Timeout);
+            self.position.state = State::Timeout;
         }
     }
 
@@ -428,9 +428,9 @@ impl Game {
                 .get_attacks(&self.position.turn.opponent())
                 .has_square(self.get_pieces(&PieceType::King, &self.position.turn))
             {
-                dbg!(State::Checkmate)
+                State::Checkmate
             } else {
-                dbg!(State::Stalemate)
+                State::Stalemate
             }
         }
 
