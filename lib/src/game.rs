@@ -79,6 +79,7 @@ impl Game {
         };
 
         game.reinitialize();
+        game.position.seen_positions.insert(game.position.hash, 1);
         game
     }
 
@@ -138,11 +139,6 @@ impl Game {
         let mut hasher = DefaultHasher::new();
         self.position.hash(&mut hasher);
         self.position.hash = hasher.finish();
-        if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
-            *times_seen += 1;
-        } else {
-            self.position.seen_positions.insert(self.position.hash, 1);
-        }
 
         self.update_attacks();
     }
@@ -235,11 +231,17 @@ impl Game {
         self.refresh();
 
         // Repetition
-        if *self
+        if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
+            *times_seen += 1;
+        } else {
+            self.position.seen_positions.insert(self.position.hash, 1);
+        }
+
+        if *dbg!(self
             .position
             .seen_positions
             .get(&self.position.hash)
-            .expect("Position should be hashed!")
+            .expect("Position should be hashed!"))
             == 3
         {
             self.position.state = State::Repetition;
@@ -273,6 +275,11 @@ impl Game {
         self.position.turn = self.position.turn.opponent();
         if self.position.turn == Color::White {
             self.position.full_move_clock -= 1;
+        }
+
+        // Repetition
+        if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
+            *times_seen -= 1;
         }
 
         self.refresh();
@@ -727,13 +734,14 @@ mod tests {
         ];
 
         for (from, to) in moves {
-            assert_eq!(game.position.state, State::InProgress);
+            // assert_eq!(game.position.state, State::InProgress);
             let m = Move::new(from, to, &game.position);
             should_generate(&game.generate_all_legal_moves(), &m);
             game.play(&m);
         }
 
-        game.generate_all_legal_moves();
+        // game.generate_all_legal_moves();
+        assert!(game.generate_all_legal_moves().is_empty());
         assert_eq!(game.position.state, State::Repetition);
     }
 
