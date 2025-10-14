@@ -154,7 +154,7 @@ impl Move {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::board::Board;
+    use crate::board::{Board, State};
     use crate::square::Square;
     use crate::test_utils::compare_games;
 
@@ -242,4 +242,15 @@ mod tests {
         "rnbqkbnr/pppppppp/8/8/2BPPB2/P1N2N1P/1PPQ1PP1/R3K2R w KQkq - 0 1",
         [(Square::E1, Square::C1)]
     );
+
+    #[test]
+    fn no_repition() {
+        let mut game = Game::default();
+        let m = Move::new(Square::E2, Square::E4, &game.position);
+        for _ in 0..5 {
+            m.play(&mut game);
+            m.unplay(&mut game);
+            assert_eq!(game.position.state, State::InProgress);
+        }
+    }
 }
