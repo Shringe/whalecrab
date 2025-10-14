@@ -16,7 +16,7 @@ const DIRECTIONS: [Direction; 4] = [
 pub struct Rook(pub Square);
 
 impl Piece for Rook {
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         self.0.ray_moves(&DIRECTIONS, game)
     }
 

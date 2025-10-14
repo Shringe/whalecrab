@@ -16,7 +16,7 @@ const DIRECTIONS: [Direction; 4] = [
 pub struct Bishop(pub Square);
 
 impl Piece for Bishop {
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         self.0.ray_moves(&DIRECTIONS, game)
     }
 

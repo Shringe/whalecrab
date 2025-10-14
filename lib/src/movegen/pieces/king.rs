@@ -15,7 +15,7 @@ pub struct King(pub Square);
 
 impl Piece for King {
     /// King safety not considered.
-    fn psuedo_legal_moves(&self, game: &mut Game) -> Vec<Move> {
+    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let friendly = game.position.turn;
