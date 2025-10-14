@@ -156,6 +156,7 @@ impl Game {
             let sqbb = BitBoard::from_square(sq);
             let (piece, _) = self.determine_piece(&sqbb).unwrap();
             let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
+            println!("rays: {}", moveinfo.check_rays);
             attacks |= moveinfo.attacks;
             check_rays |= moveinfo.check_rays;
         }

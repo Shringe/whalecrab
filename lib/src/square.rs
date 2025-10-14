@@ -366,7 +366,7 @@ impl Square {
         let mut moveinfo = PieceMoveInfo::default();
         // let mut ray = EMPTY;
         // let mut check_ray = EMPTY;
-        let enemy = game.position.turn.opponent();
+        let enemy = game.position.turn;
 
         let mut current = *self;
         let mut is_check = false;
