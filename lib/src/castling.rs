@@ -61,7 +61,7 @@ pub enum CastleSide {
     Kingside,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct CastlingRights {
     pub white_queenside: bool,
     pub white_kingside: bool,
