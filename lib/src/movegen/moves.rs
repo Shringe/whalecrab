@@ -124,7 +124,7 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::Game;
+    use crate::{game::Game, test_utils::should_generate};
 
     #[test]
     fn to_uci() {
@@ -149,5 +149,22 @@ mod tests {
         };
 
         assert_eq!(Move::from_uci(uci, &game.position).unwrap(), m);
+    }
+
+    #[test]
+    fn from_uci_capture() {
+        let fen = "3qkbnr/1p3ppp/2n5/1ppbp3/8/r1pPBP1P/1P2P1P1/3QKBNR w Kk - 0 13";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+
+        let uci = "e3c5";
+        let looking_for = Move {
+            from: Square::E3,
+            to: Square::C5,
+            variant: MoveType::Capture(PieceType::Pawn),
+        };
+
+        let moves = game.generate_all_legal_moves();
+        should_generate(&moves, &looking_for);
+        assert_eq!(Move::from_uci(uci, &game.position).unwrap(), looking_for);
     }
 }
