@@ -18,16 +18,27 @@
         };
 
         cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        name = cargoToml.package.name;
-        version = cargoToml.package.version;
+        version = cargoToml.workspace.package.version;
       in
       {
-        packages.default = pkgs.rustPlatform.buildRustPackage {
-          inherit name version;
-          pname = "tui";
+        packages = {
+          tui = pkgs.rustPlatform.buildRustPackage {
+            inherit version;
+            name = "tui";
+            pname = "whalecrab_tui";
 
-          cargoLock.lockFile = ./Cargo.lock;
-          src = self;
+            cargoLock.lockFile = ./Cargo.lock;
+            src = self;
+          };
+
+          uci = pkgs.rustPlatform.buildRustPackage {
+            inherit version;
+            name = "uci";
+            pname = "whalecrab_uci";
+
+            cargoLock.lockFile = ./Cargo.lock;
+            src = self;
+          };
         };
 
         devShells.default = pkgs.mkShell {
