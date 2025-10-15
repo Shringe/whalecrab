@@ -81,12 +81,7 @@ fn main() {
                 uci_send!("uciok");
             }
 
-            UciCommand::Position => {
-                let mut full_cmd = line.split(' ');
-                let _ = full_cmd.next(); // "position"
-                let _ = full_cmd.next(); // "startpos"
-                let _ = full_cmd.next(); // "moves"
-
+            UciCommand::Position { uci_moves } => {
                 let game = match &mut uci.game {
                     Some(game) => game,
                     None => {
@@ -99,8 +94,7 @@ fn main() {
                 *game = Game::default();
 
                 // Play all moves in sequence
-                let uci_moves: Vec<&str> = full_cmd.collect();
-                for uci_move in uci_moves {
+                for uci_move in uci_moves.split(' ') {
                     let move_to_play = match Move::from_uci(uci_move, &game.position) {
                         Ok(m) => m,
                         Err(e) => {
