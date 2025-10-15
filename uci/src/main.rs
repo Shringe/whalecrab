@@ -46,7 +46,7 @@ fn main() {
     // TODO, allow setoption for depth
     let mut uci = UciInterface {
         game: None,
-        depth: 4,
+        depth: 3,
     };
 
     let stdin = io::stdin();
@@ -98,7 +98,7 @@ fn main() {
                 };
 
                 let uci_moves: Vec<&str> = full_cmd.collect();
-                let uci_played = uci_moves.get(game.position.half_move_clock);
+                let uci_played = uci_moves.last();
                 let move_played = match uci_played {
                     Some(uci) => match Move::from_uci(uci, &game.position) {
                         Ok(m) => m,
@@ -125,6 +125,7 @@ fn main() {
                         Some(m) => m,
                         None => {
                             log!("No engine move found. Maybe the game is finished?");
+                            log!("Game state: {:?}", game.position.state);
                             continue;
                         }
                     };
