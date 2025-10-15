@@ -51,6 +51,11 @@
             gnuplot
           ];
         };
+
+        overlays.default = final: prev: {
+          whalecrab_tui = "${prev.system}".packages.${prev.system}.tui;
+          whalecrab_uci = "${prev.system}".packages.${prev.system}.uci;
+        };
       }
     );
 }
