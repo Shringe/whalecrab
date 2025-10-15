@@ -237,11 +237,11 @@ impl Game {
             self.position.seen_positions.insert(self.position.hash, 1);
         }
 
-        if *dbg!(self
+        if *self
             .position
             .seen_positions
             .get(&self.position.hash)
-            .expect("Position should be hashed!"))
+            .expect("Position should be hashed!")
             == 3
         {
             self.position.state = State::Repetition;
@@ -273,16 +273,17 @@ impl Game {
         };
 
         self.position.turn = self.position.turn.opponent();
-        if self.position.turn == Color::White {
-            self.position.full_move_clock -= 1;
-        }
-
         // Repetition
         if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
-            *times_seen -= 1;
+            if *times_seen > 0 {
+                *times_seen -= 1;
+            }
         }
 
         self.refresh();
+        if self.position.turn == Color::White {
+            self.position.full_move_clock -= 1;
+        }
     }
 
     /// Gets the bitboard of a colored piece
