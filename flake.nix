@@ -11,7 +11,7 @@
       flake-utils,
     }:
     let
-      systemOutputs = inputs.flake-utils.lib.eachDefaultSystem (
+      systemOutputs = flake-utils.lib.eachDefaultSystem (
         system:
         let
           pkgs = import nixpkgs {
@@ -54,7 +54,6 @@
           };
         }
       );
-
     in
     systemOutputs
     // {
