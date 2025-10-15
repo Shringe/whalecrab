@@ -6,7 +6,7 @@ pub enum UciCommand {
     Uci,
     Quit,
     IsReady,
-    Position,
+    Position { uci_moves: String },
     Go,
 }
 
@@ -38,7 +38,15 @@ impl FromStr for UciCommand {
             "uci" => Ok(Self::Uci),
             "quit" => Ok(Self::Quit),
             "isready" => Ok(Self::IsReady),
-            "position" => Ok(Self::Position),
+            "position" => {
+                let mut full_cmd = line.split(' ');
+                let _ = full_cmd.next(); // "position"
+                let _ = full_cmd.next(); // "startpos"
+                let _ = full_cmd.next(); // "moves"
+                Ok(Self::Position {
+                    uci_moves: full_cmd.collect(),
+                })
+            }
             "go" => Ok(Self::Go),
             _ => Err(UciError::UnrecognizedCommand(cmd.to_string())),
         }
