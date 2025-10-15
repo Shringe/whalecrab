@@ -6,6 +6,7 @@ use crate::game::Game;
 use crate::movegen::moves::Move;
 
 /// Formats the items in the vector neatly with their native display methods
+#[track_caller]
 pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
     let mut lines = Vec::new();
     let title = type_name::<T>().to_owned();
@@ -85,12 +86,14 @@ pub fn compare_games(before: &Game, after: &Game) {
 }
 
 /// Compares and actual board to one generated from a fen
+#[track_caller]
 pub fn compare_to_fen(board: &Board, fen: &str) {
     let fen_board = &Board::from_fen(fen).unwrap();
     assert_eq!(board, fen_board);
 }
 
 /// Asserts that moves contains m
+#[track_caller]
 pub fn should_generate(moves: &Vec<Move>, m: &Move) {
     assert!(
         moves.contains(m),
@@ -101,6 +104,7 @@ pub fn should_generate(moves: &Vec<Move>, m: &Move) {
 }
 
 /// Asserts that moves doesn't contain m
+#[track_caller]
 pub fn shouldnt_generate(moves: &Vec<Move>, m: &Move) {
     assert!(
         !moves.contains(m),

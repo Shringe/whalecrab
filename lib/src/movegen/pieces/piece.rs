@@ -174,7 +174,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        board::Board,
+        board::{Board, State},
         movegen::moves::get_targets,
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
@@ -522,5 +522,28 @@ Available moves: {}
         ];
 
         ensure_legal_game(game, &game_turns);
+    }
+
+    #[test]
+    fn not_checkmate() {
+        let fen = "r2q1rk1/p2n1pp1/1p3n1p/2b5/8/1R3P1N/P2pP1PP/2BQKB1R w K - 0 14";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let moves = game.generate_all_legal_moves();
+        let possible_moves = vec![
+            Move {
+                from: Square::D1,
+                to: Square::D2,
+                variant: MoveType::Capture(PieceType::Pawn),
+            },
+            Move {
+                from: Square::C1,
+                to: Square::D2,
+                variant: MoveType::Capture(PieceType::Pawn),
+            },
+        ];
+
+        assert_eq!(game.position.state, State::InProgress);
+        should_generate(&moves, &possible_moves[0]);
+        should_generate(&moves, &possible_moves[1]);
     }
 }
