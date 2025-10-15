@@ -50,7 +50,7 @@ fn main() {
     };
 
     let stdin = io::stdin();
-    for line in stdin.lock().lines() {
+    'outer: for line in stdin.lock().lines() {
         let line = match line {
             Ok(line) => {
                 log!("Recieved: {}", line);
@@ -82,41 +82,37 @@ fn main() {
             }
 
             UciCommand::Position => {
-                // TODO, accept positions other than startpos
-                // < position startpos moves e2e4 e7e5
                 let mut full_cmd = line.split(' ');
-                let _ = full_cmd.next();
-                let _ = full_cmd.next();
-                let _ = full_cmd.next();
+                let _ = full_cmd.next(); // "position"
+                let _ = full_cmd.next(); // "startpos"
+                let _ = full_cmd.next(); // "moves"
 
-                let game: &mut Game = match &mut uci.game {
+                let game = match &mut uci.game {
                     Some(game) => game,
                     None => {
-                        log!("Can't accept moves when game is not uninitialized");
+                        log!("Can't accept moves when game is uninitialized");
                         continue;
                     }
                 };
 
+                // Reset to starting position
+                *game = Game::default();
+
+                // Play all moves in sequence
                 let uci_moves: Vec<&str> = full_cmd.collect();
-                let uci_played = uci_moves.last();
-                let move_played = match uci_played {
-                    Some(uci) => match Move::from_uci(uci, &game.position) {
+                for uci_move in uci_moves {
+                    let move_to_play = match Move::from_uci(uci_move, &game.position) {
                         Ok(m) => m,
                         Err(e) => {
-                            log!("Failed to parse the played uci move: {:?}", e);
-                            continue;
+                            log!("Failed to parse uci move '{}': {:?}", uci_move, e);
+                            continue 'outer;
                         }
-                    },
-                    None => {
-                        log!("Couldn't find the move played by uci");
-                        continue;
-                    }
-                };
-
-                game.generate_all_legal_moves();
-                log!("Playing move from uci opponent: {}", &move_played);
-                log!("Fen before playing the move: {}", game.position.to_fen());
-                game.play(&move_played);
+                    };
+                    log!("Playing move: {}", move_to_play);
+                    game.play(&move_to_play);
+                }
+                log!("Final position FEN: {}", game.position.to_fen());
+                log!("Game state: {:?}", game.position.state);
             }
 
             UciCommand::Go => match &mut uci.game {
