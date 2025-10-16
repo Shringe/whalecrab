@@ -348,8 +348,8 @@ impl App {
         self.game.play(&m);
         self.score = self.game.grade_position();
         self.fen.input = self.game.position.to_fen();
-        if let Some(sm) = self.game.find_best_move() {
-            self.suggested = Some(sm.0)
+        if let Some(sm) = self.game.get_engine_move_minimax(4) {
+            self.suggested = Some(sm)
         }
 
         let player = match self.game.position.turn {
@@ -393,7 +393,7 @@ impl App {
     fn play_engine_move(&mut self) {
         let m = self
             .game
-            .get_engine_move_minimax(3)
+            .get_engine_move_minimax(4)
             .expect("Tried to play engine move, but there was no move to play");
 
         self.play_move(&m);

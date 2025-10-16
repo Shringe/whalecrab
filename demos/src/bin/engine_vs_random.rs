@@ -8,7 +8,7 @@ fn main() {
     for _ in 0..100 {
         match game.position.turn {
             Color::White => {
-                let m = game.find_best_move().unwrap().0;
+                let m = game.get_engine_move_minimax(2).unwrap();
                 println!("Chose to play: {}", m);
                 game.play(&m);
             }
