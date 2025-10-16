@@ -27,21 +27,13 @@ pub struct Game {
     pub white_occupied: BitBoard,
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
-    pub pawns: BitBoard,
-    pub knights: BitBoard,
-    pub bishops: BitBoard,
-    pub rooks: BitBoard,
-    pub queens: BitBoard,
-    pub kings: BitBoard,
 
     pub transposition_table: HashMap<u64, f32>,
-    pub white_num_checks: u8,
-    pub black_num_checks: u8,
+    pub position_history: Vec<UnRestoreable>,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
-    pub position_history: Vec<UnRestoreable>,
 }
 
 impl Default for Game {
@@ -53,15 +45,12 @@ impl Default for Game {
 impl Game {
     color_field_getters!(attacks, BitBoard);
     color_field_getters!(check_rays, BitBoard);
-    color_field_getters!(num_checks, u8);
     color_field_getters!(occupied, BitBoard);
 
     pub fn from_position(position: Board) -> Self {
         let mut game = Self {
             position,
             transposition_table: HashMap::new(),
-            white_num_checks: 0,
-            black_num_checks: 0,
             white_attacks: EMPTY,
             black_attacks: EMPTY,
             white_check_rays: EMPTY,
@@ -69,12 +58,6 @@ impl Game {
             white_occupied: EMPTY,
             black_occupied: EMPTY,
             occupied: EMPTY,
-            pawns: EMPTY,
-            knights: EMPTY,
-            bishops: EMPTY,
-            rooks: EMPTY,
-            queens: EMPTY,
-            kings: EMPTY,
             position_history: Vec::new(),
         };
 
@@ -119,19 +102,6 @@ impl Game {
             | self.position.black_kings;
         let pieces = white_pieces | black_pieces;
 
-        let pawns = self.position.white_pawns | self.position.black_pawns;
-        let knights = self.position.white_knights | self.position.black_knights;
-        let bishops = self.position.white_bishops | self.position.black_bishops;
-        let rooks = self.position.white_rooks | self.position.black_rooks;
-        let queens = self.position.white_queens | self.position.black_queens;
-        let kings = self.position.white_kings | self.position.black_kings;
-
-        self.pawns = pawns;
-        self.knights = knights;
-        self.bishops = bishops;
-        self.rooks = rooks;
-        self.queens = queens;
-        self.kings = kings;
         self.white_occupied = white_pieces;
         self.black_occupied = black_pieces;
         self.occupied = pieces;
@@ -224,7 +194,6 @@ impl Game {
 
         // Update position state
         self.position.turn = self.position.turn.opponent();
-        self.position.half_move_clock += 1;
         if self.position.turn == Color::Black {
             self.position.full_move_clock += 1;
         }
