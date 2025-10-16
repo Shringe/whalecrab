@@ -6,11 +6,14 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, ALL_PIECE_TYPES},
+        pieces::piece::Color,
     },
 };
 
+/// Orders the moves for better minimax pruning
+/// TODO: Figure out why the reduction in nodes searched is minimal
 fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
+    // return moves;
     let mut sorted = Vec::with_capacity(moves.len());
 
     for m in &moves {
@@ -102,6 +105,7 @@ impl Game {
         let mut max = f32::NEG_INFINITY;
         for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
+            self.nodes_seached += 1;
             let score = self.mini(alpha, beta, depth - 1);
             m.unplay(self);
             if score > max {
@@ -127,6 +131,7 @@ impl Game {
         let mut min = f32::INFINITY;
         for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
+            self.nodes_seached += 1;
             let score = self.maxi(alpha, beta, depth - 1);
             m.unplay(self);
             if score < min {
