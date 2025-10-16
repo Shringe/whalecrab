@@ -8,19 +8,24 @@ pub enum UciCommand {
     IsReady,
     Position { uci_moves: String },
     Go,
+    SetOption { name: String, value: String },
 }
 
 #[derive(Debug)]
 pub enum UciError {
     UnrecognizedCommand(String),
-    ParseMoveError(String),
+    ParseMove(String),
+    ParseOptionName(String),
+    ParseOptionValue(String),
 }
 
 impl fmt::Display for UciError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
-            Self::ParseMoveError(cmd) => write!(f, "Failed to parse move string: '{}'", cmd),
+            Self::ParseMove(cmd) => write!(f, "Failed to parse move string: '{}'", cmd),
+            Self::ParseOptionName(cmd) => write!(f, "Failed to name of setoption: '{}'", cmd),
+            Self::ParseOptionValue(cmd) => write!(f, "Failed to value of setoption: '{}'", cmd),
         }
     }
 }
@@ -43,7 +48,7 @@ impl FromStr for UciCommand {
             "position" => {
                 let moves = match line.split_once("moves ") {
                     Some(moves) => moves.1,
-                    None => return Err(UciError::ParseMoveError(line.to_string())),
+                    None => return Err(UciError::ParseMove(line.to_string())),
                 };
 
                 Ok(Self::Position {
@@ -51,6 +56,22 @@ impl FromStr for UciCommand {
                 })
             }
             "go" => Ok(Self::Go),
+            "setoption" => {
+                let split: Vec<&str> = line.split(' ').collect();
+                let name = match split.get(2) {
+                    Some(name) => name,
+                    None => return Err(UciError::ParseOptionName(line.to_string())),
+                };
+                let value = match split.get(4) {
+                    Some(value) => value,
+                    None => return Err(UciError::ParseOptionValue(line.to_string())),
+                };
+
+                Ok(Self::SetOption {
+                    name: name.to_string(),
+                    value: value.to_string(),
+                })
+            }
             _ => Err(UciError::UnrecognizedCommand(cmd.to_string())),
         }
     }
