@@ -34,6 +34,7 @@ pub struct Game {
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
+    pub nodes_seached: u128,
 }
 
 impl Default for Game {
@@ -59,6 +60,7 @@ impl Game {
             black_occupied: EMPTY,
             occupied: EMPTY,
             position_history: Vec::new(),
+            nodes_seached: 0,
         };
 
         game.reinitialize();
