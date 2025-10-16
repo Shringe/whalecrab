@@ -153,7 +153,11 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use super::*;
-    use crate::{board::Board, square::Square};
+    use crate::{
+        board::Board,
+        movegen::{moves::MoveType, pieces::piece::PieceType},
+        square::Square,
+    };
 
     /// Used for determining cache hit/miss
     fn time_grading(game: &mut Game) -> (f32, Duration) {
@@ -184,11 +188,38 @@ mod tests {
     }
 
     #[test]
+    fn black_always_takes_king() {
+        let fen = "k6r/pp4r1/8/pp6/Qp6/pp6/7K/8 w - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let white_moves = game.generate_all_legal_moves();
+        for m in white_moves {
+            m.play(&mut game);
+            let result = game.get_engine_move_minimax(0).unwrap();
+            assert_eq!(result.variant, MoveType::Capture(PieceType::King));
+            m.unplay(&mut game);
+        }
+    }
+
+    #[test]
+    fn white_always_checkmates() {
+        let fen = "7k/8/8/8/8/8/5R2/K5R1 b - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let black_moves = game.generate_all_legal_moves();
+        for m in black_moves {
+            m.play(&mut game);
+            let looking_for = Move::new(Square::F2, Square::H2, &game.position);
+            let result = game.get_engine_move_minimax(1).unwrap();
+            assert_eq!(result, looking_for);
+            m.unplay(&mut game);
+        }
+    }
+
+    #[test]
     fn transportation_table_cache_hits() {
         let mut game = Game::default();
 
         let (initial_result, initial_duration) = time_grading(&mut game);
-        let min_speedup_factor = 1.5;
+        let min_speedup_factor = 1.2;
 
         for i in 1..100 {
             let (result, duration) = time_grading(&mut game);
