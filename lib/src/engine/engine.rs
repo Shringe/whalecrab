@@ -2,6 +2,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::{
     bitboard::BitBoard,
+    board::State,
     game::Game,
     movegen::{moves::Move, pieces::piece::Color},
 };
@@ -35,6 +36,22 @@ impl Game {
                     score -= piece.square_value(&sq, &color);
                 }
             }
+        }
+
+        // State
+        match self.position.state {
+            State::InProgress => {}
+            State::Checkmate => {
+                score = match self.position.turn {
+                    Color::White => f32::NEG_INFINITY,
+                    Color::Black => f32::INFINITY,
+                }
+            }
+            State::Stalemate => score = 0.0,
+            // TODO. Timing out should result in a win for the opponent if the opponent has
+            // sufficent checkmating material
+            State::Timeout => score = 0.0,
+            State::Repetition => score = 0.0,
         }
 
         self.transposition_table.insert(hash, score);

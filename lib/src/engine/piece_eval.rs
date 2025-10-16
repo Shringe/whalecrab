@@ -85,7 +85,8 @@ impl PieceType {
             PieceType::Bishop => 3.0,
             PieceType::Rook => 5.0,
             PieceType::Queen => 9.0,
-            PieceType::King => 0.0,
+            // Setting to infinity results in NaN
+            PieceType::King => f32::MAX,
         }
     }
 
