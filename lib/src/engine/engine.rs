@@ -77,6 +77,10 @@ impl Game {
             }
         }
 
+        // Attackers and defenders
+        score += (self.white_attacks & self.occupied).popcnt() as f32 / 10.0;
+        score -= (self.black_attacks & self.occupied).popcnt() as f32 / 10.0;
+
         // State
         match self.position.state {
             State::InProgress => {}
