@@ -352,7 +352,6 @@ legally attacking:
 {}
 
 White Board info:
-num_checks: {}
 ray_attacks:
 {}
 
@@ -360,7 +359,6 @@ attacks:
 {}
 
 Black Board info:
-num_checks: {}
 ray_attacks:
 {}
 
@@ -375,10 +373,8 @@ Available moves: {}
                     to_play.to,
                     piece_attacks,
                     piece_attacks_legal,
-                    game.white_num_checks,
                     game.white_check_rays,
                     game.white_attacks,
-                    game.black_num_checks,
                     game.black_check_rays,
                     game.black_attacks,
                     format_pretty_list(&legal_moves)
