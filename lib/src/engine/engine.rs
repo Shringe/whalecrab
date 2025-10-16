@@ -4,8 +4,44 @@ use crate::{
     bitboard::BitBoard,
     board::State,
     game::Game,
-    movegen::{moves::Move, pieces::piece::Color},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::piece::{Color, ALL_PIECE_TYPES},
+    },
 };
+
+fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
+    let mut sorted = Vec::with_capacity(moves.len());
+
+    for m in &moves {
+        if matches!(m.variant, MoveType::Promotion(_)) {
+            sorted.push(m.clone());
+        }
+    }
+
+    for m in &moves {
+        if matches!(m.variant, MoveType::Capture(_)) {
+            sorted.push(m.clone());
+        }
+    }
+
+    for m in &moves {
+        if matches!(m.variant, MoveType::Castle(_)) {
+            sorted.push(m.clone());
+        }
+    }
+
+    for m in &moves {
+        match m.variant {
+            MoveType::Capture(_) | MoveType::Promotion(_) | MoveType::Castle(_) => {}
+            _ => {
+                sorted.push(m.clone());
+            }
+        }
+    }
+
+    sorted
+}
 
 impl Game {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
@@ -57,13 +93,14 @@ impl Game {
         self.transposition_table.insert(hash, score);
         score
     }
+
     fn maxi(&mut self, mut alpha: f32, beta: f32, depth: u16) -> f32 {
         if depth == 0 {
             return self.grade_position();
         }
 
         let mut max = f32::NEG_INFINITY;
-        for m in self.generate_all_legal_moves() {
+        for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
             let score = self.mini(alpha, beta, depth - 1);
             m.unplay(self);
@@ -88,7 +125,7 @@ impl Game {
         }
 
         let mut min = f32::INFINITY;
-        for m in self.generate_all_legal_moves() {
+        for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
             let score = self.maxi(alpha, beta, depth - 1);
             m.unplay(self);
@@ -108,7 +145,7 @@ impl Game {
     }
 
     pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
-        let moves = self.generate_all_legal_moves();
+        let moves = sort_moves(self.generate_all_legal_moves());
         let mut best_move = None;
 
         let alpha = f32::NEG_INFINITY;
