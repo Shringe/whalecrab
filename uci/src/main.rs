@@ -94,6 +94,7 @@ fn main() {
                 *game = Game::default();
 
                 // Play all moves in sequence
+                log!("{:#?}", uci_moves);
                 for uci_move in uci_moves.split(' ') {
                     let move_to_play = match Move::from_uci(uci_move, &game.position) {
                         Ok(m) => m,

@@ -13,12 +13,14 @@ pub enum UciCommand {
 #[derive(Debug)]
 pub enum UciError {
     UnrecognizedCommand(String),
+    ParseMoveError(String),
 }
 
 impl fmt::Display for UciError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
+            Self::ParseMoveError(cmd) => write!(f, "Failed to parse move string: '{}'", cmd),
         }
     }
 }
@@ -39,12 +41,13 @@ impl FromStr for UciCommand {
             "quit" => Ok(Self::Quit),
             "isready" => Ok(Self::IsReady),
             "position" => {
-                let mut full_cmd = line.split(' ');
-                let _ = full_cmd.next(); // "position"
-                let _ = full_cmd.next(); // "startpos"
-                let _ = full_cmd.next(); // "moves"
+                let moves = match line.split_once("moves ") {
+                    Some(moves) => moves.1,
+                    None => return Err(UciError::ParseMoveError(line.to_string())),
+                };
+
                 Ok(Self::Position {
-                    uci_moves: full_cmd.collect(),
+                    uci_moves: moves.to_string(),
                 })
             }
             "go" => Ok(Self::Go),
