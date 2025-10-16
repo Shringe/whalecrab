@@ -78,8 +78,24 @@ fn main() {
             UciCommand::Uci => {
                 uci_send!("id name {ID_NAME}");
                 uci_send!("id author {ID_AUTHOR}");
+                uci_send!("option name Depth type spin default 4");
                 uci_send!("uciok");
             }
+
+            UciCommand::SetOption { name, value } => match name.to_lowercase().as_str() {
+                "depth" => match value.parse::<u16>() {
+                    Ok(depth) => {
+                        log!("Setting depth to {}", depth);
+                        uci.depth = depth
+                    }
+                    Err(e) => {
+                        log!("Failed to parse depth: {}", e);
+                    }
+                },
+                _ => {
+                    log!("Unknown option: {}", name);
+                }
+            },
 
             UciCommand::Position { uci_moves } => {
                 let game = match &mut uci.game {
