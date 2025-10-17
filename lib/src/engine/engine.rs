@@ -289,4 +289,14 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn engine_moves_immutably() {
+        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let before = game.clone();
+        let _ = game.generate_all_legal_moves();
+        let _ = game.get_engine_move_minimax(2);
+        assert_eq!(before, game);
+    }
 }
