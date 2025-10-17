@@ -217,7 +217,7 @@ impl Game {
 
         // Update position state
         self.position.turn = self.position.turn.opponent();
-        if self.position.turn == Color::Black {
+        if self.position.turn == Color::White {
             self.position.full_move_clock += 1;
         }
         self.refresh();
@@ -266,7 +266,7 @@ impl Game {
 
         self.position.turn = self.position.turn.opponent();
         self.refresh();
-        if self.position.turn == Color::White {
+        if self.position.turn == Color::Black {
             self.position.full_move_clock -= 1;
         }
 
