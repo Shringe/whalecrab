@@ -85,14 +85,13 @@ impl PieceType {
             PieceType::Bishop => 3.0,
             PieceType::Rook => 5.0,
             PieceType::Queen => 9.0,
-            // Setting to infinity results in NaN
-            PieceType::King => f32::MAX,
+            PieceType::King => 10.0,
         }
     }
 
     /// Gets the positional value of a piece using a very basic piece-square table
     pub fn square_value(&self, sq: &Square, color: &Color) -> f32 {
-        let mut table = match self {
+        let table = match self {
             PieceType::Pawn => PAWN_MID,
             PieceType::Knight => KNIGHT_MID,
             PieceType::Bishop => BISHOP_MID,
@@ -101,10 +100,52 @@ impl PieceType {
             PieceType::King => KING_MID,
         };
 
-        if color == &Color::Black {
-            table.reverse();
-        }
+        // TODO. broken completely
+        let idx = match color {
+            Color::White => sq.to_int(),
+            Color::Black => sq.flip_side().to_int(),
+        };
 
-        *table.get(sq.to_int() as usize).unwrap()
+        *table.get(idx as usize).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        movegen::pieces::piece::{Color, PieceType},
+        square::Square,
+    };
+
+    #[test]
+    fn balanced_square_value() {
+        for (piece, sq) in [
+            (PieceType::Pawn, Square::E4),
+            (PieceType::Pawn, Square::D2),
+            (PieceType::Pawn, Square::A7),
+            (PieceType::Knight, Square::C3),
+            (PieceType::Knight, Square::F6),
+            (PieceType::Knight, Square::H1),
+            (PieceType::Bishop, Square::D4),
+            (PieceType::Bishop, Square::A1),
+            (PieceType::Bishop, Square::G7),
+            (PieceType::Rook, Square::A1),
+            (PieceType::Rook, Square::E1),
+            (PieceType::Rook, Square::H8),
+            (PieceType::Queen, Square::D1),
+            (PieceType::Queen, Square::E5),
+            (PieceType::Queen, Square::B6),
+            (PieceType::King, Square::E1),
+            (PieceType::King, Square::G1),
+            (PieceType::King, Square::D4),
+        ] {
+            assert_eq!(
+                piece.square_value(&sq, &Color::White),
+                piece.square_value(&sq.flip_side(), &Color::Black),
+                "Failed for {:?} at {:?}",
+                piece,
+                sq
+            );
+        }
     }
 }

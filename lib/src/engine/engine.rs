@@ -49,11 +49,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 impl Game {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
     pub fn grade_position(&mut self) -> f32 {
-        let mut hasher = DefaultHasher::new();
-        self.position.hash(&mut hasher);
-        let hash = hasher.finish();
-
-        if let Some(pre) = self.transposition_table.get(&hash) {
+        if let Some(pre) = self.transposition_table.get(&self.position.hash) {
             return *pre;
         }
 
@@ -97,7 +93,7 @@ impl Game {
             State::Repetition => score = 0.0,
         }
 
-        self.transposition_table.insert(hash, score);
+        self.transposition_table.insert(self.position.hash, score);
         score
     }
 
@@ -211,6 +207,12 @@ mod tests {
         let result = game.grade_position();
         let duration = start_time.elapsed();
         (result, duration)
+    }
+
+    #[test]
+    fn starting_evaluation_is_balanced() {
+        let mut game = Game::default();
+        assert_eq!(game.grade_position(), 0.0);
     }
 
     #[test]
