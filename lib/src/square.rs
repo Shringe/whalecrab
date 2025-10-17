@@ -139,6 +139,11 @@ impl Square {
         Square(((rank.to_index() as u8) << 3) ^ (file.to_index() as u8))
     }
 
+    /// Flips the side of the square for the opposite color
+    pub fn flip_side(&self) -> Square {
+        Square::new(self.0 ^ 56)
+    }
+
     pub fn uleft(&self) -> Option<Square> {
         if self.get_rank() == Rank::Eighth || self.get_file() == File::A {
             None
@@ -452,5 +457,17 @@ mod tests {
         let g3 = Square::G3;
         assert_eq!("A6", format!("{}", a6));
         assert_eq!("G3", format!("{}", g3));
+    }
+
+    #[test]
+    fn flip_side() {
+        assert_eq!(Square::E4, Square::E5.flip_side());
+        assert_eq!(Square::A1, Square::A8.flip_side());
+        assert_eq!(Square::H1, Square::H8.flip_side());
+        assert_eq!(Square::D2, Square::D7.flip_side());
+        assert_eq!(Square::F6, Square::F3.flip_side());
+        assert_eq!(Square::C3, Square::C6.flip_side());
+        assert_eq!(Square::G7, Square::G2.flip_side());
+        assert_eq!(Square::H3, Square::H3.flip_side().flip_side())
     }
 }

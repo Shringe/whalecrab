@@ -19,6 +19,8 @@ use crate::{
 pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: usize,
+    // Not technically necessary but probably much faster to remember
+    pub state: State,
 }
 
 #[derive(Clone, PartialEq)]
@@ -76,6 +78,7 @@ impl Game {
             .expect("Tried to unmake a move, but the required information is not present");
         self.position.castling_rights = last_position.castling_rights;
         self.position.half_move_timeout = last_position.half_move_timeout;
+        self.position.state = last_position.state;
     }
 
     /// Captures essential position information to be restored later
@@ -83,6 +86,7 @@ impl Game {
         let last_position = UnRestoreable {
             castling_rights: self.position.castling_rights,
             half_move_timeout: self.position.half_move_timeout,
+            state: self.position.state,
         };
         self.position_history.push(last_position);
     }
@@ -244,16 +248,16 @@ impl Game {
         };
 
         self.position.turn = self.position.turn.opponent();
+        self.refresh();
+        if self.position.turn == Color::White {
+            self.position.full_move_clock -= 1;
+        }
+
         // Repetition
         if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
             if *times_seen > 0 {
                 *times_seen -= 1;
             }
-        }
-
-        self.refresh();
-        if self.position.turn == Color::White {
-            self.position.full_move_clock -= 1;
         }
     }
 

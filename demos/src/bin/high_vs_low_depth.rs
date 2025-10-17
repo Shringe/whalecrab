@@ -11,8 +11,12 @@ fn main() {
 
         match m {
             Some(m) => {
-                println!("Chose to play: {}", m);
                 game.play(&m);
+                println!(
+                    "Game score {} after chosing to play: {}",
+                    game.grade_position(),
+                    m
+                );
             }
             None => {
                 println!("Game ended in {:?}.", game.position.state);

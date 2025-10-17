@@ -31,7 +31,7 @@ macro_rules! color_field_getters {
 }
 pub(crate) use color_field_getters;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
     InProgress,
     Checkmate,

@@ -5,11 +5,14 @@ fn bench(c: &mut Criterion) {
     let mut game = Game::default();
     c.bench_function("Engine against self", |b| {
         b.iter(|| {
-            if let Some(m) = game.get_engine_move_minimax(6) {
+            if let Some(m) = game.get_engine_move_minimax(20) {
                 game.play(&m);
             } else {
                 // Reset the board if no moves to play
-                println!("{}", game.nodes_seached);
+                println!(
+                    "Game ended in {:?}. {} nodes searched.",
+                    game.position.state, game.nodes_seached
+                );
                 game = Game::default();
             }
         })
