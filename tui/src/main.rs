@@ -9,6 +9,7 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
+use whalecrab_lib::engine::score::Score;
 use whalecrab_lib::movegen::pieces::piece;
 use whalecrab_lib::{
     bitboard::BitBoard,
@@ -245,7 +246,7 @@ struct App {
     ascii: Ascii,
     potential_targets: Vec<Square>,
 
-    score: f32,
+    score: Score,
     engine_suggestions: bool,
     suggested: Option<Move>,
 
@@ -268,7 +269,7 @@ impl App {
             ascii: Ascii::default(),
             potential_targets: Vec::new(),
 
-            score: 0.0,
+            score: Score::new(0.0),
             engine_suggestions: false,
             suggested: None,
 

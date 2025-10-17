@@ -1,4 +1,5 @@
 use crate::{
+    engine::score::Score,
     movegen::pieces::piece::{Color, PieceType},
     square::Square,
 };
@@ -78,19 +79,21 @@ const PAWN_MID: [f32; 64] = [
 
 impl PieceType {
     /// Gets the pieces value, for example, a pawn is 1.0. Does not consider turn.
-    pub fn material_value(&self) -> f32 {
-        match self {
+    pub fn material_value(&self) -> Score {
+        let value = match self {
             PieceType::Pawn => 1.0,
             PieceType::Knight => 3.0,
             PieceType::Bishop => 3.0,
             PieceType::Rook => 5.0,
             PieceType::Queen => 9.0,
             PieceType::King => 10.0,
-        }
+        };
+
+        Score::new(value)
     }
 
     /// Gets the positional value of a piece using a very basic piece-square table
-    pub fn square_value(&self, sq: &Square, color: &Color) -> f32 {
+    pub fn square_value(&self, sq: &Square, color: &Color) -> Score {
         let table = match self {
             PieceType::Pawn => PAWN_MID,
             PieceType::Knight => KNIGHT_MID,
@@ -106,7 +109,8 @@ impl PieceType {
             Color::Black => sq.flip_side().to_int(),
         };
 
-        *table.get(idx as usize).unwrap()
+        let value = *table.get(idx as usize).unwrap();
+        Score::new(value)
     }
 }
 

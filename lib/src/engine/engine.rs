@@ -1,8 +1,7 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
-
 use crate::{
     bitboard::BitBoard,
     board::State,
+    engine::score::Score,
     game::Game,
     movegen::{
         moves::{Move, MoveType},
@@ -48,12 +47,35 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 
 impl Game {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
-    pub fn grade_position(&mut self) -> f32 {
+    pub fn grade_position(&mut self) -> Score {
         if let Some(pre) = self.transposition_table.get(&self.position.hash) {
             return *pre;
         }
 
-        let mut score = 0.0;
+        macro_rules! end {
+            ($score: expr) => {{
+                self.transposition_table.insert(self.position.hash, $score);
+                return $score;
+            }};
+        }
+
+        // State
+        match self.position.state {
+            State::InProgress => {}
+            State::Checkmate => {
+                end!(match self.position.turn {
+                    Color::White => Score::MAX,
+                    Color::Black => Score::MIN,
+                })
+            }
+            State::Stalemate => end!(Score::new(0.0)),
+            // TODO. Timing out should result in a win for the opponent if the opponent has
+            // sufficent checkmating material
+            State::Timeout => end!(Score::new(0.0)),
+            State::Repetition => end!(Score::new(0.0)),
+        }
+
+        let mut score = Score::new(0.0);
 
         // Piece value
         for sq in self.occupied {
@@ -74,35 +96,18 @@ impl Game {
         }
 
         // Attackers and defenders
-        score += (self.white_attacks & self.occupied).popcnt() as f32 / 10.0;
-        score -= (self.black_attacks & self.occupied).popcnt() as f32 / 10.0;
+        score += Score::new((self.white_attacks & self.occupied).popcnt() as f32 / 10.0);
+        score -= Score::new((self.black_attacks & self.occupied).popcnt() as f32 / 10.0);
 
-        // State
-        match self.position.state {
-            State::InProgress => {}
-            State::Checkmate => {
-                score = match self.position.turn {
-                    Color::White => f32::NEG_INFINITY,
-                    Color::Black => f32::INFINITY,
-                }
-            }
-            State::Stalemate => score = 0.0,
-            // TODO. Timing out should result in a win for the opponent if the opponent has
-            // sufficent checkmating material
-            State::Timeout => score = 0.0,
-            State::Repetition => score = 0.0,
-        }
-
-        self.transposition_table.insert(self.position.hash, score);
-        score
+        end!(score)
     }
 
-    fn maxi(&mut self, mut alpha: f32, beta: f32, depth: u16) -> f32 {
+    fn maxi(&mut self, mut alpha: Score, beta: Score, depth: u16) -> Score {
         if depth == 0 {
             return self.grade_position();
         }
 
-        let mut max = f32::NEG_INFINITY;
+        let mut max = Score::MIN;
         for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
             self.nodes_seached += 1;
@@ -123,12 +128,12 @@ impl Game {
         max
     }
 
-    fn mini(&mut self, alpha: f32, mut beta: f32, depth: u16) -> f32 {
+    fn mini(&mut self, alpha: Score, mut beta: Score, depth: u16) -> Score {
         if depth == 0 {
             return self.grade_position();
         }
 
-        let mut min = f32::INFINITY;
+        let mut min = Score::MAX;
         for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
             self.nodes_seached += 1;
@@ -153,12 +158,12 @@ impl Game {
         let moves = sort_moves(self.generate_all_legal_moves());
         let mut best_move = None;
 
-        let alpha = f32::NEG_INFINITY;
-        let beta = f32::INFINITY;
+        let alpha = Score::MIN;
+        let beta = Score::MAX;
 
         match self.position.turn {
             Color::White => {
-                let mut best_score = f32::NEG_INFINITY;
+                let mut best_score = Score::MIN;
                 for m in moves {
                     m.play(self);
                     let score = self.mini(alpha, beta, depth);
@@ -173,7 +178,7 @@ impl Game {
             }
 
             Color::Black => {
-                let mut best_score = f32::INFINITY;
+                let mut best_score = Score::MAX;
                 for m in moves {
                     m.play(self);
                     let score = self.maxi(alpha, beta, depth);
@@ -202,7 +207,7 @@ mod tests {
     };
 
     /// Used for determining cache hit/miss
-    fn time_grading(game: &mut Game) -> (f32, Duration) {
+    fn time_grading(game: &mut Game) -> (Score, Duration) {
         let start_time = Instant::now();
         let result = game.grade_position();
         let duration = start_time.elapsed();
@@ -212,7 +217,7 @@ mod tests {
     #[test]
     fn starting_evaluation_is_balanced() {
         let mut game = Game::default();
-        assert_eq!(game.grade_position(), 0.0);
+        assert_eq!(game.grade_position(), Score::new(0.0));
     }
 
     #[test]

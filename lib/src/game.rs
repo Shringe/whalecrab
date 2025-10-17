@@ -7,6 +7,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, State},
     castling::CastlingRights,
+    engine::score::Score,
     movegen::{
         moves::{Move, MoveType},
         pieces::piece::{Color, PieceType, ALL_PIECE_TYPES},
@@ -30,7 +31,7 @@ pub struct Game {
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
 
-    pub transposition_table: HashMap<u64, f32>,
+    pub transposition_table: HashMap<u64, Score>,
     pub position_history: Vec<UnRestoreable>,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
