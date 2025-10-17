@@ -4,7 +4,7 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Score(f32);
+pub struct Score(i32);
 
 impl Add for Score {
     type Output = Self;
@@ -38,11 +38,17 @@ impl fmt::Display for Score {
     }
 }
 
-impl Score {
-    pub const MAX: Score = Score(f32::MAX);
-    pub const MIN: Score = Score(f32::MAX);
+impl Default for Score {
+    fn default() -> Self {
+        Self(0)
+    }
+}
 
-    pub fn new(value: f32) -> Self {
+impl Score {
+    pub const MAX: Score = Score(i32::MAX);
+    pub const MIN: Score = Score(i32::MAX);
+
+    pub fn new(value: i32) -> Self {
         Self(value)
     }
 }

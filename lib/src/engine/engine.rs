@@ -68,14 +68,14 @@ impl Game {
                     Color::Black => Score::MIN,
                 })
             }
-            State::Stalemate => end!(Score::new(0.0)),
+            State::Stalemate => end!(Score::default()),
             // TODO. Timing out should result in a win for the opponent if the opponent has
             // sufficent checkmating material
-            State::Timeout => end!(Score::new(0.0)),
-            State::Repetition => end!(Score::new(0.0)),
+            State::Timeout => end!(Score::default()),
+            State::Repetition => end!(Score::default()),
         }
 
-        let mut score = Score::new(0.0);
+        let mut score = Score::default();
 
         // Piece value
         for sq in self.occupied {
@@ -96,8 +96,8 @@ impl Game {
         }
 
         // Attackers and defenders
-        score += Score::new((self.white_attacks & self.occupied).popcnt() as f32 / 10.0);
-        score -= Score::new((self.black_attacks & self.occupied).popcnt() as f32 / 10.0);
+        // score += Score::new((self.white_attacks & self.occupied).popcnt() * 10);
+        // score -= Score::new((self.black_attacks & self.occupied).popcnt() * 10);
 
         end!(score)
     }
@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn starting_evaluation_is_balanced() {
         let mut game = Game::default();
-        assert_eq!(game.grade_position(), Score::new(0.0));
+        assert_eq!(game.grade_position(), Score::default());
     }
 
     #[test]

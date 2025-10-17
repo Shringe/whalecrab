@@ -269,7 +269,7 @@ impl App {
             ascii: Ascii::default(),
             potential_targets: Vec::new(),
 
-            score: Score::new(0.0),
+            score: Score::default(),
             engine_suggestions: false,
             suggested: None,
 
