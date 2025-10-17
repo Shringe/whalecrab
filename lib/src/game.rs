@@ -24,7 +24,7 @@ pub struct UnRestoreable {
     pub state: State,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Game {
     pub position: Board,
     pub white_occupied: BitBoard,
@@ -38,6 +38,22 @@ pub struct Game {
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
     pub nodes_seached: u128,
+}
+
+impl PartialEq for Game {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position
+            && self.white_occupied == other.white_occupied
+            && self.black_occupied == other.black_occupied
+            && self.occupied == other.occupied
+            // && self.transposition_table == other.transposition_table
+            && self.position_history == other.position_history
+            && self.white_attacks == other.white_attacks
+            && self.black_attacks == other.black_attacks
+            && self.white_check_rays == other.white_check_rays
+            && self.black_check_rays == other.black_check_rays
+        // && self.nodes_seached == other.nodes_seached
+    }
 }
 
 impl Default for Game {

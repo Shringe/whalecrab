@@ -436,9 +436,11 @@ impl PartialEq for Board {
             && self.en_passant_target == other.en_passant_target
             && self.turn == other.turn
             && self.castling_rights == other.castling_rights
-        // && self.transposition_table == other.transposition_table
-        // && self.white_attack_bitboard == other.white_attack_bitboard
-        // && self.black_attack_bitboard == other.black_attack_bitboard
+            && self.half_move_timeout == other.half_move_timeout
+            && self.full_move_clock == other.full_move_clock
+            && self.state == other.state
+            // && self.seen_positions == other.seen_positions
+        && self.hash == other.hash
     }
 }
 
