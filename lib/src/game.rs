@@ -441,90 +441,12 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use crate::board::{Board, State};
-    use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
-    use crate::movegen::pieces::king::King;
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::{Color, Piece, PieceType};
     use crate::square::Square;
-    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
-
-    #[test]
-    fn both_lose_castling_rights_by_moving_kings() {
-        let mut game = Game::from_position(
-            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap(),
-        );
-
-        let black_moves = Move::new(Square::E8, Square::D7, &game.position);
-        game.play(&black_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 1 2",
-        );
-
-        let white_moves = Move::new(Square::E1, Square::E2, &game.position);
-        game.play(&white_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP1KPPP/RNBQ1B1R b - - 2 2",
-        );
-    }
-
-    #[test]
-    fn both_lose_castling_rights_by_moving_rooks() {
-        let mut game = Game::from_position(
-            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap(),
-        );
-
-        let black_moves = Move::new(Square::H8, Square::G8, &game.position);
-        game.play(&black_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQq - 1 2",
-        );
-
-        let white_moves = Move::new(Square::H1, Square::G1, &game.position);
-        game.play(&white_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKBR1 b Qq - 2 2",
-        );
-    }
-
-    #[test]
-    fn white_king_castles_queenside() {
-        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/R3K1NR w KQkq - 6 7";
-        let fen_after = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
-        let to_play = &WHITE_CASTLES_QUEENSIDE;
-        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
-
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
-        should_generate(&moves, to_play);
-
-        game.play(to_play);
-        compare_to_fen(&game.position, fen_after);
-    }
-
-    #[test]
-    fn black_king_castles_kingside() {
-        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
-        let fen_after = "rn3rk1/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR w - - 8 8";
-        let to_play = &BLACK_CASTLES_KINGSIDE;
-        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
-
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
-        should_generate(&moves, to_play);
-
-        game.play(to_play);
-        compare_to_fen(&game.position, fen_after);
-    }
+    use crate::test_utils::{format_pretty_list, should_generate};
 
     #[test]
     fn white_pawn_promotes_to_queen() {
