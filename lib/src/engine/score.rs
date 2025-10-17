@@ -34,7 +34,9 @@ impl SubAssign for Score {
 
 impl fmt::Display for Score {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        let pawns = self.0 / 100;
+        let centipawns = self.0 % 100;
+        write!(f, "{}.{}", pawns, centipawns.abs())
     }
 }
 
@@ -50,5 +52,16 @@ impl Score {
 
     pub fn new(value: i32) -> Self {
         Self(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::engine::score::Score;
+
+    #[test]
+    fn display() {
+        assert_eq!(Score::new(52019).to_string(), "520.19".to_string());
+        assert_eq!(Score::new(-52019).to_string(), "-520.19".to_string());
     }
 }
