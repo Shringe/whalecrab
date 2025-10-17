@@ -10,7 +10,8 @@ use crate::{
 };
 
 /// Orders the moves for better minimax pruning
-/// TODO: Figure out why the reduction in nodes searched is minimal
+/// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
+/// also being changed sometimes
 fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
     // return moves;
     let mut sorted = Vec::with_capacity(moves.len());
