@@ -585,6 +585,12 @@ mod tests {
         let mut fen_game_after_refresh = fen_game.clone();
         game_after_refresh.refresh();
         fen_game_after_refresh.refresh();
+
+        assert_eq!(
+            game.position.en_passant_target,
+            fen_game.position.en_passant_target
+        );
+
         assert_eq!(
             game_after_refresh.position.hash, fen_game_after_refresh.position.hash,
             "The naturally reached position has a different hash than the one generated from fen, even after refreshing them both"
