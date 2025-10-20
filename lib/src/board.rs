@@ -460,6 +460,8 @@ impl Hash for Board {
         self.black_kings.hash(state);
         self.turn.hash(state);
         self.castling_rights.hash(state);
+        // TODO: En passant target should probably be hashed, but uncommenting this breaks things
+        // by messing up the hashes in self.seen_positions and triggering false Repetitions
         // self.en_passant_target.hash(state);
     }
 }
