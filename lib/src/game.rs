@@ -265,16 +265,18 @@ impl Game {
         };
 
         self.position.turn = self.position.turn.opponent();
-        self.refresh();
-        if self.position.turn == Color::Black {
-            self.position.full_move_clock -= 1;
-        }
 
         // Repetition
         if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
-            if *times_seen > 0 {
+            if *times_seen == 1 {
+                self.position.seen_positions.remove(&self.position.hash);
+            } else {
                 *times_seen -= 1;
             }
+        }
+        self.refresh();
+        if self.position.turn == Color::Black {
+            self.position.full_move_clock -= 1;
         }
     }
 
