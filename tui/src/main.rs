@@ -633,6 +633,21 @@ impl App {
         // Debug info
         let mut debug_text = String::new();
         debug_text.push_str(&format!(
+            "Game:
+    state: {:?}
+    evaluation: {}
+    turn: {:?}
+    nodes_searched: {}
+    position_hash: {}
+",
+            self.game.position.state,
+            self.score,
+            self.game.position.turn,
+            self.game.nodes_seached,
+            self.game.position.hash
+        ));
+
+        debug_text.push_str(&format!(
             "Screen area:
     width: {}
     height: {}
@@ -640,8 +655,6 @@ impl App {
 ",
             area.width, area.height, self.focus
         ));
-
-        debug_text.push_str(&format!("Current evaluation: {}\n", self.score));
 
         debug_text.push_str(&format!(
             "Highlighted square: {}\n",
