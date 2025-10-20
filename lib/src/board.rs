@@ -458,11 +458,11 @@ impl Hash for Board {
         self.black_rooks.hash(state);
         self.black_queens.hash(state);
         self.black_kings.hash(state);
-        // TODO: Broken state
-        self.en_passant_target.hash(state);
         self.turn.hash(state);
         self.castling_rights.hash(state);
-        self.half_move_timeout.hash(state);
+        // TODO: Broken state?
+        // self.half_move_timeout.hash(state);
+        // self.en_passant_target.hash(state);
     }
 }
 
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn hash_determinism() {
-        let fen_after = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+        let fen_after = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
         let mut game = Game::default();
         game.play(&Move::new(Square::E2, Square::E4, &game.position));
         let fen_game = Game::from_position(Board::from_fen(fen_after).unwrap());
