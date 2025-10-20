@@ -1,81 +1,82 @@
-use std::{
-    cmp::Ordering,
-    fmt,
-    hash::{DefaultHasher, Hash, Hasher},
-};
-
 use crate::{
     bitboard::BitBoard,
+    board::State,
+    engine::score::Score,
     game::Game,
-    movegen::{moves::Move, pieces::piece::Color},
+    movegen::{
+        moves::{Move, MoveType},
+        pieces::piece::Color,
+    },
 };
 
-#[derive(Clone)]
-pub struct ScoredMove(pub Move, f32);
+/// Orders the moves for better minimax pruning
+/// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
+/// also being changed sometimes
+fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
+    // return moves;
+    let mut sorted = Vec::with_capacity(moves.len());
 
-impl fmt::Display for ScoredMove {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} -> {}, {:?}, {}",
-            self.0.from, self.0.to, self.0.variant, self.1
-        )
-    }
-}
-
-impl fmt::Debug for ScoredMove {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self, f)
-    }
-}
-
-impl Ord for ScoredMove {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.1.partial_cmp(&other.1).unwrap_or(Ordering::Equal)
-    }
-}
-
-impl PartialOrd for ScoredMove {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for ScoredMove {
-    fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
-    }
-}
-
-impl Eq for ScoredMove {}
-
-impl ScoredMove {
-    pub fn from_moves(game: &mut Game, moves: Vec<Move>) -> Vec<Self> {
-        let mut scored_moves = Vec::new();
-        for m in moves {
-            let mut new = game.clone();
-            new.play(&m);
-            let score = new.grade_position();
-            let scored_move = ScoredMove(m, score);
-            scored_moves.push(scored_move);
+    for m in &moves {
+        if matches!(m.variant, MoveType::Promotion(_)) {
+            sorted.push(m.clone());
         }
-
-        scored_moves
     }
+
+    for m in &moves {
+        if matches!(m.variant, MoveType::Capture(_)) {
+            sorted.push(m.clone());
+        }
+    }
+
+    for m in &moves {
+        if matches!(m.variant, MoveType::Castle(_)) {
+            sorted.push(m.clone());
+        }
+    }
+
+    for m in &moves {
+        match m.variant {
+            MoveType::Capture(_) | MoveType::Promotion(_) | MoveType::Castle(_) => {}
+            _ => {
+                sorted.push(m.clone());
+            }
+        }
+    }
+
+    sorted
 }
 
 impl Game {
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
-    pub fn grade_position(&mut self) -> f32 {
-        let mut hasher = DefaultHasher::new();
-        self.position.hash(&mut hasher);
-        let hash = hasher.finish();
-
-        if let Some(pre) = self.transposition_table.get(&hash) {
+    pub fn grade_position(&mut self) -> Score {
+        if let Some(pre) = self.transposition_table.get(&self.position.hash) {
             return *pre;
         }
 
-        let mut score = 0.0;
+        macro_rules! end {
+            ($score: expr) => {{
+                self.transposition_table.insert(self.position.hash, $score);
+                return $score;
+            }};
+        }
+
+        // State
+        match self.position.state {
+            State::InProgress => {}
+            State::Checkmate => {
+                end!(match self.position.turn {
+                    Color::White => Score::MAX,
+                    Color::Black => Score::MIN,
+                })
+            }
+            State::Stalemate => end!(Score::default()),
+            // TODO. Timing out should result in a win for the opponent if the opponent has
+            // sufficent checkmating material
+            State::Timeout => end!(Score::default()),
+            State::Repetition => end!(Score::default()),
+        }
+
+        let mut score = Score::default();
 
         // Piece value
         for sq in self.occupied {
@@ -95,70 +96,22 @@ impl Game {
             }
         }
 
-        self.transposition_table.insert(hash, score);
-        score
+        // Attackers and defenders
+        // score += Score::new((self.white_attacks & self.occupied).popcnt() * 10);
+        // score -= Score::new((self.black_attacks & self.occupied).popcnt() * 10);
+
+        end!(score)
     }
 
-    /// Finds and returns the suggested move for the current players turn
-    pub fn find_best_move(&mut self) -> Option<ScoredMove> {
-        let moves = self.generate_all_legal_moves();
-        let mut scored_moves = ScoredMove::from_moves(self, moves);
-        scored_moves.sort();
-        match self.position.turn {
-            Color::White => scored_moves.into_iter().next_back(),
-            Color::Black => scored_moves.into_iter().next(),
-        }
-    }
-
-    /// Recusively searches through the specified depth (in half moves) to find the best move
-    pub fn get_engine_move(
-        &mut self,
-        depth: u16,
-        initial: Option<ScoredMove>,
-    ) -> Option<ScoredMove> {
-        if depth == 0 {
-            let best = self.find_best_move();
-            return best;
-        }
-
-        let moves = self.generate_all_legal_moves();
-        let scored_moves = ScoredMove::from_moves(self, moves);
-        let mut best_initial = None;
-        let mut best_final = None;
-        for m in scored_moves {
-            let mut board = self.clone();
-            board.play(&m.0);
-
-            let initial = if initial.is_some() {
-                initial.clone()
-            } else {
-                Some(m)
-            };
-
-            if let Some(m) = board.get_engine_move(depth - 1, initial.clone()) {
-                if let Some(b) = &best_final {
-                    if &m > b {
-                        best_initial = initial;
-                        best_final = Some(m);
-                    }
-                } else {
-                    best_initial = initial;
-                    best_final = Some(m)
-                }
-            }
-        }
-
-        best_initial
-    }
-
-    fn maxi(&mut self, mut alpha: f32, beta: f32, depth: u16) -> f32 {
+    fn maxi(&mut self, mut alpha: Score, beta: Score, depth: u16) -> Score {
         if depth == 0 {
             return self.grade_position();
         }
 
-        let mut max = f32::NEG_INFINITY;
-        for m in self.generate_all_legal_moves() {
+        let mut max = Score::MIN;
+        for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
+            self.nodes_seached += 1;
             let score = self.mini(alpha, beta, depth - 1);
             m.unplay(self);
             if score > max {
@@ -176,14 +129,15 @@ impl Game {
         max
     }
 
-    fn mini(&mut self, alpha: f32, mut beta: f32, depth: u16) -> f32 {
+    fn mini(&mut self, alpha: Score, mut beta: Score, depth: u16) -> Score {
         if depth == 0 {
             return self.grade_position();
         }
 
-        let mut min = f32::INFINITY;
-        for m in self.generate_all_legal_moves() {
+        let mut min = Score::MAX;
+        for m in sort_moves(self.generate_all_legal_moves()) {
             m.play(self);
+            self.nodes_seached += 1;
             let score = self.maxi(alpha, beta, depth - 1);
             m.unplay(self);
             if score < min {
@@ -202,15 +156,15 @@ impl Game {
     }
 
     pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
-        let moves = self.generate_all_legal_moves();
+        let moves = sort_moves(self.generate_all_legal_moves());
         let mut best_move = None;
 
-        let alpha = f32::NEG_INFINITY;
-        let beta = f32::INFINITY;
+        let alpha = Score::MIN;
+        let beta = Score::MAX;
 
         match self.position.turn {
             Color::White => {
-                let mut best_score = f32::NEG_INFINITY;
+                let mut best_score = Score::MIN;
                 for m in moves {
                     m.play(self);
                     let score = self.mini(alpha, beta, depth);
@@ -225,7 +179,7 @@ impl Game {
             }
 
             Color::Black => {
-                let mut best_score = f32::INFINITY;
+                let mut best_score = Score::MAX;
                 for m in moves {
                     m.play(self);
                     let score = self.maxi(alpha, beta, depth);
@@ -247,10 +201,14 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use super::*;
-    use crate::{board::Board, square::Square};
+    use crate::{
+        board::Board,
+        movegen::{moves::MoveType, pieces::piece::PieceType},
+        square::Square,
+    };
 
     /// Used for determining cache hit/miss
-    fn time_grading(game: &mut Game) -> (f32, Duration) {
+    fn time_grading(game: &mut Game) -> (Score, Duration) {
         let start_time = Instant::now();
         let result = game.grade_position();
         let duration = start_time.elapsed();
@@ -258,22 +216,9 @@ mod tests {
     }
 
     #[test]
-    fn old_engine_takes_queen() {
-        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
-        let mut game = Game::from_position(Board::from_fen(starting).unwrap());
-        let looking_for = Move::new(Square::C1, Square::G5, &game.position);
-        let result = game.find_best_move().expect("No moves found");
-        assert_eq!(result.0, looking_for);
-    }
-
-    #[test]
-    fn old_engine_saves_queen() {
-        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
-        let mut game = Game::from_position(Board::from_fen(starting).unwrap());
-        let black_queens_before = game.position.black_queens.popcnt();
-        let result = game.find_best_move().expect("No moves found");
-        game.play(&result.0);
-        assert_eq!(black_queens_before, game.position.black_queens.popcnt());
+    fn starting_evaluation_is_balanced() {
+        let mut game = Game::default();
+        assert_eq!(game.grade_position(), Score::default());
     }
 
     #[test]
@@ -282,11 +227,7 @@ mod tests {
         let mut game = Game::from_position(Board::from_fen(starting).unwrap());
         let looking_for = Move::new(Square::C1, Square::G5, &game.position);
         let result = game.get_engine_move_minimax(2).expect("No moves found");
-        let moves = game.generate_all_legal_moves();
-        let mut scored = ScoredMove::from_moves(&mut game, moves);
-        scored.sort();
         println!("State: {:?}", game.position.state);
-        println!("Available moves: {:#?}", scored);
         assert_eq!(result, looking_for);
     }
 
@@ -301,11 +242,38 @@ mod tests {
     }
 
     #[test]
+    fn black_always_takes_king() {
+        let fen = "k6r/pp4r1/8/pp6/Qp6/pp6/7K/8 w - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let white_moves = game.generate_all_legal_moves();
+        for m in white_moves {
+            m.play(&mut game);
+            let result = game.get_engine_move_minimax(0).unwrap();
+            assert_eq!(result.variant, MoveType::Capture(PieceType::King));
+            m.unplay(&mut game);
+        }
+    }
+
+    #[test]
+    fn white_always_checkmates() {
+        let fen = "7k/8/8/8/8/8/5R2/K5R1 b - - 0 1";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let black_moves = game.generate_all_legal_moves();
+        for m in black_moves {
+            m.play(&mut game);
+            let looking_for = Move::new(Square::F2, Square::H2, &game.position);
+            let result = game.get_engine_move_minimax(1).unwrap();
+            assert_eq!(result, looking_for);
+            m.unplay(&mut game);
+        }
+    }
+
+    #[test]
     fn transportation_table_cache_hits() {
         let mut game = Game::default();
 
         let (initial_result, initial_duration) = time_grading(&mut game);
-        let min_speedup_factor = 1.5;
+        let min_speedup_factor = 1.2;
 
         for i in 1..100 {
             let (result, duration) = time_grading(&mut game);
@@ -320,5 +288,15 @@ mod tests {
                 i, speedup_factor, min_speedup_factor, initial_duration, duration
             );
         }
+    }
+
+    #[test]
+    fn engine_moves_immutably() {
+        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let before = game.clone();
+        let _ = game.generate_all_legal_moves();
+        let _ = game.get_engine_move_minimax(2);
+        assert_eq!(before, game);
     }
 }

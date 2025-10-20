@@ -9,6 +9,7 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
+use whalecrab_lib::engine::score::Score;
 use whalecrab_lib::movegen::pieces::piece;
 use whalecrab_lib::{
     bitboard::BitBoard,
@@ -245,9 +246,11 @@ struct App {
     ascii: Ascii,
     potential_targets: Vec<Square>,
 
-    score: f32,
+    score: Score,
     engine_suggestions: bool,
+    verbose: bool,
     suggested: Option<Move>,
+    last: Option<Move>,
 
     player_white: PlayerType,
     player_black: PlayerType,
@@ -268,9 +271,11 @@ impl App {
             ascii: Ascii::default(),
             potential_targets: Vec::new(),
 
-            score: 0.0,
+            score: Score::default(),
             engine_suggestions: false,
+            verbose: false,
             suggested: None,
+            last: None,
 
             player_white: PlayerType::Human,
             player_black: PlayerType::Engine,
@@ -348,8 +353,8 @@ impl App {
         self.game.play(&m);
         self.score = self.game.grade_position();
         self.fen.input = self.game.position.to_fen();
-        if let Some(sm) = self.game.find_best_move() {
-            self.suggested = Some(sm.0)
+        if let Some(sm) = self.game.get_engine_move_minimax(4) {
+            self.suggested = Some(sm)
         }
 
         let player = match self.game.position.turn {
@@ -361,6 +366,8 @@ impl App {
             PlayerType::Human => self.unselect(),
             PlayerType::Engine => self.play_engine_move(),
         };
+
+        self.last = Some(m.clone());
     }
 
     /// Tries to make a human player's move if possible
@@ -393,62 +400,69 @@ impl App {
     fn play_engine_move(&mut self) {
         let m = self
             .game
-            .get_engine_move_minimax(3)
+            .get_engine_move_minimax(4)
             .expect("Tried to play engine move, but there was no move to play");
 
         self.play_move(&m);
     }
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            KeyCode::Char('c') => {
-                if key_event.modifiers == KeyModifiers::CONTROL {
-                    self.exit();
-                } else {
-                    self.focus = Focus::Command;
+        if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+            match key_event.code {
+                KeyCode::Char('c') => self.exit(),
+                _ => {}
+            }
+        } else {
+            match key_event.code {
+                KeyCode::Char('q') => self.exit(),
+                KeyCode::Char('c') => self.focus = Focus::Command,
+                KeyCode::Char('m') => self.focus = Focus::Menu,
+                KeyCode::Char('f') => self.focus = Focus::Fen,
+                KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
+                KeyCode::Char('v') => self.verbose = !self.verbose,
+                KeyCode::Char('u') => {
+                    if let Some(m) = &self.last {
+                        m.unplay(&mut self.game);
+                        self.last = None;
+                    }
                 }
-            }
 
-            KeyCode::Char('m') => self.focus = Focus::Menu,
-            KeyCode::Char('f') => self.focus = Focus::Fen,
-            KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
-
-            KeyCode::Left => {
-                if let Some(new) = self.highlighted_square.left() {
-                    self.highlighted_square = new
+                KeyCode::Left => {
+                    if let Some(new) = self.highlighted_square.left() {
+                        self.highlighted_square = new
+                    }
                 }
-            }
-            KeyCode::Down => {
-                if let Some(new) = self.highlighted_square.down() {
-                    self.highlighted_square = new;
+                KeyCode::Down => {
+                    if let Some(new) = self.highlighted_square.down() {
+                        self.highlighted_square = new;
+                    }
                 }
-            }
-            KeyCode::Up => {
-                if let Some(new) = self.highlighted_square.up() {
-                    self.highlighted_square = new;
+                KeyCode::Up => {
+                    if let Some(new) = self.highlighted_square.up() {
+                        self.highlighted_square = new;
+                    }
                 }
-            }
-            KeyCode::Right => {
-                if let Some(new) = self.highlighted_square.right() {
-                    self.highlighted_square = new;
+                KeyCode::Right => {
+                    if let Some(new) = self.highlighted_square.right() {
+                        self.highlighted_square = new;
+                    }
                 }
+
+                KeyCode::Esc => self.unselect(),
+                KeyCode::Enter => {
+                    let player = match self.game.position.turn {
+                        piece::Color::White => &self.player_white,
+                        piece::Color::Black => &self.player_black,
+                    };
+
+                    match player {
+                        PlayerType::Human => self.play_human_move(),
+                        PlayerType::Engine => self.play_engine_move(),
+                    };
+                }
+
+                _ => {}
             }
-
-            KeyCode::Esc => self.unselect(),
-            KeyCode::Enter => {
-                let player = match self.game.position.turn {
-                    piece::Color::White => &self.player_white,
-                    piece::Color::Black => &self.player_black,
-                };
-
-                match player {
-                    PlayerType::Human => self.play_human_move(),
-                    PlayerType::Engine => self.play_engine_move(),
-                };
-            }
-
-            _ => {}
         }
     }
 
@@ -632,6 +646,21 @@ impl App {
         // Debug info
         let mut debug_text = String::new();
         debug_text.push_str(&format!(
+            "Game:
+    state: {:?}
+    evaluation: {}
+    turn: {:?}
+    nodes_searched: {}
+    position_hash: {}
+",
+            self.game.position.state,
+            self.score,
+            self.game.position.turn,
+            self.game.nodes_seached,
+            self.game.position.hash,
+        ));
+
+        debug_text.push_str(&format!(
             "Screen area:
     width: {}
     height: {}
@@ -639,8 +668,6 @@ impl App {
 ",
             area.width, area.height, self.focus
         ));
-
-        debug_text.push_str(&format!("Current evaluation: {}\n", self.score));
 
         debug_text.push_str(&format!(
             "Highlighted square: {}\n",
@@ -671,6 +698,15 @@ Selected Square info:
                     format_pretty_list(&self.potential_targets)
                 ));
             }
+        }
+
+        if self.verbose {
+            debug_text.push_str(&format!(
+                "Verbose:
+    seen_positions: {:#?}
+",
+                self.game.position.seen_positions
+            ));
         }
 
         Paragraph::new(debug_text)

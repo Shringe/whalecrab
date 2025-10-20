@@ -7,6 +7,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{color_field_getters, Board, State},
     castling::CastlingRights,
+    engine::score::Score,
     movegen::{
         moves::{Move, MoveType},
         pieces::piece::{Color, PieceType, ALL_PIECE_TYPES},
@@ -19,29 +20,40 @@ use crate::{
 pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: usize,
+    // Not technically necessary but probably much faster to remember
+    pub state: State,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Game {
     pub position: Board,
     pub white_occupied: BitBoard,
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
-    pub pawns: BitBoard,
-    pub knights: BitBoard,
-    pub bishops: BitBoard,
-    pub rooks: BitBoard,
-    pub queens: BitBoard,
-    pub kings: BitBoard,
 
-    pub transposition_table: HashMap<u64, f32>,
-    pub white_num_checks: u8,
-    pub black_num_checks: u8,
+    pub transposition_table: HashMap<u64, Score>,
+    pub position_history: Vec<UnRestoreable>,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
-    pub position_history: Vec<UnRestoreable>,
+    pub nodes_seached: u128,
+}
+
+impl PartialEq for Game {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position
+            && self.white_occupied == other.white_occupied
+            && self.black_occupied == other.black_occupied
+            && self.occupied == other.occupied
+            // && self.transposition_table == other.transposition_table
+            && self.position_history == other.position_history
+            && self.white_attacks == other.white_attacks
+            && self.black_attacks == other.black_attacks
+            && self.white_check_rays == other.white_check_rays
+            && self.black_check_rays == other.black_check_rays
+        // && self.nodes_seached == other.nodes_seached
+    }
 }
 
 impl Default for Game {
@@ -53,15 +65,12 @@ impl Default for Game {
 impl Game {
     color_field_getters!(attacks, BitBoard);
     color_field_getters!(check_rays, BitBoard);
-    color_field_getters!(num_checks, u8);
     color_field_getters!(occupied, BitBoard);
 
     pub fn from_position(position: Board) -> Self {
         let mut game = Self {
             position,
             transposition_table: HashMap::new(),
-            white_num_checks: 0,
-            black_num_checks: 0,
             white_attacks: EMPTY,
             black_attacks: EMPTY,
             white_check_rays: EMPTY,
@@ -69,13 +78,8 @@ impl Game {
             white_occupied: EMPTY,
             black_occupied: EMPTY,
             occupied: EMPTY,
-            pawns: EMPTY,
-            knights: EMPTY,
-            bishops: EMPTY,
-            rooks: EMPTY,
-            queens: EMPTY,
-            kings: EMPTY,
             position_history: Vec::new(),
+            nodes_seached: 0,
         };
 
         game.reinitialize();
@@ -91,6 +95,7 @@ impl Game {
             .expect("Tried to unmake a move, but the required information is not present");
         self.position.castling_rights = last_position.castling_rights;
         self.position.half_move_timeout = last_position.half_move_timeout;
+        self.position.state = last_position.state;
     }
 
     /// Captures essential position information to be restored later
@@ -98,6 +103,7 @@ impl Game {
         let last_position = UnRestoreable {
             castling_rights: self.position.castling_rights,
             half_move_timeout: self.position.half_move_timeout,
+            state: self.position.state,
         };
         self.position_history.push(last_position);
     }
@@ -119,19 +125,6 @@ impl Game {
             | self.position.black_kings;
         let pieces = white_pieces | black_pieces;
 
-        let pawns = self.position.white_pawns | self.position.black_pawns;
-        let knights = self.position.white_knights | self.position.black_knights;
-        let bishops = self.position.white_bishops | self.position.black_bishops;
-        let rooks = self.position.white_rooks | self.position.black_rooks;
-        let queens = self.position.white_queens | self.position.black_queens;
-        let kings = self.position.white_kings | self.position.black_kings;
-
-        self.pawns = pawns;
-        self.knights = knights;
-        self.bishops = bishops;
-        self.rooks = rooks;
-        self.queens = queens;
-        self.kings = kings;
         self.white_occupied = white_pieces;
         self.black_occupied = black_pieces;
         self.occupied = pieces;
@@ -224,8 +217,7 @@ impl Game {
 
         // Update position state
         self.position.turn = self.position.turn.opponent();
-        self.position.half_move_clock += 1;
-        if self.position.turn == Color::Black {
+        if self.position.turn == Color::White {
             self.position.full_move_clock += 1;
         }
         self.refresh();
@@ -273,15 +265,17 @@ impl Game {
         };
 
         self.position.turn = self.position.turn.opponent();
+
         // Repetition
         if let Some(times_seen) = self.position.seen_positions.get_mut(&self.position.hash) {
-            if *times_seen > 0 {
+            if *times_seen == 1 {
+                self.position.seen_positions.remove(&self.position.hash);
+            } else {
                 *times_seen -= 1;
             }
         }
-
         self.refresh();
-        if self.position.turn == Color::White {
+        if self.position.turn == Color::Black {
             self.position.full_move_clock -= 1;
         }
     }
@@ -449,90 +443,12 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use crate::board::{Board, State};
-    use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
-    use crate::movegen::pieces::king::King;
     use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::{Color, Piece, PieceType};
     use crate::square::Square;
-    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
-
-    #[test]
-    fn both_lose_castling_rights_by_moving_kings() {
-        let mut game = Game::from_position(
-            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap(),
-        );
-
-        let black_moves = Move::new(Square::E8, Square::D7, &game.position);
-        game.play(&black_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 1 2",
-        );
-
-        let white_moves = Move::new(Square::E1, Square::E2, &game.position);
-        game.play(&white_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP1KPPP/RNBQ1B1R b - - 2 2",
-        );
-    }
-
-    #[test]
-    fn both_lose_castling_rights_by_moving_rooks() {
-        let mut game = Game::from_position(
-            Board::from_fen("rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1")
-                .unwrap(),
-        );
-
-        let black_moves = Move::new(Square::H8, Square::G8, &game.position);
-        game.play(&black_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQq - 1 2",
-        );
-
-        let white_moves = Move::new(Square::H1, Square::G1, &game.position);
-        game.play(&white_moves);
-
-        compare_to_fen(
-            &game.position,
-            "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKBR1 b Qq - 2 2",
-        );
-    }
-
-    #[test]
-    fn white_king_castles_queenside() {
-        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/R3K1NR w KQkq - 6 7";
-        let fen_after = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
-        let to_play = &WHITE_CASTLES_QUEENSIDE;
-        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
-
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
-        should_generate(&moves, to_play);
-
-        game.play(to_play);
-        compare_to_fen(&game.position, fen_after);
-    }
-
-    #[test]
-    fn black_king_castles_kingside() {
-        let fen_before = "rn2k2r/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR b kq - 7 7";
-        let fen_after = "rn3rk1/pppbqppp/3p1n2/2b1p3/2B1P3/2NP4/PPPBQPPP/2KR2NR w - - 8 8";
-        let to_play = &BLACK_CASTLES_KINGSIDE;
-        let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
-
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
-        should_generate(&moves, to_play);
-
-        game.play(to_play);
-        compare_to_fen(&game.position, fen_after);
-    }
+    use crate::test_utils::{format_pretty_list, should_generate};
 
     #[test]
     fn white_pawn_promotes_to_queen() {

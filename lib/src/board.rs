@@ -31,7 +31,7 @@ macro_rules! color_field_getters {
 }
 pub(crate) use color_field_getters;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
     InProgress,
     Checkmate,
@@ -61,7 +61,6 @@ pub struct Board {
     pub turn: Color,
 
     pub half_move_timeout: usize,
-    pub half_move_clock: usize,
     pub full_move_clock: usize,
     pub state: State,
     pub seen_positions: HashMap<u64, u8>,
@@ -90,7 +89,6 @@ impl Board {
             turn: Color::White,
 
             half_move_timeout: 0,
-            half_move_clock: 0,
             full_move_clock: 0,
             state: State::InProgress,
             seen_positions: HashMap::new(),
@@ -407,8 +405,7 @@ impl Default for Board {
             turn: Color::White,
 
             half_move_timeout: 0,
-            half_move_clock: 0,
-            full_move_clock: 0,
+            full_move_clock: 1,
             state: State::InProgress,
             seen_positions: HashMap::new(),
             hash: 0,
@@ -439,9 +436,11 @@ impl PartialEq for Board {
             && self.en_passant_target == other.en_passant_target
             && self.turn == other.turn
             && self.castling_rights == other.castling_rights
-        // && self.transposition_table == other.transposition_table
-        // && self.white_attack_bitboard == other.white_attack_bitboard
-        // && self.black_attack_bitboard == other.black_attack_bitboard
+            && self.half_move_timeout == other.half_move_timeout
+            && self.full_move_clock == other.full_move_clock
+            && self.state == other.state
+        // && self.hash == other.hash
+        // && self.seen_positions == other.seen_positions
     }
 }
 
@@ -459,9 +458,11 @@ impl Hash for Board {
         self.black_rooks.hash(state);
         self.black_queens.hash(state);
         self.black_kings.hash(state);
-        self.en_passant_target.hash(state);
         self.turn.hash(state);
         self.castling_rights.hash(state);
+        // TODO: En passant target should probably be hashed, but uncommenting this breaks things
+        // by messing up the hashes in self.seen_positions and triggering false Repetitions
+        // self.en_passant_target.hash(state);
     }
 }
 
@@ -572,5 +573,31 @@ mod tests {
         assert!(BitBoard::from_square(Square::H8) & black_rooks != EMPTY);
         assert!(BitBoard::from_square(Square::B7) & black_rooks == EMPTY);
         assert!(BitBoard::from_square(Square::E5) & black_rooks == EMPTY);
+    }
+
+    #[test]
+    fn hash_determinism() {
+        let fen_after = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+        let mut game = Game::default();
+        game.play(&Move::new(Square::E2, Square::E4, &game.position));
+        let fen_game = Game::from_position(Board::from_fen(fen_after).unwrap());
+        let mut game_after_refresh = game.clone();
+        let mut fen_game_after_refresh = fen_game.clone();
+        game_after_refresh.refresh();
+        fen_game_after_refresh.refresh();
+
+        assert_eq!(
+            game.position.en_passant_target,
+            fen_game.position.en_passant_target
+        );
+
+        assert_eq!(
+            game_after_refresh.position.hash, fen_game_after_refresh.position.hash,
+            "The naturally reached position has a different hash than the one generated from fen, even after refreshing them both"
+        );
+        assert_eq!(
+            game.position.hash, fen_game.position.hash,
+            "The naturally reached position has a different hash than the one generated from fen"
+        );
     }
 }

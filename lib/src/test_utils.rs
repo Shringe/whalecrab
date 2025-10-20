@@ -59,20 +59,18 @@ pub fn compare_games(before: &Game, after: &Game) {
     assert_push!(differences, before, after, black_occupied);
     assert_push!(differences, before, after, occupied);
 
-    assert_push!(differences, before, after, pawns);
-    assert_push!(differences, before, after, knights);
-    assert_push!(differences, before, after, bishops);
-    assert_push!(differences, before, after, rooks);
-    assert_push!(differences, before, after, queens);
-    assert_push!(differences, before, after, kings);
-
-    assert_push!(differences, before, after, white_num_checks);
-    assert_push!(differences, before, after, black_num_checks);
     assert_push!(differences, before, after, white_attacks);
     assert_push!(differences, before, after, black_attacks);
     assert_push!(differences, before, after, white_check_rays);
     assert_push!(differences, before, after, black_check_rays);
 
+    assert_push!(
+        differences,
+        before.position,
+        after.position,
+        seen_positions,
+        "{:?}"
+    );
     assert_push!(differences, before, after, position_history, "{:?}");
     assert_push!(differences, before, after, transposition_table, "{:?}");
 
