@@ -545,7 +545,7 @@ Available moves: {}
 
     #[test]
     fn should_have_moves_fen() {
-        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2";
+        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let moves = game.generate_all_legal_moves();
         let engine_move = game.get_engine_move_minimax(2);
@@ -565,6 +565,7 @@ Available moves: {}
             m.play(&mut game);
             let moves = game.generate_all_legal_moves();
             let engine_move = game.get_engine_move_minimax(2);
+            assert_eq!(game.position.state, State::InProgress);
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())
         }
