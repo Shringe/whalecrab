@@ -352,7 +352,6 @@ legally attacking:
 {}
 
 White Board info:
-num_checks: {}
 ray_attacks:
 {}
 
@@ -360,7 +359,6 @@ attacks:
 {}
 
 Black Board info:
-num_checks: {}
 ray_attacks:
 {}
 
@@ -375,10 +373,8 @@ Available moves: {}
                     to_play.to,
                     piece_attacks,
                     piece_attacks_legal,
-                    game.white_num_checks,
                     game.white_check_rays,
                     game.white_attacks,
-                    game.black_num_checks,
                     game.black_check_rays,
                     game.black_attacks,
                     format_pretty_list(&legal_moves)
@@ -545,5 +541,33 @@ Available moves: {}
         assert_eq!(game.position.state, State::InProgress);
         should_generate(&moves, &possible_moves[0]);
         should_generate(&moves, &possible_moves[1]);
+    }
+
+    #[test]
+    fn should_have_moves_fen() {
+        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let moves = game.generate_all_legal_moves();
+        let engine_move = game.get_engine_move_minimax(2);
+        assert!(!moves.is_empty());
+        assert!(engine_move.is_some())
+    }
+
+    #[test]
+    fn should_have_moves() {
+        let mut game = Game::default();
+        for (from, to) in [
+            (Square::E2, Square::E4),
+            (Square::C7, Square::C6),
+            (Square::F2, Square::F4),
+        ] {
+            let m = Move::new(from, to, &game.position);
+            m.play(&mut game);
+            let moves = game.generate_all_legal_moves();
+            let engine_move = game.get_engine_move_minimax(2);
+            assert_eq!(game.position.state, State::InProgress);
+            assert!(!moves.is_empty());
+            assert!(engine_move.is_some())
+        }
     }
 }

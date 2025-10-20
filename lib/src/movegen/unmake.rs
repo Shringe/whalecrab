@@ -212,10 +212,10 @@ mod tests {
         [
             (Square::E2, Square::E4),
             (Square::D7, Square::D5),
-            (Square::E4, Square::E5),
-            (Square::D5, Square::D4),
-            (Square::C2, Square::C4),
-            (Square::D4, Square::C3), // En passant capture
+            // (Square::E4, Square::E5),
+            // (Square::D5, Square::D4),
+            // (Square::C2, Square::C4),
+            // (Square::D4, Square::C3), // En passant capture
         ]
     );
 

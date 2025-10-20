@@ -4,7 +4,7 @@ fn main() {
     let mut game = Game::default();
 
     for _ in 0..100 {
-        let m = game.find_best_move().unwrap().0;
+        let m = game.get_engine_move_minimax(2).unwrap();
         println!("Chose to play: {}", m);
         game.play(&m);
     }
