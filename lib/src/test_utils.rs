@@ -64,6 +64,13 @@ pub fn compare_games(before: &Game, after: &Game) {
     assert_push!(differences, before, after, white_check_rays);
     assert_push!(differences, before, after, black_check_rays);
 
+    assert_push!(
+        differences,
+        before.position,
+        after.position,
+        seen_positions,
+        "{:?}"
+    );
     assert_push!(differences, before, after, position_history, "{:?}");
     assert_push!(differences, before, after, transposition_table, "{:?}");
 
