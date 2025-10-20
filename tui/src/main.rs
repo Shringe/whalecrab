@@ -649,12 +649,14 @@ impl App {
     turn: {:?}
     nodes_searched: {}
     position_hash: {}
+    seen_positions: {:#?}
 ",
             self.game.position.state,
             self.score,
             self.game.position.turn,
             self.game.nodes_seached,
-            self.game.position.hash
+            self.game.position.hash,
+            self.game.position.seen_positions
         ));
 
         debug_text.push_str(&format!(
