@@ -249,6 +249,7 @@ struct App {
     score: Score,
     engine_suggestions: bool,
     suggested: Option<Move>,
+    last: Option<Move>,
 
     player_white: PlayerType,
     player_black: PlayerType,
@@ -272,6 +273,7 @@ impl App {
             score: Score::default(),
             engine_suggestions: false,
             suggested: None,
+            last: None,
 
             player_white: PlayerType::Human,
             player_black: PlayerType::Engine,
@@ -362,6 +364,8 @@ impl App {
             PlayerType::Human => self.unselect(),
             PlayerType::Engine => self.play_engine_move(),
         };
+
+        self.last = Some(m.clone());
     }
 
     /// Tries to make a human player's move if possible
@@ -401,55 +405,61 @@ impl App {
     }
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            KeyCode::Char('c') => {
-                if key_event.modifiers == KeyModifiers::CONTROL {
-                    self.exit();
-                } else {
-                    self.focus = Focus::Command;
+        if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+            match key_event.code {
+                KeyCode::Char('c') => self.exit(),
+                _ => {}
+            }
+        } else {
+            match key_event.code {
+                KeyCode::Char('q') => self.exit(),
+                KeyCode::Char('c') => self.focus = Focus::Command,
+                KeyCode::Char('m') => self.focus = Focus::Menu,
+                KeyCode::Char('f') => self.focus = Focus::Fen,
+                KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
+                KeyCode::Char('u') => {
+                    if let Some(m) = &self.last {
+                        m.unplay(&mut self.game);
+                        self.last = None;
+                    }
                 }
-            }
 
-            KeyCode::Char('m') => self.focus = Focus::Menu,
-            KeyCode::Char('f') => self.focus = Focus::Fen,
-            KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
-
-            KeyCode::Left => {
-                if let Some(new) = self.highlighted_square.left() {
-                    self.highlighted_square = new
+                KeyCode::Left => {
+                    if let Some(new) = self.highlighted_square.left() {
+                        self.highlighted_square = new
+                    }
                 }
-            }
-            KeyCode::Down => {
-                if let Some(new) = self.highlighted_square.down() {
-                    self.highlighted_square = new;
+                KeyCode::Down => {
+                    if let Some(new) = self.highlighted_square.down() {
+                        self.highlighted_square = new;
+                    }
                 }
-            }
-            KeyCode::Up => {
-                if let Some(new) = self.highlighted_square.up() {
-                    self.highlighted_square = new;
+                KeyCode::Up => {
+                    if let Some(new) = self.highlighted_square.up() {
+                        self.highlighted_square = new;
+                    }
                 }
-            }
-            KeyCode::Right => {
-                if let Some(new) = self.highlighted_square.right() {
-                    self.highlighted_square = new;
+                KeyCode::Right => {
+                    if let Some(new) = self.highlighted_square.right() {
+                        self.highlighted_square = new;
+                    }
                 }
+
+                KeyCode::Esc => self.unselect(),
+                KeyCode::Enter => {
+                    let player = match self.game.position.turn {
+                        piece::Color::White => &self.player_white,
+                        piece::Color::Black => &self.player_black,
+                    };
+
+                    match player {
+                        PlayerType::Human => self.play_human_move(),
+                        PlayerType::Engine => self.play_engine_move(),
+                    };
+                }
+
+                _ => {}
             }
-
-            KeyCode::Esc => self.unselect(),
-            KeyCode::Enter => {
-                let player = match self.game.position.turn {
-                    piece::Color::White => &self.player_white,
-                    piece::Color::Black => &self.player_black,
-                };
-
-                match player {
-                    PlayerType::Human => self.play_human_move(),
-                    PlayerType::Engine => self.play_engine_move(),
-                };
-            }
-
-            _ => {}
         }
     }
 
