@@ -248,6 +248,7 @@ struct App {
 
     score: Score,
     engine_suggestions: bool,
+    verbose: bool,
     suggested: Option<Move>,
     last: Option<Move>,
 
@@ -272,6 +273,7 @@ impl App {
 
             score: Score::default(),
             engine_suggestions: false,
+            verbose: false,
             suggested: None,
             last: None,
 
@@ -417,6 +419,7 @@ impl App {
                 KeyCode::Char('m') => self.focus = Focus::Menu,
                 KeyCode::Char('f') => self.focus = Focus::Fen,
                 KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
+                KeyCode::Char('v') => self.verbose = !self.verbose,
                 KeyCode::Char('u') => {
                     if let Some(m) = &self.last {
                         m.unplay(&mut self.game);
@@ -649,14 +652,12 @@ impl App {
     turn: {:?}
     nodes_searched: {}
     position_hash: {}
-    seen_positions: {:#?}
 ",
             self.game.position.state,
             self.score,
             self.game.position.turn,
             self.game.nodes_seached,
             self.game.position.hash,
-            self.game.position.seen_positions
         ));
 
         debug_text.push_str(&format!(
@@ -697,6 +698,15 @@ Selected Square info:
                     format_pretty_list(&self.potential_targets)
                 ));
             }
+        }
+
+        if self.verbose {
+            debug_text.push_str(&format!(
+                "Verbose:
+    seen_positions: {:#?}
+",
+                self.game.position.seen_positions
+            ));
         }
 
         Paragraph::new(debug_text)
