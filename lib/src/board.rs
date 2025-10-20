@@ -439,7 +439,7 @@ impl PartialEq for Board {
             && self.half_move_timeout == other.half_move_timeout
             && self.full_move_clock == other.full_move_clock
             && self.state == other.state
-            && self.hash == other.hash
+        // && self.hash == other.hash
         // && self.seen_positions == other.seen_positions
     }
 }
