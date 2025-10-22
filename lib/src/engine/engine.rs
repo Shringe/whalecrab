@@ -1,5 +1,5 @@
 use crate::{
-    bitboard::{BitBoard, EMPTY},
+    bitboard::BitBoard,
     board::State,
     engine::score::Score,
     game::Game,
