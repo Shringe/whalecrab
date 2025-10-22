@@ -47,6 +47,10 @@
           };
 
           devShells.default = pkgs.mkShell {
+            shellHook = ''
+              export RUSTFLAGS="-C target-cpu=native"
+            '';
+
             buildInputs = with pkgs; [
               git
               rustc
