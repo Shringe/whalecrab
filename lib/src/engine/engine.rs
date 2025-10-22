@@ -7,6 +7,7 @@ use crate::{
         moves::{Move, MoveType},
         pieces::piece::Color,
     },
+    square::Square,
 };
 
 /// Orders the moves for better minimax pruning
@@ -47,6 +48,83 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 }
 
 impl Game {
+    /// Score material based on its value and position on the board
+    fn score_material(&self) -> Score {
+        let mut score = Score::default();
+
+        for sq in self.occupied {
+            let sqbb = BitBoard::from_square(sq);
+            let (piece, color) = self.determine_piece(&sqbb).unwrap();
+
+            match color {
+                Color::White => {
+                    score += piece.material_value();
+                    score += piece.square_value(&sq, &color);
+                }
+
+                Color::Black => {
+                    score -= piece.material_value();
+                    score -= piece.square_value(&sq, &color);
+                }
+            }
+        }
+
+        score
+    }
+
+    /// Scores king safety. Primarily based on whether the king has friendly pawns next to him.
+    fn score_king_safety(&self) -> Score {
+        let mut score = Score::default();
+
+        let calculate_pawn_area = |king: &Square| {
+            let file = king.get_file();
+            let mut pawn_area = file.to_bitboard();
+            if file.to_index() > 0 {
+                pawn_area |= file.left().to_bitboard();
+            }
+            if file.to_index() < 7 {
+                pawn_area |= file.right().to_bitboard();
+            }
+            pawn_area
+        };
+
+        let white_king = self.position.white_kings.to_square();
+        let white_pawn_area = calculate_pawn_area(&white_king);
+        score += Score::new(
+            ((white_pawn_area & self.position.white_pawns).popcnt() * 40)
+                .try_into()
+                .unwrap(),
+        );
+
+        let black_king = self.position.black_kings.to_square();
+        let black_pawn_area = calculate_pawn_area(&black_king);
+        score -= Score::new(
+            ((black_pawn_area & self.position.black_pawns).popcnt() * 40)
+                .try_into()
+                .unwrap(),
+        );
+
+        score
+    }
+
+    /// Scores both attackers and defenders
+    fn score_attackers(&self) -> Score {
+        let mut score = Score::default();
+
+        score += Score::new(
+            ((self.white_attacks & self.occupied).popcnt() * 10)
+                .try_into()
+                .unwrap(),
+        );
+        score -= Score::new(
+            ((self.black_attacks & self.occupied).popcnt() * 10)
+                .try_into()
+                .unwrap(),
+        );
+
+        score
+    }
+
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
     pub fn grade_position(&mut self) -> Score {
         if let Some(pre) = self.transposition_table.get(&self.position.hash) {
@@ -78,27 +156,9 @@ impl Game {
 
         let mut score = Score::default();
 
-        // Piece value
-        for sq in self.occupied {
-            let sqbb = BitBoard::from_square(sq);
-            let (piece, color) = self.determine_piece(&sqbb).unwrap();
-
-            match color {
-                Color::White => {
-                    score += piece.material_value();
-                    score += piece.square_value(&sq, &color);
-                }
-
-                Color::Black => {
-                    score -= piece.material_value();
-                    score -= piece.square_value(&sq, &color);
-                }
-            }
-        }
-
-        // Attackers and defenders
-        // score += Score::new((self.white_attacks & self.occupied).popcnt() * 10);
-        // score -= Score::new((self.black_attacks & self.occupied).popcnt() * 10);
+        score += self.score_material();
+        score += self.score_attackers();
+        score += self.score_king_safety();
 
         end!(score)
     }
@@ -285,7 +345,11 @@ mod tests {
                 speedup_factor >= min_speedup_factor,
                 "Grading #{} was only {:.2}x faster than initial, but should be at least {:.1}x faster. \
                 Initial: {:?}, Current: {:?}",
-                i, speedup_factor, min_speedup_factor, initial_duration, duration
+                i,
+                speedup_factor,
+                min_speedup_factor,
+                initial_duration,
+                duration
             );
         }
     }
