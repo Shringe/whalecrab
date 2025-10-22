@@ -76,11 +76,20 @@ impl Game {
 
     /// Scores both attackers and defenders
     fn score_attackers(&self) -> Score {
-        todo!()
-        // let mut score = Score::default();
-        // // score += Score::new((self.white_attacks & self.occupied).popcnt() * 10);
-        // // score -= Score::new((self.black_attacks & self.occupied).popcnt() * 10);
-        // score
+        let mut score = Score::default();
+
+        score += Score::new(
+            ((self.white_attacks & self.occupied).popcnt() * 10)
+                .try_into()
+                .unwrap(),
+        );
+        score -= Score::new(
+            ((self.black_attacks & self.occupied).popcnt() * 10)
+                .try_into()
+                .unwrap(),
+        );
+
+        score
     }
 
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
@@ -115,7 +124,7 @@ impl Game {
         let mut score = Score::default();
 
         score += self.score_material();
-        // score += self.score_attackers();
+        score += self.score_attackers();
         // score += self.score_king_safety();
 
         end!(score)
