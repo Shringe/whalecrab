@@ -570,4 +570,16 @@ Available moves: {}
             assert!(engine_move.is_some())
         }
     }
+
+    #[test]
+    fn shouldnt_have_moves() {
+        let fen = "1kb2b1r/1p1p1ppp/1Np5/8/4P1PP/1P3PK1/r6q/8 w - - 1 27";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let moves = game.generate_all_legal_moves();
+        assert!(
+            moves.is_empty(),
+            "White can play: {}",
+            format_pretty_list(&moves)
+        );
+    }
 }
