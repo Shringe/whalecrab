@@ -1,5 +1,5 @@
-use crate::file::{File, ALL_FILES};
-use crate::rank::{Rank, ALL_RANKS};
+use crate::file::{ALL_FILES, File};
+use crate::rank::{ALL_RANKS, Rank};
 use crate::square::*;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
