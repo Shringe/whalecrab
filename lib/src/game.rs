@@ -679,11 +679,15 @@ mod tests {
             game.play(&m);
         }
 
+        let moves_left = game.generate_all_legal_moves();
+
         assert_ne!(
             game.position.state,
             State::InProgress,
-            "Fen: {}",
-            game.position.to_fen()
+            "Fen: {}\n{:?} still had {}",
+            game.position.to_fen(),
+            game.position.turn,
+            format_pretty_list(&moves_left)
         );
     }
 }

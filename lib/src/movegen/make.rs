@@ -1,5 +1,6 @@
 use crate::{
     bitboard::BitBoard,
+    board::State,
     castling::{self, CastleSide},
     game::Game,
     movegen::{
@@ -37,6 +38,9 @@ impl Move {
         *enemy_pieces ^= tobb;
 
         self.revoke_castling_rights(game);
+        if self.variant == MoveType::Capture(PieceType::King) {
+            game.position.state = State::Checkmate;
+        }
         game.next_turn(&self);
     }
 
