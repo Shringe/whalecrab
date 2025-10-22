@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/release-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -30,6 +30,7 @@
 
               cargoLock.lockFile = ./Cargo.lock;
               src = self;
+              RUSTFLAGS = "-C target-cpu=native";
             };
 
             uci = pkgs.rustPlatform.buildRustPackage {
@@ -39,10 +40,15 @@
 
               cargoLock.lockFile = ./Cargo.lock;
               src = self;
+              RUSTFLAGS = "-C target-cpu=native";
             };
           };
 
           devShells.default = pkgs.mkShell {
+            shellHook = ''
+              export RUSTFLAGS="-C target-cpu=native"
+            '';
+
             buildInputs = with pkgs; [
               git
               rustc
