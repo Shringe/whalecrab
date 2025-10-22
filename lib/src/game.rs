@@ -5,12 +5,12 @@ use std::{
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::{color_field_getters, Board, State},
+    board::{Board, State, color_field_getters},
     castling::CastlingRights,
     engine::score::Score,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceType, ALL_PIECE_TYPES},
+        pieces::piece::{ALL_PIECE_TYPES, Color, PieceType},
     },
     square::Square,
 };
@@ -668,5 +668,22 @@ mod tests {
         let game = Game::from_position(Board::from_fen(fen).unwrap());
         let black_pawnbb = Square::E4;
         assert_eq!(game.num_attackers(black_pawnbb), 5);
+    }
+
+    #[test]
+    #[ignore]
+    fn game_comes_to_an_end() {
+        let mut game = Game::default();
+        while let Some(m) = game.get_engine_move_minimax(2) {
+            println!("Playing: {}", m);
+            game.play(&m);
+        }
+
+        assert_ne!(
+            game.position.state,
+            State::InProgress,
+            "Fen: {}",
+            game.position.to_fen()
+        );
     }
 }
