@@ -1,5 +1,5 @@
 use crate::{
-    bitboard::BitBoard,
+    bitboard::{BitBoard, EMPTY},
     board::State,
     engine::score::Score,
     game::Game,
@@ -7,6 +7,7 @@ use crate::{
         moves::{Move, MoveType},
         pieces::piece::Color,
     },
+    square::Square,
 };
 
 /// Orders the moves for better minimax pruning
@@ -47,6 +48,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 }
 
 impl Game {
+    /// Score material based on its value and position on the board
     fn score_material(&self) -> Score {
         let mut score = Score::default();
 
@@ -70,8 +72,39 @@ impl Game {
         score
     }
 
+    /// Scores king safety. Primarily based on whether the king has friendly pawns next to him.
     fn score_king_safety(&self) -> Score {
-        todo!()
+        let mut score = Score::default();
+
+        let calculate_pawn_area = |king: &Square| {
+            let file = king.get_file();
+            let mut pawn_area = file.to_bitboard();
+            if file.to_index() > 0 {
+                pawn_area |= file.left().to_bitboard();
+            }
+            if file.to_index() < 7 {
+                pawn_area |= file.right().to_bitboard();
+            }
+            pawn_area
+        };
+
+        let white_king = self.position.white_kings.to_square();
+        let white_pawn_area = calculate_pawn_area(&white_king);
+        score += Score::new(
+            ((white_pawn_area & self.position.white_pawns).popcnt() * 40)
+                .try_into()
+                .unwrap(),
+        );
+
+        let black_king = self.position.black_kings.to_square();
+        let black_pawn_area = calculate_pawn_area(&black_king);
+        score -= Score::new(
+            ((black_pawn_area & self.position.black_pawns).popcnt() * 40)
+                .try_into()
+                .unwrap(),
+        );
+
+        score
     }
 
     /// Scores both attackers and defenders
@@ -125,7 +158,7 @@ impl Game {
 
         score += self.score_material();
         score += self.score_attackers();
-        // score += self.score_king_safety();
+        score += self.score_king_safety();
 
         end!(score)
     }
