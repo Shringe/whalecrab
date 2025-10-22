@@ -104,7 +104,6 @@ impl PieceType {
             PieceType::King => KING_MID,
         };
 
-        // TODO. broken completely
         let idx = match color {
             Color::White => sq.to_int(),
             Color::Black => sq.flip_side().to_int(),
