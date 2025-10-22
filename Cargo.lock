@@ -908,7 +908,7 @@ dependencies = [
 
 [[package]]
 name = "tui"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "crossterm 0.29.0",
  "ratatui",
@@ -917,7 +917,7 @@ dependencies = [
 
 [[package]]
 name = "uci"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "whalecrab_lib",
 ]
@@ -1062,7 +1062,7 @@ dependencies = [
 
 [[package]]
 name = "whalecrab_demos"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "rand",
  "whalecrab_lib",
@@ -1070,7 +1070,7 @@ dependencies = [
 
 [[package]]
 name = "whalecrab_lib"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "criterion",
  "paste",
