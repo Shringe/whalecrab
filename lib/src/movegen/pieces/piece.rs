@@ -141,7 +141,7 @@ pub trait Piece {
 
         let kingbb = game.get_pieces(&PieceType::King, &game.position.turn);
         let king = kingbb.to_square();
-        let num_checks = game.num_attackers(king);
+        let king_attackers = game.attackers(king);
 
         for m in psuedo_legal {
             let frombb = BitBoard::from_square(m.from);
@@ -151,14 +151,15 @@ pub trait Piece {
                 .expect("Can't move nonexisting piece!");
 
             let is_moving_king = piece == PieceType::King;
-            let is_capturing = matches!(m.variant, MoveType::Capture(_));
             let checks = game.get_check_rays(&enemy);
             let is_blocking = trim_check_ray(*checks).has_square(&tobb);
+            let is_capturing = matches!(m.variant, MoveType::Capture(_));
+            let is_capturing_attcking_piece = is_capturing && king_attackers.has_square(&tobb);
 
             // Handle being in check
-            match num_checks {
+            match king_attackers.popcnt() {
                 1 => {
-                    if !(is_moving_king || is_capturing || is_blocking) {
+                    if !(is_moving_king || is_capturing_attcking_piece || is_blocking) {
                         continue;
                     }
                 }
