@@ -122,6 +122,19 @@ fn trim_check_ray(ray: BitBoard) -> BitBoard {
     ray ^ ends
 }
 
+/// Gen a bitboard containing every square set between two square indexes, non inclusive
+fn between_two_squares(from: Square, to: Square) -> BitBoard {
+    let mut out = EMPTY;
+
+    for sq in !EMPTY {
+        if sq.to_int() > from.to_int() && sq.to_int() < to.to_int() {
+            out |= BitBoard::from_square(sq);
+        }
+    }
+
+    out
+}
+
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
     fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move>;
@@ -151,15 +164,19 @@ pub trait Piece {
                 .expect("Can't move nonexisting piece!");
 
             let is_moving_king = piece == PieceType::King;
-            let checks = game.get_check_rays(&enemy);
-            let is_blocking = trim_check_ray(*checks).has_square(&tobb);
-            let is_capturing = matches!(m.variant, MoveType::Capture(_));
-            let is_capturing_attcking_piece = is_capturing && king_attackers.has_square(&tobb);
 
             // Handle being in check
             match king_attackers.popcnt() {
                 1 => {
-                    if !(is_moving_king || is_capturing_attcking_piece || is_blocking) {
+                    let checks = game.get_check_rays(&enemy);
+                    let is_blocking = (between_two_squares(king, king_attackers.to_square())
+                        & checks)
+                        .has_square(&tobb);
+                    let is_capturing = matches!(m.variant, MoveType::Capture(_));
+                    let is_capturing_attacking_piece =
+                        is_capturing && king_attackers.has_square(&tobb);
+
+                    if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
                         continue;
                     }
                 }
