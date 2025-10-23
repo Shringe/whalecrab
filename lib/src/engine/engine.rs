@@ -388,4 +388,15 @@ mod tests {
         let _ = game.get_engine_move_minimax(2);
         assert_eq!(before, game);
     }
+
+    #[test]
+    fn sort_moves_keeps_all_moves() {
+        let mut game = Game::default();
+        let moves = game.generate_all_legal_moves();
+        let sorted = sort_moves(moves.clone());
+        for sortedm in &sorted {
+            assert!(moves.contains(sortedm));
+        }
+        assert_eq!(sorted.len(), moves.len());
+    }
 }
