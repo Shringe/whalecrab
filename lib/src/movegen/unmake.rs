@@ -239,6 +239,12 @@ mod tests {
         [(Square::H6, Square::G7)]
     );
 
+    test_play_unplay!(
+        unplay_promotion_with_capture,
+        "5Q2/6p1/8/8/8/6rr/RR6/KN4nk b - - 0 1",
+        [(Square::G7, Square::F8)]
+    );
+
     #[test]
     fn no_repetition() {
         let mut game = Game::default();
