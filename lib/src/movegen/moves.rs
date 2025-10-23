@@ -127,6 +127,14 @@ mod tests {
     use crate::{game::Game, test_utils::should_generate};
 
     #[test]
+    fn should_be_promotion() {
+        let fen = "5q2/6P1/8/8/8/6rr/RR6/KN4nk w - - 0 1";
+        let game = Game::from_position(Board::from_fen(fen).unwrap());
+        let m = Move::new(Square::G7, Square::F8, &game.position);
+        assert_eq!(m.variant, MoveType::Promotion(PieceType::Queen));
+    }
+
+    #[test]
     fn to_uci() {
         let uci = "e2e4";
         let m = Move {
