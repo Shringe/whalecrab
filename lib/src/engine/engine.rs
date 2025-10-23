@@ -107,6 +107,30 @@ impl Game {
         score
     }
 
+    /// Scores the position castling rights
+    fn score_castling_rights(&self) -> Score {
+        let mut score = Score::default();
+        let value = 2;
+
+        if self.position.castling_rights.white_queenside {
+            score += Score::new(value);
+        }
+
+        if self.position.castling_rights.white_kingside {
+            score += Score::new(value);
+        }
+
+        if self.position.castling_rights.black_queenside {
+            score -= Score::new(value);
+        }
+
+        if self.position.castling_rights.black_kingside {
+            score -= Score::new(value);
+        }
+
+        score
+    }
+
     /// Scores both attackers and defenders
     fn score_attackers(&self) -> Score {
         let mut score = Score::default();
@@ -159,6 +183,7 @@ impl Game {
         score += self.score_material();
         score += self.score_attackers();
         score += self.score_king_safety();
+        score += self.score_castling_rights();
 
         end!(score)
     }
