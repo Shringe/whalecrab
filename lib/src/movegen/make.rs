@@ -20,7 +20,7 @@ impl Move {
 
         self.move_piece(game, &piece, &color, frombb, tobb);
         self.revoke_castling_rights(game);
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     fn play_capture(&self, game: &mut Game, piece_type: &PieceType) {
@@ -41,7 +41,7 @@ impl Move {
         if self.variant == MoveType::Capture(PieceType::King) {
             game.position.state = State::Checkmate;
         }
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     fn play_create_en_passant(&self, game: &mut Game) {
@@ -53,7 +53,7 @@ impl Move {
 
         self.move_piece(game, &piece, &color, frombb, tobb);
         self.revoke_castling_rights(game);
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     fn play_capture_en_passant(&self, game: &mut Game) {
@@ -76,7 +76,7 @@ impl Move {
         *enemy_pawns ^= en_passant_bb;
 
         self.revoke_castling_rights(game);
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     fn play_promotion(&self, game: &mut Game, promoted_piece: &PieceType) {
@@ -95,7 +95,7 @@ impl Move {
         *promoted_pieces |= tobb;
 
         self.revoke_castling_rights(game);
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     fn play_castle(&self, game: &mut Game, castle_side: &CastleSide) {
@@ -138,7 +138,7 @@ impl Move {
             }
         }
 
-        game.next_turn(&self);
+        game.next_turn(self);
     }
 
     /// Helper method to move a piece from one square to another
@@ -157,19 +157,19 @@ impl Move {
 
     /// Helper method to revoke castling rights based on move squares
     fn revoke_castling_rights(&self, game: &mut Game) {
-        let mut revoke_rights = |square: &Square| match square {
-            &Square::E1 => {
+        let mut revoke_rights = |square: &Square| match *square {
+            Square::E1 => {
                 game.position.castling_rights.white_kingside = false;
                 game.position.castling_rights.white_queenside = false;
             }
-            &Square::A1 => game.position.castling_rights.white_queenside = false,
-            &Square::H1 => game.position.castling_rights.white_kingside = false,
-            &Square::E8 => {
+            Square::A1 => game.position.castling_rights.white_queenside = false,
+            Square::H1 => game.position.castling_rights.white_kingside = false,
+            Square::E8 => {
                 game.position.castling_rights.black_kingside = false;
                 game.position.castling_rights.black_queenside = false;
             }
-            &Square::A8 => game.position.castling_rights.black_queenside = false,
-            &Square::H8 => game.position.castling_rights.black_kingside = false,
+            Square::A8 => game.position.castling_rights.black_queenside = false,
+            Square::H8 => game.position.castling_rights.black_kingside = false,
             _ => {}
         };
 

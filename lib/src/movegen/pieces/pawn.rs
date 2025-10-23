@@ -94,15 +94,14 @@ impl Piece for Pawn {
                         });
                     }
                 }
-            } else if let Some(target) = game.position.en_passant_target {
-                if diagnol == target {
+            } else if let Some(target) = game.position.en_passant_target
+                && diagnol == target {
                     moves.push(Move {
                         from: self.0,
                         to: target,
                         variant: MoveType::CaptureEnPassant,
                     });
                 }
-            }
         }
 
         moves
@@ -150,11 +149,10 @@ impl Piece for Pawn {
                 if enemy == enemy_color {
                     moveinfo.targets |= diagnolbb;
                 }
-            } else if let Some(target) = game.position.en_passant_target {
-                if diagnol == target {
+            } else if let Some(target) = game.position.en_passant_target
+                && diagnol == target {
                     moveinfo.targets |= diagnolbb;
                 }
-            }
         }
 
         moveinfo

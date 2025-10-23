@@ -350,7 +350,7 @@ impl App {
 
     /// Refreshes the board after playing a move and starts the next move
     fn play_move(&mut self, m: &Move) {
-        self.game.play(&m);
+        self.game.play(m);
         self.score = self.game.grade_position();
         self.fen.input = self.game.position.to_fen();
         if let Some(sm) = self.game.get_engine_move_minimax(4) {
@@ -388,11 +388,10 @@ impl App {
             self.select(new);
 
             let newbb = BitBoard::from_square(new);
-            if let Some((piece, color)) = self.game.determine_piece(&newbb) {
-                if self.game.position.turn == color {
+            if let Some((piece, color)) = self.game.determine_piece(&newbb)
+                && self.game.position.turn == color {
                     self.potential_targets = get_targets(piece.legal_moves(&mut self.game, new));
                 }
-            }
         }
     }
 
@@ -408,10 +407,7 @@ impl App {
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
         if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-            match key_event.code {
-                KeyCode::Char('c') => self.exit(),
-                _ => {}
-            }
+            if let KeyCode::Char('c') = key_event.code { self.exit() }
         } else {
             match key_event.code {
                 KeyCode::Char('q') => self.exit(),
@@ -674,11 +670,10 @@ impl App {
             self.highlighted_square
         ));
 
-        if self.engine_suggestions {
-            if let Some(m) = &self.suggested {
+        if self.engine_suggestions
+            && let Some(m) = &self.suggested {
                 debug_text.push_str(&format!("Suggested move: {}\n", m));
             }
-        }
 
         if let Some(sq) = self.selected_square {
             let sqbb = BitBoard::from_square(sq);
