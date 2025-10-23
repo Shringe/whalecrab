@@ -102,6 +102,26 @@ pub struct PieceMoveInfo {
     pub check_rays: BitBoard,
 }
 
+/// Trims the first and last squares off of a check_ray to determine whether a piece is really
+/// blocking the ray, or just moving inside it
+fn trim_check_ray(ray: BitBoard) -> BitBoard {
+    if ray == EMPTY {
+        return EMPTY;
+    }
+
+    let mut firstsq = None;
+    let mut lastsq = Square::H8;
+    for sq in ray {
+        if firstsq.is_none() {
+            firstsq = Some(sq);
+        }
+        lastsq = sq;
+    }
+
+    let ends = BitBoard::from_square(firstsq.unwrap()) | BitBoard::from_square(lastsq);
+    ray ^ ends
+}
+
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
     fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move>;
@@ -133,7 +153,7 @@ pub trait Piece {
             let is_moving_king = piece == PieceType::King;
             let is_capturing = matches!(m.variant, MoveType::Capture(_));
             let checks = game.get_check_rays(&enemy);
-            let is_blocking = checks & tobb != EMPTY;
+            let is_blocking = trim_check_ray(*checks).has_square(&tobb);
 
             // Handle being in check
             match num_checks {
@@ -581,5 +601,15 @@ Available moves: {}
             "White can play: {}",
             format_pretty_list(&moves)
         );
+    }
+
+    #[test]
+    fn trim_check_ray() {
+        let initial =
+            BitBoard(0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100);
+        let expected =
+            BitBoard(0b00000000_00000100_00000100_00000100_00000100_00000100_00000100_00000000);
+        let result = super::trim_check_ray(initial);
+        assert_eq!(result, expected);
     }
 }
