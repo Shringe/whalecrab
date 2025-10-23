@@ -102,26 +102,6 @@ pub struct PieceMoveInfo {
     pub check_rays: BitBoard,
 }
 
-/// Trims the first and last squares off of a check_ray to determine whether a piece is really
-/// blocking the ray, or just moving inside it
-fn trim_check_ray(ray: BitBoard) -> BitBoard {
-    if ray == EMPTY {
-        return EMPTY;
-    }
-
-    let mut firstsq = None;
-    let mut lastsq = Square::H8;
-    for sq in ray {
-        if firstsq.is_none() {
-            firstsq = Some(sq);
-        }
-        lastsq = sq;
-    }
-
-    let ends = BitBoard::from_square(firstsq.unwrap()) | BitBoard::from_square(lastsq);
-    ray ^ ends
-}
-
 /// Gen a bitboard containing every square set between two square indexes, non inclusive
 fn between_two_squares(from: Square, to: Square) -> BitBoard {
     let mut out = EMPTY;
@@ -150,7 +130,7 @@ pub trait Piece {
 
         let enemy = game.position.turn.opponent();
         let attack_board = game.get_attacks(&enemy);
-        let check_ray_board = game.get_check_rays(&enemy);
+        let checks = game.get_check_rays(&enemy);
 
         let kingbb = game.get_pieces(&PieceType::King, &game.position.turn);
         let king = kingbb.to_square();
@@ -168,7 +148,6 @@ pub trait Piece {
             // Handle being in check
             match king_attackers.popcnt() {
                 1 => {
-                    let checks = game.get_check_rays(&enemy);
                     let is_blocking = (between_two_squares(king, king_attackers.to_square())
                         & checks)
                         .has_square(&tobb);
@@ -195,7 +174,7 @@ pub trait Piece {
                 }
             } else {
                 // Prevent moving piece blocking check (pin)
-                if check_ray_board.has_square(&frombb) {
+                if checks.has_square(&frombb) {
                     continue;
                 }
             }
@@ -619,15 +598,5 @@ Available moves: {}
             "White can play: {}",
             format_pretty_list(&moves)
         );
-    }
-
-    #[test]
-    fn trim_check_ray() {
-        let initial =
-            BitBoard(0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100);
-        let expected =
-            BitBoard(0b00000000_00000100_00000100_00000100_00000100_00000100_00000100_00000000);
-        let result = super::trim_check_ray(initial);
-        assert_eq!(result, expected);
     }
 }
