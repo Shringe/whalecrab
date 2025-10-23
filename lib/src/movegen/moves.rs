@@ -8,7 +8,7 @@ use crate::{
     square::Square,
 };
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum MoveType {
     Normal,
     Capture(PieceType),
@@ -23,7 +23,7 @@ pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
     moves.into_iter().map(|m| m.to).collect()
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
