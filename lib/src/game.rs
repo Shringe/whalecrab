@@ -5,12 +5,12 @@ use std::{
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    board::{color_field_getters, Board, State},
+    board::{Board, State, color_field_getters},
     castling::CastlingRights,
     engine::score::Score,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceType, ALL_PIECE_TYPES},
+        pieces::piece::{ALL_PIECE_TYPES, Color, PieceType},
     },
     square::Square,
 };
@@ -182,9 +182,9 @@ impl Game {
         // self.position.turn = self.position.turn.opponent();
     }
 
-    /// Determines how many pieces are attacking a piece
-    pub fn num_attackers(&self, sq: Square) -> u8 {
-        let mut attackers = 0;
+    /// Returns a bitboard of every piece attacking the given square
+    pub fn attackers(&self, sq: Square) -> BitBoard {
+        let mut attackers = EMPTY;
         let sqbb = BitBoard::from_square(sq);
         let color = if let Some(color) = self.determine_color(&sqbb) {
             color
@@ -200,7 +200,7 @@ impl Game {
         for piece in ALL_PIECE_TYPES {
             let moveinfo = piece.psuedo_legal_targets_fast(self, sq);
             let potential_enemy = self.get_pieces(&piece, &enemy);
-            attackers += (moveinfo.attacks & potential_enemy).popcnt() as u8;
+            attackers |= moveinfo.attacks & potential_enemy;
         }
 
         attackers
@@ -667,6 +667,27 @@ mod tests {
         let fen = "kr2r3/pp6/8/2N5/4pK2/8/2B1R1B1/8 w - - 0 1";
         let game = Game::from_position(Board::from_fen(fen).unwrap());
         let black_pawnbb = Square::E4;
-        assert_eq!(game.num_attackers(black_pawnbb), 5);
+        assert_eq!(game.attackers(black_pawnbb).popcnt(), 5);
+    }
+
+    #[test]
+    #[ignore]
+    fn game_comes_to_an_end() {
+        let mut game = Game::default();
+        while let Some(m) = game.get_engine_move_minimax(2) {
+            println!("Playing: {}", m);
+            game.play(&m);
+        }
+
+        let moves_left = game.generate_all_legal_moves();
+
+        assert_ne!(
+            game.position.state,
+            State::InProgress,
+            "Fen: {}\n{:?} still had {}",
+            game.position.to_fen(),
+            game.position.turn,
+            format_pretty_list(&moves_left)
+        );
     }
 }
