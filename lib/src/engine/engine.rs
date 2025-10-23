@@ -25,7 +25,7 @@ macro_rules! search_move {
         #[cfg(debug_assertions)]
         assert_eq!(
             $self.position, before,
-            "State changed after playing and unplaying {}!",
+            "State changed after playing and unplaying {}",
             $move
         );
 
