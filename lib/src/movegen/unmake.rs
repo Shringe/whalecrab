@@ -146,7 +146,7 @@ impl Move {
         }
 
         game.restore_position();
-        game.previous_turn(self);
+        game.previous_turn();
         game.refresh();
     }
 }

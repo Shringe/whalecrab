@@ -260,7 +260,7 @@ impl Game {
     }
 
     /// Reverses turn color and full_move_clock to the last turn
-    pub fn previous_turn(&mut self, last_move: &Move) {
+    pub fn previous_turn(&mut self) {
         self.position.turn = self.position.turn.opponent();
 
         // Repetition
