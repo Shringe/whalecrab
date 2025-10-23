@@ -690,4 +690,19 @@ mod tests {
             format_pretty_list(&moves_left)
         );
     }
+
+    #[test]
+    fn can_capture_attacking_rook() {
+        let fen = "rR1k3r/2p3p1/p1P2p1p/2Bpp3/8/6P1/P6P/1R4K1 b - - 3 33";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let moves = game.generate_all_legal_moves();
+        should_generate(
+            &moves,
+            &Move {
+                from: Square::A8,
+                to: Square::B8,
+                variant: MoveType::Capture(PieceType::Rook),
+            },
+        );
+    }
 }
