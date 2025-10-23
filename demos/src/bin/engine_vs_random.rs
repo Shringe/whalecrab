@@ -15,7 +15,7 @@ fn main() {
                 } else {
                     let chosen_move = rng.random_range(0..moves.len());
                     let m = moves.get(chosen_move).expect("Chose invalid move");
-                    Some(m.clone())
+                    Some(*m)
                 }
             }
         };

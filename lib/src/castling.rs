@@ -55,7 +55,7 @@ pub const BLACK_CASTLES_KINGSIDE: Move = Move {
     variant: MoveType::Castle(CastleSide::Kingside),
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CastleSide {
     Queenside,
     Kingside,

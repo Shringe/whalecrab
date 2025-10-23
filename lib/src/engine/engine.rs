@@ -19,19 +19,19 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 
     for m in &moves {
         if matches!(m.variant, MoveType::Promotion(_)) {
-            sorted.push(m.clone());
+            sorted.push(*m);
         }
     }
 
     for m in &moves {
         if matches!(m.variant, MoveType::Capture(_)) {
-            sorted.push(m.clone());
+            sorted.push(*m);
         }
     }
 
     for m in &moves {
         if matches!(m.variant, MoveType::Castle(_)) {
-            sorted.push(m.clone());
+            sorted.push(*m);
         }
     }
 
@@ -39,7 +39,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
         match m.variant {
             MoveType::Capture(_) | MoveType::Promotion(_) | MoveType::Castle(_) => {}
             _ => {
-                sorted.push(m.clone());
+                sorted.push(*m);
             }
         }
     }

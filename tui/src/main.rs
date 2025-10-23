@@ -1,11 +1,11 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::widgets::Paragraph;
 use ratatui::{
+    DefaultTerminal, Frame,
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Color, Stylize},
     widgets::{Block, Widget},
-    DefaultTerminal, Frame,
 };
 use std::io::Result;
 use std::str::FromStr;
@@ -16,7 +16,7 @@ use whalecrab_lib::{
     board::Board,
     file::File,
     game::Game,
-    movegen::moves::{get_targets, Move},
+    movegen::moves::{Move, get_targets},
     rank::Rank,
     square::Square,
     test_utils::format_pretty_list,
@@ -367,7 +367,7 @@ impl App {
             PlayerType::Engine => self.play_engine_move(),
         };
 
-        self.last = Some(m.clone());
+        self.last = Some(*m);
     }
 
     /// Tries to make a human player's move if possible

@@ -42,7 +42,7 @@ pub const ALL_PIECE_TYPES: [PieceType; 6] = [
     PieceType::King,
 ];
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn,
     Knight,
