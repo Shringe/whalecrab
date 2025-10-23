@@ -350,14 +350,10 @@ impl Square {
         moves
     }
 
-    /// Generates a ray of squares until eiher the end of the board, right before a friendly piece,
+    /// Generates a ray of squares until either the end of the board, right before a friendly piece,
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
-    /// Gives back a bitboard of attack squares, a bitboard of checking rays, and whether or not
-    /// the enemy king is attacked
     pub fn ray(&self, direction: &Direction, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
-        // let mut ray = EMPTY;
-        // let mut check_ray = EMPTY;
         let enemy = game.position.turn;
 
         let mut current = *self;

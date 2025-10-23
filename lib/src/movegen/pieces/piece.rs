@@ -102,6 +102,19 @@ pub struct PieceMoveInfo {
     pub check_rays: BitBoard,
 }
 
+/// Gen a bitboard containing every square set between two square indexes, non inclusive
+fn between_two_squares(from: Square, to: Square) -> BitBoard {
+    let mut out = EMPTY;
+
+    for sq in !EMPTY {
+        if sq.to_int() > from.to_int() && sq.to_int() < to.to_int() {
+            out |= BitBoard::from_square(sq);
+        }
+    }
+
+    out
+}
+
 pub trait Piece {
     /// Generates psuedo legal moves not considering king safety.
     fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move>;
@@ -117,11 +130,11 @@ pub trait Piece {
 
         let enemy = game.position.turn.opponent();
         let attack_board = game.get_attacks(&enemy);
-        let check_ray_board = game.get_check_rays(&enemy);
+        let checks = game.get_check_rays(&enemy);
 
         let kingbb = game.get_pieces(&PieceType::King, &game.position.turn);
         let king = kingbb.to_square();
-        let num_checks = game.num_attackers(king);
+        let king_attackers = game.attackers(king);
 
         for m in psuedo_legal {
             let frombb = BitBoard::from_square(m.from);
@@ -131,14 +144,18 @@ pub trait Piece {
                 .expect("Can't move nonexisting piece!");
 
             let is_moving_king = piece == PieceType::King;
-            let is_capturing = matches!(m.variant, MoveType::Capture(_));
-            let checks = game.get_check_rays(&enemy);
-            let is_blocking = checks & tobb != EMPTY;
 
             // Handle being in check
-            match num_checks {
+            match king_attackers.popcnt() {
                 1 => {
-                    if !(is_moving_king || is_capturing || is_blocking) {
+                    let is_blocking = (between_two_squares(king, king_attackers.to_square())
+                        & checks)
+                        .has_square(&tobb);
+                    let is_capturing = matches!(m.variant, MoveType::Capture(_));
+                    let is_capturing_attacking_piece =
+                        is_capturing && king_attackers.has_square(&tobb);
+
+                    if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
                         continue;
                     }
                 }
@@ -157,7 +174,7 @@ pub trait Piece {
                 }
             } else {
                 // Prevent moving piece blocking check (pin)
-                if check_ray_board.has_square(&frombb) {
+                if checks.has_square(&frombb) {
                     continue;
                 }
             }
@@ -569,5 +586,17 @@ Available moves: {}
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())
         }
+    }
+
+    #[test]
+    fn shouldnt_have_moves() {
+        let fen = "1kb2b1r/1p1p1ppp/1Np5/8/4P1PP/1P3PK1/r6q/8 w - - 1 27";
+        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let moves = game.generate_all_legal_moves();
+        assert!(
+            moves.is_empty(),
+            "White can play: {}",
+            format_pretty_list(&moves)
+        );
     }
 }

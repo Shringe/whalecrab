@@ -143,8 +143,8 @@ impl Game {
             State::InProgress => {}
             State::Checkmate => {
                 end!(match self.position.turn {
-                    Color::White => Score::MAX,
-                    Color::Black => Score::MIN,
+                    Color::White => Score::MIN,
+                    Color::Black => Score::MAX,
                 })
             }
             State::Stalemate => end!(Score::default()),
