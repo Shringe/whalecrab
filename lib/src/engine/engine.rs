@@ -91,7 +91,7 @@ impl Game {
         let white_king = self.position.white_kings.to_square();
         let white_pawn_area = calculate_pawn_area(&white_king);
         score += Score::new(
-            ((white_pawn_area & self.position.white_pawns).popcnt() * 40)
+            ((white_pawn_area & self.position.white_pawns).popcnt() * 15)
                 .try_into()
                 .unwrap(),
         );
@@ -99,7 +99,7 @@ impl Game {
         let black_king = self.position.black_kings.to_square();
         let black_pawn_area = calculate_pawn_area(&black_king);
         score -= Score::new(
-            ((black_pawn_area & self.position.black_pawns).popcnt() * 40)
+            ((black_pawn_area & self.position.black_pawns).popcnt() * 15)
                 .try_into()
                 .unwrap(),
         );
