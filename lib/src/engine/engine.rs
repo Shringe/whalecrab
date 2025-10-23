@@ -10,6 +10,29 @@ use crate::{
     square::Square,
 };
 
+/// Plays a move, gets the score from the given method, and then unplays the move and returns that
+/// score. Also does expensive validity checks in debug builds.
+macro_rules! search_move {
+    ($self:expr, $move:expr, $method:ident($($args:expr),*)) => {{
+        #[cfg(debug_assertions)]
+        let before = $self.position.clone();
+
+        $move.play($self);
+        $self.nodes_seached += 1;
+        let score = $self.$method($($args),*);
+        $move.unplay($self);
+
+        #[cfg(debug_assertions)]
+        assert_eq!(
+            before, $self.position,
+            "State changed after playing and unplaying {}!",
+            $move
+        );
+
+        score
+    }};
+}
+
 /// Orders the moves for better minimax pruning
 /// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
 /// also being changed sometimes
@@ -195,10 +218,7 @@ impl Game {
 
         let mut max = Score::MIN;
         for m in sort_moves(self.generate_all_legal_moves()) {
-            m.play(self);
-            self.nodes_seached += 1;
-            let score = self.mini(alpha, beta, depth - 1);
-            m.unplay(self);
+            let score = search_move!(self, m, mini(alpha, beta, depth - 1));
             if score > max {
                 max = score;
                 if score > alpha {
@@ -221,10 +241,7 @@ impl Game {
 
         let mut min = Score::MAX;
         for m in sort_moves(self.generate_all_legal_moves()) {
-            m.play(self);
-            self.nodes_seached += 1;
-            let score = self.maxi(alpha, beta, depth - 1);
-            m.unplay(self);
+            let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
             if score < min {
                 min = score;
                 if score < beta {
@@ -251,9 +268,7 @@ impl Game {
             Color::White => {
                 let mut best_score = Score::MIN;
                 for m in moves {
-                    m.play(self);
-                    let score = self.mini(alpha, beta, depth);
-                    m.unplay(self);
+                    let score = search_move!(self, m, mini(alpha, beta, depth));
                     if score > best_score {
                         best_score = score;
                         best_move = Some(m);
@@ -266,9 +281,7 @@ impl Game {
             Color::Black => {
                 let mut best_score = Score::MAX;
                 for m in moves {
-                    m.play(self);
-                    let score = self.maxi(alpha, beta, depth);
-                    m.unplay(self);
+                    let score = search_move!(self, m, maxi(alpha, beta, depth));
                     if score < best_score {
                         best_score = score;
                         best_move = Some(m);

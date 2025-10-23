@@ -243,8 +243,14 @@ mod tests {
         [(Square::E1, Square::C1)]
     );
 
+    test_play_unplay!(
+        unplay_edgecase_pawn_capture,
+        "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29",
+        [(Square::H6, Square::G7)]
+    );
+
     #[test]
-    fn no_repition() {
+    fn no_repetition() {
         let mut game = Game::default();
         let m = Move::new(Square::E2, Square::E4, &game.position);
         for _ in 0..5 {
