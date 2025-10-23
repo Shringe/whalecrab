@@ -144,7 +144,7 @@ impl Game {
         for sq in *self.get_occupied(color) {
             let sqbb = BitBoard::from_square(sq);
             let (piece, _) = self.determine_piece(&sqbb).unwrap();
-            let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
+            let moveinfo = piece.psuedo_legal_targets_fast(self, sq);
             attacks |= moveinfo.attacks;
             check_rays |= moveinfo.check_rays;
         }
@@ -383,7 +383,7 @@ impl Game {
         for sq in *occupied {
             let sqbb = BitBoard::from_square(sq);
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                let moveinfo = piece.psuedo_legal_targets_fast(&self, sq);
+                let moveinfo = piece.psuedo_legal_targets_fast(self, sq);
                 for t in moveinfo.targets {
                     moves.push(Move::new(sq, t, &self.position));
                 }

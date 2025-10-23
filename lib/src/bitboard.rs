@@ -14,8 +14,8 @@ impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut out = String::new();
 
-        let mut ranks = ALL_RANKS.clone();
-        let files = ALL_FILES.clone();
+        let mut ranks = ALL_RANKS;
+        let files = ALL_FILES;
         ranks.reverse();
 
         for r in ranks {

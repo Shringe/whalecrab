@@ -4,6 +4,7 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Default)]
 pub struct Score(i32);
 
 impl Add for Score {
@@ -40,11 +41,6 @@ impl fmt::Display for Score {
     }
 }
 
-impl Default for Score {
-    fn default() -> Self {
-        Self(0)
-    }
-}
 
 impl Score {
     pub const MAX: Score = Score(i32::MAX);
