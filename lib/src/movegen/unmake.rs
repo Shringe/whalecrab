@@ -241,7 +241,7 @@ mod tests {
 
     test_play_unplay!(
         unplay_promotion_with_capture,
-        "5Q2/6p1/8/8/8/6rr/RR6/KN4nk b - - 0 1",
+        "5q2/6P1/8/8/8/6rr/RR6/KN4nk w - - 0 1",
         [(Square::G7, Square::F8)]
     );
 
