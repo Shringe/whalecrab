@@ -20,6 +20,7 @@ use crate::{
 pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: usize,
+    pub en_passant_target: Option<Square>,
     // Not technically necessary but probably much faster to remember
     pub state: State,
 }
@@ -95,6 +96,7 @@ impl Game {
             .expect("Tried to unmake a move, but the required information is not present");
         self.position.castling_rights = last_position.castling_rights;
         self.position.half_move_timeout = last_position.half_move_timeout;
+        self.position.en_passant_target = last_position.en_passant_target;
         self.position.state = last_position.state;
     }
 
@@ -103,6 +105,7 @@ impl Game {
         let last_position = UnRestoreable {
             castling_rights: self.position.castling_rights,
             half_move_timeout: self.position.half_move_timeout,
+            en_passant_target: self.position.en_passant_target,
             state: self.position.state,
         };
         self.position_history.push(last_position);
@@ -258,12 +261,6 @@ impl Game {
 
     /// Reverses turn color and full_move_clock to the last turn
     pub fn previous_turn(&mut self, last_move: &Move) {
-        self.position.en_passant_target = if last_move.variant == MoveType::CaptureEnPassant {
-            Some(last_move.to)
-        } else {
-            None
-        };
-
         self.position.turn = self.position.turn.opponent();
 
         // Repetition
