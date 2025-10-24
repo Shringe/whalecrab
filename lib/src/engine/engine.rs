@@ -36,7 +36,7 @@ macro_rules! search_move {
 /// Orders the moves for better minimax pruning
 /// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
 /// also being changed sometimes
-fn sort_moves(mut moves: Vec<Move>) -> Vec<Move> {
+fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
     // return moves;
 
     moves.sort_unstable_by_key(|m| match m.variant {
@@ -196,7 +196,7 @@ impl Game {
         }
 
         let mut max = Score::MIN;
-        for m in sort_moves(self.generate_all_legal_moves()) {
+        for m in order_moves(self.generate_all_legal_moves()) {
             let score = search_move!(self, m, mini(alpha, beta, depth - 1));
             if score > max {
                 max = score;
@@ -219,7 +219,7 @@ impl Game {
         }
 
         let mut min = Score::MAX;
-        for m in sort_moves(self.generate_all_legal_moves()) {
+        for m in order_moves(self.generate_all_legal_moves()) {
             let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
             if score < min {
                 min = score;
@@ -237,7 +237,7 @@ impl Game {
     }
 
     pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
-        let moves = sort_moves(self.generate_all_legal_moves());
+        let moves = order_moves(self.generate_all_legal_moves());
         let mut best_move = None;
 
         let alpha = Score::MIN;
@@ -386,7 +386,7 @@ mod tests {
     fn sort_moves_keeps_all_moves() {
         let mut game = Game::default();
         let moves = game.generate_all_legal_moves();
-        let sorted = sort_moves(moves.clone());
+        let sorted = order_moves(moves.clone());
         for sortedm in &sorted {
             assert!(moves.contains(sortedm));
         }
