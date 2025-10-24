@@ -287,7 +287,7 @@ mod tests {
             from: Square::G7,
             to: Square::H8,
             variant: MoveType::Promotion(PieceType::Queen),
-            capture: None,
+            capture: Some(PieceType::Rook),
         };
 
         for m in [
