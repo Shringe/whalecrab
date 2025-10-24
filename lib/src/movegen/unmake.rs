@@ -237,8 +237,8 @@ mod tests {
 
     test_play_unplay!(
         unplay_edgecase_pawn_capture,
-        "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29",
-        [(Square::H6, Square::G7)]
+        "r1k2b1R/1p6/p1p5/4B3/8/3p3P/NP2P1B1/2K2R2 b - - 0 30",
+        [(Square::H8, Square::H3)]
     );
 
     test_play_unplay!(
