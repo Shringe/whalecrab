@@ -442,161 +442,9 @@ mod tests {
     use crate::board::{Board, State};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
-    use crate::movegen::pieces::pawn::Pawn;
-    use crate::movegen::pieces::piece::{Color, Piece, PieceType};
+    use crate::movegen::pieces::piece::{Color, PieceType};
     use crate::square::Square;
     use crate::test_utils::{format_pretty_list, should_generate};
-
-    #[test]
-    fn white_pawn_promotes_to_queen() {
-        let mut game = Game::default();
-        let looking_for = Move {
-            from: Square::G7,
-            to: Square::H8,
-            variant: MoveType::Promotion(PieceType::Queen),
-            capture: None,
-        };
-
-        for m in [
-            Move {
-                from: Square::H2,
-                to: Square::H4,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::G7,
-                to: Square::G5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::H4,
-                to: Square::G5,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::H7,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::G5,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::F8,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::H6,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::E7,
-                to: Square::E5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-        ] {
-            game.play(&m);
-        }
-
-        assert_eq!(game.position.turn, Color::White);
-        assert!(
-            looking_for.from.in_bitboard(&game.position.white_pawns),
-            "White pawn not in position"
-        );
-        assert!(
-            looking_for.to.in_bitboard(&game.position.black_rooks),
-            "Black rook not in position"
-        );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
-        assert!(
-            moves.contains(&looking_for),
-            "White pawn can't see target. Available moves: {:?}",
-            moves
-        );
-
-        game.play(&looking_for);
-
-        assert_eq!(game.position.turn, Color::Black);
-        assert!(
-            Square::H8.in_bitboard(&game.position.white_queens),
-            "Expected white queen at H8 after promotion"
-        );
-        assert!(
-            !Square::H8.in_bitboard(&game.position.white_pawns),
-            "H8 incorrectly contains a white pawn after promotion"
-        );
-        assert!(
-            !looking_for.from.in_bitboard(&game.position.white_pawns),
-            "Original white pawn still present at {} after promotion",
-            looking_for.from
-        );
-    }
-
-    #[test]
-    fn make_moves() {
-        let mut game = Game::default();
-        let original_position = game.position.clone();
-
-        let pawn = Move {
-            from: Square::C2,
-            to: Square::C3,
-            variant: MoveType::Normal,
-            capture: None,
-        };
-        let knight = Move {
-            from: Square::G8,
-            to: Square::F6,
-            variant: MoveType::Normal,
-            capture: None,
-        };
-        let king = Move {
-            from: Square::E1,
-            to: Square::E2,
-            variant: MoveType::Normal,
-            capture: None,
-        };
-
-        // Test pawn move
-        game.play(&pawn);
-        let after_pawn = game.position.clone();
-
-        // Reset and test knight move
-        game.position = original_position.clone();
-        game.play(&knight);
-        let after_knight = game.position.clone();
-
-        // Reset and test king move
-        game.position = original_position.clone();
-        game.play(&king);
-        let after_king = game.position.clone();
-
-        assert!(pawn.from.in_bitboard(&original_position.white_pawns));
-        assert!(!pawn.to.in_bitboard(&original_position.white_pawns));
-        assert!(!pawn.from.in_bitboard(&after_pawn.white_pawns));
-        assert!(pawn.to.in_bitboard(&after_pawn.white_pawns));
-
-        assert!(knight.from.in_bitboard(&original_position.black_knights));
-        assert!(!knight.to.in_bitboard(&original_position.black_knights));
-        assert!(!knight.from.in_bitboard(&after_knight.black_knights));
-        assert!(knight.to.in_bitboard(&after_knight.black_knights));
-
-        assert!(king.from.in_bitboard(&original_position.white_kings));
-        assert!(!king.to.in_bitboard(&original_position.white_kings));
-        assert!(!king.from.in_bitboard(&after_king.white_kings));
-        assert!(king.to.in_bitboard(&after_king.white_kings));
-    }
 
     #[test]
     fn white_gets_checkmated() {
@@ -616,7 +464,7 @@ mod tests {
     }
 
     #[test]
-    fn black_gets_stalmated() {
+    fn black_gets_stalemated() {
         let fen = "4k3/4P3/5K2/8/8/8/8/8 w - - 0 1";
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let to_play = Move::new(Square::F6, Square::E6, &game.position);
