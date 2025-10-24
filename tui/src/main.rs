@@ -19,7 +19,6 @@ use whalecrab_lib::{
     movegen::moves::{Move, get_targets},
     rank::Rank,
     square::Square,
-    test_utils::format_pretty_list,
 };
 
 pub struct Ascii {
@@ -389,9 +388,10 @@ impl App {
 
             let newbb = BitBoard::from_square(new);
             if let Some((piece, color)) = self.game.determine_piece(&newbb)
-                && self.game.position.turn == color {
-                    self.potential_targets = get_targets(piece.legal_moves(&mut self.game, new));
-                }
+                && self.game.position.turn == color
+            {
+                self.potential_targets = get_targets(piece.legal_moves(&mut self.game, new));
+            }
         }
     }
 
@@ -407,7 +407,9 @@ impl App {
 
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
         if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-            if let KeyCode::Char('c') = key_event.code { self.exit() }
+            if let KeyCode::Char('c') = key_event.code {
+                self.exit()
+            }
         } else {
             match key_event.code {
                 KeyCode::Char('q') => self.exit(),
@@ -671,9 +673,10 @@ impl App {
         ));
 
         if self.engine_suggestions
-            && let Some(m) = &self.suggested {
-                debug_text.push_str(&format!("Suggested move: {}\n", m));
-            }
+            && let Some(m) = &self.suggested
+        {
+            debug_text.push_str(&format!("Suggested move: {}\n", m));
+        }
 
         if let Some(sq) = self.selected_square {
             let sqbb = BitBoard::from_square(sq);
@@ -684,13 +687,12 @@ Selected Square info:
     square: {}
     type: {:?}
     color: {:?}
-    targets: 
-{}
+    targets: {:#?}
 ",
                     sq,
                     piece,
                     self.game.determine_color(&sqbb).unwrap(),
-                    format_pretty_list(&self.potential_targets)
+                    &self.potential_targets
                 ));
             }
         }
