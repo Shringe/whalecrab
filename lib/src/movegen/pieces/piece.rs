@@ -2,7 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     game::Game,
     movegen::{
-        moves::{Move, MoveType},
+        moves::Move,
         pieces::{
             bishop::Bishop, king::King, knight::Knight, pawn::Pawn, queen::Queen, rook::Rook,
         },
@@ -151,7 +151,7 @@ pub trait Piece {
                     let is_blocking = (between_two_squares(king, king_attackers.to_square())
                         & checks)
                         .has_square(&tobb);
-                    let is_capturing = matches!(m.variant, MoveType::Capture(_));
+                    let is_capturing = m.capture.is_some();
                     let is_capturing_attacking_piece =
                         is_capturing && king_attackers.has_square(&tobb);
 
@@ -192,7 +192,7 @@ mod tests {
 
     use crate::{
         board::{Board, State},
-        movegen::moves::get_targets,
+        movegen::moves::{MoveType, get_targets},
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
     };
@@ -546,12 +546,14 @@ Available moves: {}
             Move {
                 from: Square::D1,
                 to: Square::D2,
-                variant: MoveType::Capture(PieceType::Pawn),
+                variant: MoveType::Normal,
+                capture: Some(PieceType::Pawn),
             },
             Move {
                 from: Square::C1,
                 to: Square::D2,
-                variant: MoveType::Capture(PieceType::Pawn),
+                variant: MoveType::Normal,
+                capture: Some(PieceType::Pawn),
             },
         ];
 

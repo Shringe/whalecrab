@@ -35,24 +35,28 @@ pub const WHITE_CASTLES_QUEENSIDE: Move = Move {
     from: Square::E1,
     to: Square::C1,
     variant: MoveType::Castle(CastleSide::Queenside),
+    capture: None,
 };
 
 pub const WHITE_CASTLES_KINGSIDE: Move = Move {
     from: Square::E1,
     to: Square::G1,
     variant: MoveType::Castle(CastleSide::Kingside),
+    capture: None,
 };
 
 pub const BLACK_CASTLES_QUEENSIDE: Move = Move {
     from: Square::E8,
     to: Square::C8,
     variant: MoveType::Castle(CastleSide::Queenside),
+    capture: None,
 };
 
 pub const BLACK_CASTLES_KINGSIDE: Move = Move {
     from: Square::E8,
     to: Square::G8,
     variant: MoveType::Castle(CastleSide::Kingside),
+    capture: None,
 };
 
 #[derive(Debug, PartialEq, Clone, Copy)]

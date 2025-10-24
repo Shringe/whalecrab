@@ -6,7 +6,7 @@ use crate::{
         moves::{Move, MoveType},
         pieces::piece::Color,
     },
-    square::{Square, ALL_DIRECTIONS},
+    square::{ALL_DIRECTIONS, Square},
 };
 
 use super::piece::{Piece, PieceMoveInfo};
@@ -32,7 +32,8 @@ impl Piece for King {
                         moves.push(Move {
                             from: self.0,
                             to: sq,
-                            variant: MoveType::Capture(piece),
+                            variant: MoveType::Normal,
+                            capture: Some(piece),
                         })
                     }
                 } else {
@@ -40,6 +41,7 @@ impl Piece for King {
                         from: self.0,
                         to: sq,
                         variant: MoveType::Normal,
+                        capture: None,
                     })
                 }
             }

@@ -127,8 +127,10 @@ impl Move {
     /// Unplays a move on the board.
     pub fn unplay(&self, game: &mut Game) {
         match &self.variant {
-            MoveType::Normal => self.unplay_normal(game),
-            MoveType::Capture(piece_type) => self.unplay_capture(game, piece_type),
+            MoveType::Normal => match &self.capture {
+                Some(piece_type) => self.unplay_capture(game, piece_type),
+                None => self.unplay_normal(game),
+            },
             MoveType::CreateEnPassant => self.unplay_create_en_passant(game),
             MoveType::CaptureEnPassant => self.unplay_capture_en_passant(game),
             MoveType::Promotion(piece_type) => self.unplay_promotion(game, piece_type),

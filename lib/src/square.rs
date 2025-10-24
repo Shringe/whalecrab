@@ -335,13 +335,15 @@ impl Square {
                     moves.push(Move {
                         from: *self,
                         to: sq,
-                        variant: MoveType::Capture(enemy),
+                        variant: MoveType::Normal,
+                        capture: Some(enemy),
                     });
                 } else {
                     moves.push(Move {
                         from: *self,
                         to: sq,
                         variant: MoveType::Normal,
+                        capture: None,
                     });
                 }
             }

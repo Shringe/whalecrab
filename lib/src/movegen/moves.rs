@@ -8,19 +8,18 @@ use crate::{
     square::Square,
 };
 
+/// Converts a vector of moves to a vector of taargets
+pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
+    moves.into_iter().map(|m| m.to).collect()
+}
+
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum MoveType {
     Normal,
-    Capture(PieceType),
     CreateEnPassant,
     CaptureEnPassant,
     Promotion(PieceType),
     Castle(CastleSide),
-}
-
-/// Converts a vector of moves to a vector of taargets
-pub fn get_targets(moves: Vec<Move>) -> Vec<Square> {
-    moves.into_iter().map(|m| m.to).collect()
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -28,11 +27,16 @@ pub struct Move {
     pub from: Square,
     pub to: Square,
     pub variant: MoveType,
+    pub capture: Option<PieceType>,
 }
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}, {:?}", self.from, self.to, self.variant)
+        write!(
+            f,
+            "{} -> {}, {:?}, Capturing: {:?}",
+            self.from, self.to, self.variant, self.capture
+        )
     }
 }
 
@@ -46,51 +50,59 @@ impl Move {
     /// Infers the type of variant move. This is likely already known during move generation, and in that
     /// case it is recommended to skip using this contructor.
     pub fn new(from: Square, to: Square, board: &Board) -> Self {
-        Self {
-            from,
-            to,
-            variant: match (&board.turn, from, to) {
-                (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => {
-                    MoveType::Castle(CastleSide::Queenside)
-                }
-                (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => {
-                    MoveType::Castle(CastleSide::Kingside)
-                }
-                (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => {
-                    MoveType::Castle(CastleSide::Queenside)
-                }
-                (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => {
-                    MoveType::Castle(CastleSide::Kingside)
-                }
-                _ => {
-                    if let Some(enemy) = board.determine_piece(to) {
-                        MoveType::Capture(enemy)
-                    } else if board.determine_piece(from) == Some(PieceType::Pawn) {
-                        let color = board.determine_color(from).unwrap();
-                        if Some(to) == board.en_passant_target {
-                            MoveType::CaptureEnPassant
-                        } else if let Some(once) = from.forward(&color) {
-                            if let Some(twice) = once.forward(&color) {
-                                if to == twice {
-                                    MoveType::CreateEnPassant
-                                } else {
-                                    MoveType::Normal
-                                }
-                            } else if once.get_rank() == color.final_rank() {
-                                MoveType::Promotion(PieceType::Queen)
-                            } else if let Some(enemy) = board.determine_piece(to) {
-                                MoveType::Capture(enemy)
+        let variant = match (&board.turn, from, to) {
+            (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => {
+                MoveType::Castle(CastleSide::Queenside)
+            }
+            (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => {
+                MoveType::Castle(CastleSide::Kingside)
+            }
+            (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => {
+                MoveType::Castle(CastleSide::Queenside)
+            }
+            (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => {
+                MoveType::Castle(CastleSide::Kingside)
+            }
+            _ => {
+                // if let Some(enemy) = board.determine_piece(to) {
+                //     MoveType::Capture(enemy)
+                if board.determine_piece(from) == Some(PieceType::Pawn) {
+                    let color = board.determine_color(from).unwrap();
+                    if Some(to) == board.en_passant_target {
+                        MoveType::CaptureEnPassant
+                    } else if let Some(once) = from.forward(&color) {
+                        if let Some(twice) = once.forward(&color) {
+                            if to == twice {
+                                MoveType::CreateEnPassant
                             } else {
                                 MoveType::Normal
                             }
+                        } else if once.get_rank() == color.final_rank() {
+                            MoveType::Promotion(PieceType::Queen)
+                        // } else if let Some(enemy) = board.determine_piece(to) {
+                        // MoveType::Capture(enemy)
                         } else {
                             MoveType::Normal
                         }
                     } else {
                         MoveType::Normal
                     }
+                } else {
+                    MoveType::Normal
                 }
-            },
+            }
+        };
+
+        let capture = match variant {
+            MoveType::Normal | MoveType::Promotion(_) => board.determine_piece(to),
+            _ => None,
+        };
+
+        Self {
+            from,
+            to,
+            variant,
+            capture,
         }
     }
 
@@ -141,6 +153,7 @@ mod tests {
             from: Square::E2,
             to: Square::E4,
             variant: MoveType::Normal,
+            capture: None,
         };
 
         assert_eq!(m.to_uci(), uci.to_owned());
@@ -154,6 +167,7 @@ mod tests {
             from: Square::E2,
             to: Square::E4,
             variant: MoveType::CreateEnPassant,
+            capture: None,
         };
 
         assert_eq!(Move::from_uci(uci, &game.position).unwrap(), m);
@@ -168,7 +182,8 @@ mod tests {
         let looking_for = Move {
             from: Square::E3,
             to: Square::C5,
-            variant: MoveType::Capture(PieceType::Pawn),
+            variant: MoveType::Normal,
+            capture: Some(PieceType::Pawn),
         };
 
         let moves = game.generate_all_legal_moves();
