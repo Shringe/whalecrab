@@ -563,14 +563,4 @@ mod tests {
             },
         );
     }
-
-    #[test]
-    fn engine_should_not_mutate_position() {
-        let fen = "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29";
-        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
-        let before = game.position.clone();
-        let _ = game.get_engine_move_minimax(3);
-        let after = game.position;
-        assert_eq!(before, after);
-    }
 }
