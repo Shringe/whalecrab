@@ -23,7 +23,7 @@ impl Piece for Knight {
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
 
-            if let Some((_piece, color)) = game.determine_piece(&tbb) {
+            if let Some((piece, color)) = game.determine_piece(&tbb) {
                 if color == friendly {
                     return;
                 }
@@ -32,7 +32,7 @@ impl Piece for Knight {
                     from: self.0,
                     to: t,
                     variant: MoveType::Normal,
-                    capture: None,
+                    capture: Some(piece),
                 });
             } else {
                 moves.push(Move {
@@ -180,12 +180,12 @@ mod tests {
     #[test]
     fn white_knight_captures_black_pawn() {
         let mut game = Game::default();
-        let capture = Move {
+        let capture = dbg!(Move {
             from: Square::F5,
             to: Square::E7,
             variant: MoveType::Normal,
             capture: Some(PieceType::Pawn),
-        };
+        });
 
         for m in [
             Move {
