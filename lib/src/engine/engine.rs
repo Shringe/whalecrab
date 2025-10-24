@@ -18,6 +18,10 @@ macro_rules! search_move {
         let before = $self.position.clone();
 
         $move.play($self);
+
+        #[cfg(debug_assertions)]
+        let during = $self.position.clone();
+
         $self.nodes_seached += 1;
         let score = $self.$method($($args),*);
         $move.unplay($self);
@@ -25,8 +29,8 @@ macro_rules! search_move {
         #[cfg(debug_assertions)]
         assert_eq!(
             $self.position, before,
-            "State changed after playing and unplaying {}",
-            $move
+            "State changed after playing and unplaying {}\n  Before: {:?}\n  During: {:?}\n   After: {:?}\n",
+            $move, before, during, $self.position
         );
 
         score
