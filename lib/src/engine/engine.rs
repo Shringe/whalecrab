@@ -36,40 +36,17 @@ macro_rules! search_move {
 /// Orders the moves for better minimax pruning
 /// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
 /// also being changed sometimes
-fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
+fn sort_moves(mut moves: Vec<Move>) -> Vec<Move> {
     // return moves;
-    let mut sorted = Vec::with_capacity(moves.len());
 
-    for m in &moves {
-        if matches!(m.variant, MoveType::Promotion(_)) {
-            sorted.push(*m);
-        }
-    }
+    moves.sort_unstable_by_key(|m| match m.variant {
+        MoveType::Promotion(_) => 0,
+        _ if m.capture.is_some() => 1,
+        MoveType::Castle(_) => 2,
+        _ => 3,
+    });
 
-    for m in &moves {
-        if m.capture.is_some() {
-            sorted.push(*m);
-        }
-    }
-
-    for m in &moves {
-        if matches!(m.variant, MoveType::Castle(_)) {
-            sorted.push(*m);
-        }
-    }
-
-    for m in &moves {
-        match m.variant {
-            MoveType::Promotion(_) | MoveType::Castle(_) => {}
-            _ => {
-                if m.capture.is_none() {
-                    sorted.push(*m);
-                }
-            }
-        }
-    }
-
-    sorted
+    moves
 }
 
 impl Game {
