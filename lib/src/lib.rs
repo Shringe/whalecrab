@@ -7,4 +7,5 @@ pub mod game;
 pub mod movegen;
 pub mod rank;
 pub mod square;
+#[cfg(test)]
 pub mod test_utils;
