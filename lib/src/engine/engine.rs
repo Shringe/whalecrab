@@ -47,7 +47,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
     }
 
     for m in &moves {
-        if matches!(m.variant, MoveType::Normal) && m.capture.is_some() {
+        if m.capture.is_some() {
             sorted.push(*m);
         }
     }
@@ -62,7 +62,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
         match m.variant {
             MoveType::Promotion(_) | MoveType::Castle(_) => {}
             _ => {
-                if m.variant == MoveType::Normal && m.capture.is_none() {
+                if m.capture.is_none() {
                     sorted.push(*m);
                 }
             }
