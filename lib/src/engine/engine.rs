@@ -47,7 +47,7 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
     }
 
     for m in &moves {
-        if matches!(m.variant, MoveType::Capture(_)) {
+        if matches!(m.variant, MoveType::Normal) && m.capture.is_some() {
             sorted.push(*m);
         }
     }
@@ -60,9 +60,11 @@ fn sort_moves(moves: Vec<Move>) -> Vec<Move> {
 
     for m in &moves {
         match m.variant {
-            MoveType::Capture(_) | MoveType::Promotion(_) | MoveType::Castle(_) => {}
+            MoveType::Promotion(_) | MoveType::Castle(_) => {}
             _ => {
-                sorted.push(*m);
+                if m.variant == MoveType::Normal && m.capture.is_none() {
+                    sorted.push(*m);
+                }
             }
         }
     }
@@ -347,7 +349,8 @@ mod tests {
         for m in white_moves {
             m.play(&mut game);
             let result = game.get_engine_move_minimax(0).unwrap();
-            assert_eq!(result.variant, MoveType::Capture(PieceType::King));
+            assert_eq!(result.variant, MoveType::Normal);
+            assert_eq!(result.capture, Some(PieceType::King));
             m.unplay(&mut game);
         }
     }

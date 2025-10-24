@@ -38,7 +38,7 @@ impl Move {
         *enemy_pieces ^= tobb;
 
         self.revoke_castling_rights(game);
-        if self.variant == MoveType::Capture(PieceType::King) {
+        if self.capture == Some(PieceType::King) {
             game.position.state = State::Checkmate;
         }
         game.next_turn(self);
@@ -181,8 +181,10 @@ impl Move {
     pub fn play(&self, game: &mut Game) {
         game.capture_position();
         match &self.variant {
-            MoveType::Normal => self.play_normal(game),
-            MoveType::Capture(piece_type) => self.play_capture(game, piece_type),
+            MoveType::Normal => match &self.capture {
+                Some(piece_type) => self.play_capture(game, piece_type),
+                None => self.play_normal(game),
+            },
             MoveType::CreateEnPassant => self.play_create_en_passant(game),
             MoveType::CaptureEnPassant => self.play_capture_en_passant(game),
             MoveType::Promotion(piece_type) => self.play_promotion(game, piece_type),
@@ -285,6 +287,7 @@ mod tests {
             from: Square::G7,
             to: Square::H8,
             variant: MoveType::Promotion(PieceType::Queen),
+            capture: None,
         };
 
         for m in [
@@ -292,41 +295,49 @@ mod tests {
                 from: Square::H2,
                 to: Square::H4,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::H4,
                 to: Square::G5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H7,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::G5,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::F8,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H6,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::E7,
                 to: Square::E5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
         ] {
             game.play(&m);
@@ -375,16 +386,19 @@ mod tests {
             from: Square::C2,
             to: Square::C3,
             variant: MoveType::Normal,
+            capture: None,
         };
         let knight = Move {
             from: Square::G8,
             to: Square::F6,
             variant: MoveType::Normal,
+            capture: None,
         };
         let king = Move {
             from: Square::E1,
             to: Square::E2,
             variant: MoveType::Normal,
+            capture: None,
         };
 
         game.play(&pawn);
@@ -470,32 +484,38 @@ mod tests {
             from: Square::B4,
             to: Square::C3,
             variant: MoveType::CaptureEnPassant,
+            capture: None,
         };
         for m in [
             Move {
                 from: Square::D2,
                 to: Square::D3,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::B7,
                 to: Square::B5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::D3,
                 to: Square::D4,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::B5,
                 to: Square::B4,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::C2,
                 to: Square::C4,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
         ] {
             game.play(&m);

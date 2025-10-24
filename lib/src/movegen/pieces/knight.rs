@@ -23,7 +23,7 @@ impl Piece for Knight {
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
 
-            if let Some((piece, color)) = game.determine_piece(&tbb) {
+            if let Some((_piece, color)) = game.determine_piece(&tbb) {
                 if color == friendly {
                     return;
                 }
@@ -31,13 +31,15 @@ impl Piece for Knight {
                 moves.push(Move {
                     from: self.0,
                     to: t,
-                    variant: MoveType::Capture(piece),
+                    variant: MoveType::Normal,
+                    capture: None,
                 });
             } else {
                 moves.push(Move {
                     from: self.0,
                     to: t,
                     variant: MoveType::Normal,
+                    capture: None,
                 });
             }
         };
@@ -140,27 +142,32 @@ mod tests {
             from: Square::E5,
             to: Square::C6,
             variant: MoveType::CaptureEnPassant,
+            capture: None,
         };
         for m in [
             Move {
                 from: Square::G1,
                 to: Square::F3,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::A7,
                 to: Square::A5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::F3,
                 to: Square::E5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::C7,
                 to: Square::C5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
         ] {
             game.play(&m);
@@ -176,7 +183,8 @@ mod tests {
         let capture = Move {
             from: Square::F5,
             to: Square::E7,
-            variant: MoveType::Capture(PieceType::Pawn),
+            variant: MoveType::Normal,
+            capture: Some(PieceType::Pawn),
         };
 
         for m in [
@@ -184,31 +192,37 @@ mod tests {
                 from: Square::G1,
                 to: Square::F3,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::A7,
                 to: Square::A6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::F3,
                 to: Square::D4,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::A6,
                 to: Square::A5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::D4,
                 to: Square::F5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::A5,
                 to: Square::A4,
                 variant: MoveType::Normal,
+                capture: None,
             },
         ] {
             if game.position.turn == Color::White {

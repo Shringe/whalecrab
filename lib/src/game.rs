@@ -243,7 +243,7 @@ impl Game {
         }
 
         // Half move timeout
-        if matches!(last_move.variant, MoveType::Capture(_))
+        if last_move.capture.is_some()
             || matches!(
                 self.determine_piece(&BitBoard::from_square(last_move.to)),
                 Some((PieceType::Pawn, _))
@@ -454,6 +454,7 @@ mod tests {
             from: Square::G7,
             to: Square::H8,
             variant: MoveType::Promotion(PieceType::Queen),
+            capture: None,
         };
 
         for m in [
@@ -461,41 +462,49 @@ mod tests {
                 from: Square::H2,
                 to: Square::H4,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::H4,
                 to: Square::G5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H7,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::G5,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::F8,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H6,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::E7,
                 to: Square::E5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
         ] {
             game.play(&m);
@@ -544,16 +553,19 @@ mod tests {
             from: Square::C2,
             to: Square::C3,
             variant: MoveType::Normal,
+            capture: None,
         };
         let knight = Move {
             from: Square::G8,
             to: Square::F6,
             variant: MoveType::Normal,
+            capture: None,
         };
         let king = Move {
             from: Square::E1,
             to: Square::E2,
             variant: MoveType::Normal,
+            capture: None,
         };
 
         // Test pawn move
@@ -698,7 +710,8 @@ mod tests {
             &Move {
                 from: Square::A8,
                 to: Square::B8,
-                variant: MoveType::Capture(PieceType::Rook),
+                variant: MoveType::Normal,
+                capture: Some(PieceType::Rook),
             },
         );
     }

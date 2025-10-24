@@ -40,12 +40,14 @@ impl Piece for Pawn {
                         from: self.0,
                         to: once,
                         variant: MoveType::Promotion(PieceType::Queen),
+                        capture: None,
                     });
                 } else {
                     moves.push(Move {
                         from: self.0,
                         to: once,
                         variant: MoveType::Normal,
+                        capture: None,
                     });
                 }
             }
@@ -59,6 +61,7 @@ impl Piece for Pawn {
                         from: self.0,
                         to: twice,
                         variant: MoveType::CreateEnPassant,
+                        capture: None,
                     });
                 }
             }
@@ -80,6 +83,7 @@ impl Piece for Pawn {
                             from: self.0,
                             to: diagnol,
                             variant: MoveType::Promotion(PieceType::Queen),
+                            capture: Some(piece),
                         });
                     } else {
                         if piece == PieceType::King {
@@ -90,18 +94,21 @@ impl Piece for Pawn {
                         moves.push(Move {
                             from: self.0,
                             to: diagnol,
-                            variant: MoveType::Capture(piece),
+                            variant: MoveType::Normal,
+                            capture: Some(piece),
                         });
                     }
                 }
             } else if let Some(target) = game.position.en_passant_target
-                && diagnol == target {
-                    moves.push(Move {
-                        from: self.0,
-                        to: target,
-                        variant: MoveType::CaptureEnPassant,
-                    });
-                }
+                && diagnol == target
+            {
+                moves.push(Move {
+                    from: self.0,
+                    to: target,
+                    variant: MoveType::CaptureEnPassant,
+                    capture: None,
+                });
+            }
         }
 
         moves
@@ -150,9 +157,10 @@ impl Piece for Pawn {
                     moveinfo.targets |= diagnolbb;
                 }
             } else if let Some(target) = game.position.en_passant_target
-                && diagnol == target {
-                    moveinfo.targets |= diagnolbb;
-                }
+                && diagnol == target
+            {
+                moveinfo.targets |= diagnolbb;
+            }
         }
 
         moveinfo
@@ -171,18 +179,22 @@ mod tests {
         let looking_for = Move {
             from: Square::H4,
             to: Square::G5,
-            variant: MoveType::Capture(PieceType::Pawn),
+            variant: MoveType::Normal,
+            capture: Some(PieceType::Pawn),
         };
+
         for m in [
             Move {
                 from: Square::H2,
                 to: Square::H4,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
                 variant: MoveType::Normal,
+                capture: None,
             },
         ] {
             game.play(&m);
@@ -211,7 +223,8 @@ mod tests {
         let looking_for = Move {
             from: Square::D5,
             to: Square::C4,
-            variant: MoveType::Capture(PieceType::Pawn),
+            variant: MoveType::Normal,
+            capture: Some(PieceType::Pawn),
         };
 
         for m in [
@@ -219,16 +232,19 @@ mod tests {
                 from: Square::C2,
                 to: Square::C4,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::D7,
                 to: Square::D5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H2,
                 to: Square::H3,
                 variant: MoveType::Normal,
+                capture: None,
             },
         ] {
             game.play(&m);
@@ -258,6 +274,7 @@ mod tests {
             from: Square::G7,
             to: Square::H8,
             variant: MoveType::Promotion(PieceType::Queen),
+            capture: None,
         };
 
         for m in [
@@ -265,41 +282,49 @@ mod tests {
                 from: Square::H2,
                 to: Square::H4,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::G7,
                 to: Square::G5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
             Move {
                 from: Square::H4,
                 to: Square::G5,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H7,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::G5,
                 to: Square::H6,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::F8,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::H6,
                 to: Square::G7,
                 variant: MoveType::Normal,
+                capture: None,
             },
             Move {
                 from: Square::E7,
                 to: Square::E5,
                 variant: MoveType::CreateEnPassant,
+                capture: None,
             },
         ] {
             game.play(&m);
