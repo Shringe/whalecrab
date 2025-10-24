@@ -400,6 +400,6 @@ mod tests {
         let before = game.position.clone();
         let _ = game.get_engine_move_minimax(3);
         let after = game.position;
-        assert_eq!(before, after);
+        assert_eq!(after, before);
     }
 }
