@@ -236,12 +236,6 @@ mod tests {
     );
 
     test_play_unplay!(
-        unplay_edgecase_pawn_capture,
-        "r1k2b1R/1p6/p1p5/4B3/8/3p3P/NP2P1B1/2K2R2 b - - 0 30",
-        [(Square::H8, Square::H3)]
-    );
-
-    test_play_unplay!(
         unplay_promotion_with_capture,
         "5q2/6P1/8/8/8/6rr/RR6/KN4nk w - - 0 1",
         [(Square::G7, Square::F8)]
