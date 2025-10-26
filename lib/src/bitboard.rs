@@ -7,8 +7,28 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, M
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
-#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash)]
 pub struct BitBoard(pub u64);
+
+impl fmt::Debug for BitBoard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let count = self.popcnt();
+        match count {
+            1 => f
+                .debug_struct("BitBoard")
+                .field("raw", &self.0)
+                .field("active", &format_args!("{}", self.to_square()))
+                .field("board", &format_args!("\n{}", self))
+                .finish(),
+            _ => f
+                .debug_struct("BitBoard")
+                .field("raw", &self.0)
+                .field("active", &count)
+                .field("board", &format_args!("\n{}", self))
+                .finish(),
+        }
+    }
+}
 
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
