@@ -179,6 +179,19 @@ impl Move {
 
     /// Plays a move on the board
     pub fn play(&self, game: &mut Game) {
+        #[cfg(debug_assertions)]
+        {
+            let frombb = BitBoard::from_square(self.from);
+            let (piece, color) = game
+                .determine_piece(&frombb)
+                .expect("Tried to move nonexistant piece");
+            assert_eq!(
+                color, game.position.turn,
+                "{:?} is trying to moves {:?}'s {:?}",
+                game.position.turn, color, piece
+            );
+        }
+
         game.capture_position();
         match &self.variant {
             MoveType::Normal => match &self.capture {
