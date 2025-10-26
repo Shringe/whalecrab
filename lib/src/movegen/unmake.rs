@@ -20,24 +20,8 @@ impl Move {
         let pieces = game.get_pieces_mut(&piece, &color);
         *pieces ^= tobb;
         *pieces |= frombb;
-    }
 
-    fn unplay_capture(&self, game: &mut Game, piece_type: &PieceType) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let (piece, color) = game
-            .determine_piece(&tobb)
-            .expect("Couldn't find piece to unmove!");
-        let enemy_color = color.opponent();
-
-        // Move piece back
-        let pieces = game.get_pieces_mut(&piece, &color);
-        *pieces ^= tobb;
-        *pieces |= frombb;
-
-        // Restore captured enemy piece
-        let enemy_pieces = game.get_pieces_mut(piece_type, &enemy_color);
-        *enemy_pieces |= tobb;
+        self.handle_capture(game, &color.opponent(), tobb);
     }
 
     fn unplay_create_en_passant(&self, game: &mut Game) {
@@ -91,6 +75,7 @@ impl Move {
         // Restore original pawn
         let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
         *pawns |= frombb;
+        self.handle_capture(game, &color.opponent(), tobb);
     }
 
     fn unplay_castle(&self, game: &mut Game, castle_side: &CastleSide) {
@@ -127,10 +112,7 @@ impl Move {
     /// Unplays a move on the board.
     pub fn unplay(&self, game: &mut Game) {
         match &self.variant {
-            MoveType::Normal => match &self.capture {
-                Some(piece_type) => self.unplay_capture(game, piece_type),
-                None => self.unplay_normal(game),
-            },
+            MoveType::Normal => self.unplay_normal(game),
             MoveType::CreateEnPassant => self.unplay_create_en_passant(game),
             MoveType::CaptureEnPassant => self.unplay_capture_en_passant(game),
             MoveType::Promotion(piece_type) => self.unplay_promotion(game, piece_type),
@@ -139,7 +121,6 @@ impl Move {
 
         game.restore_position();
         game.previous_turn();
-        game.refresh();
     }
 }
 

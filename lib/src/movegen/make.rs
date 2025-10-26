@@ -19,29 +19,7 @@ impl Move {
             .expect("Couldn't find piece to move!");
 
         self.move_piece(game, &piece, &color, frombb, tobb);
-        self.revoke_castling_rights(game);
-        game.next_turn(self);
-    }
-
-    fn play_capture(&self, game: &mut Game, piece_type: &PieceType) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let (piece, color) = game
-            .determine_piece(&frombb)
-            .expect("Couldn't find piece to move!");
-        let enemy_color = color.opponent();
-
-        self.move_piece(game, &piece, &color, frombb, tobb);
-
-        // Capture the enemy piece
-        let enemy_pieces = game.get_pieces_mut(piece_type, &enemy_color);
-        *enemy_pieces ^= tobb;
-
-        self.revoke_castling_rights(game);
-        if self.capture == Some(PieceType::King) {
-            game.position.state = State::Checkmate;
-        }
-        game.next_turn(self);
+        self.handle_capture(game, &color.opponent(), tobb);
     }
 
     fn play_create_en_passant(&self, game: &mut Game) {
@@ -52,8 +30,6 @@ impl Move {
             .expect("Couldn't find piece to move!");
 
         self.move_piece(game, &piece, &color, frombb, tobb);
-        self.revoke_castling_rights(game);
-        game.next_turn(self);
     }
 
     fn play_capture_en_passant(&self, game: &mut Game) {
@@ -74,9 +50,6 @@ impl Move {
         );
         let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
         *enemy_pawns ^= en_passant_bb;
-
-        self.revoke_castling_rights(game);
-        game.next_turn(self);
     }
 
     fn play_promotion(&self, game: &mut Game, promoted_piece: &PieceType) {
@@ -94,8 +67,7 @@ impl Move {
         let promoted_pieces = game.get_pieces_mut(promoted_piece, &color);
         *promoted_pieces |= tobb;
 
-        self.revoke_castling_rights(game);
-        game.next_turn(self);
+        self.handle_capture(game, &color.opponent(), tobb);
     }
 
     fn play_castle(&self, game: &mut Game, castle_side: &CastleSide) {
@@ -137,8 +109,6 @@ impl Move {
                 }
             }
         }
-
-        game.next_turn(self);
     }
 
     /// Helper method to move a piece from one square to another
@@ -177,6 +147,14 @@ impl Move {
         revoke_rights(&self.to);
     }
 
+    /// Captures self.capture if self.capture.is_some()
+    pub fn handle_capture(&self, game: &mut Game, color: &Color, sqbb: BitBoard) {
+        if let Some(capture) = &self.capture {
+            let pieces = game.get_pieces_mut(capture, color);
+            *pieces ^= sqbb;
+        }
+    }
+
     /// Plays a move on the board
     pub fn play(&self, game: &mut Game) {
         #[cfg(debug_assertions)]
@@ -194,15 +172,18 @@ impl Move {
 
         game.capture_position();
         match &self.variant {
-            MoveType::Normal => match &self.capture {
-                Some(piece_type) => self.play_capture(game, piece_type),
-                None => self.play_normal(game),
-            },
+            MoveType::Normal => self.play_normal(game),
             MoveType::CreateEnPassant => self.play_create_en_passant(game),
             MoveType::CaptureEnPassant => self.play_capture_en_passant(game),
             MoveType::Promotion(piece_type) => self.play_promotion(game, piece_type),
             MoveType::Castle(castle_side) => self.play_castle(game, castle_side),
         }
+
+        if !matches!(self.variant, MoveType::Castle(_)) {
+            self.revoke_castling_rights(game);
+        }
+
+        game.next_turn(self);
     }
 }
 
