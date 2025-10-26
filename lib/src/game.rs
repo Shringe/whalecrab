@@ -128,6 +128,12 @@ impl Game {
             | self.position.black_kings;
         let pieces = white_pieces | black_pieces;
 
+        debug_assert_eq!(
+            white_pieces & black_pieces,
+            EMPTY,
+            "Both white and black claim to have pieces on the same square!"
+        );
+
         self.white_occupied = white_pieces;
         self.black_occupied = black_pieces;
         self.occupied = pieces;
