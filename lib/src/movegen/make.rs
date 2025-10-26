@@ -165,7 +165,7 @@ impl Move {
                 .expect("Tried to move nonexistant piece");
             assert_eq!(
                 color, game.position.turn,
-                "{:?} is trying to moves {:?}'s {:?}",
+                "{:?} tried to move {:?}'s {:?}",
                 game.position.turn, color, piece
             );
         }
