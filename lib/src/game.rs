@@ -131,7 +131,7 @@ impl Game {
         debug_assert_eq!(
             white_pieces & black_pieces,
             EMPTY,
-            "Both white and black claim to have pieces on the same square!"
+            "Both white and black claim to have pieces on the same square"
         );
 
         self.white_occupied = white_pieces;
