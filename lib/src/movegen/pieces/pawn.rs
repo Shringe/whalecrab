@@ -294,7 +294,7 @@ mod tests {
                 from: Square::H4,
                 to: Square::G5,
                 variant: MoveType::Normal,
-                capture: None,
+                capture: Some(PieceType::Pawn),
             },
             Move {
                 from: Square::H7,
@@ -306,7 +306,7 @@ mod tests {
                 from: Square::G5,
                 to: Square::H6,
                 variant: MoveType::Normal,
-                capture: None,
+                capture: Some(PieceType::Pawn),
             },
             Move {
                 from: Square::F8,
@@ -318,7 +318,7 @@ mod tests {
                 from: Square::H6,
                 to: Square::G7,
                 variant: MoveType::Normal,
-                capture: None,
+                capture: Some(PieceType::Bishop),
             },
             Move {
                 from: Square::E7,
