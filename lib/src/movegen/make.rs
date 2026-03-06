@@ -1,6 +1,5 @@
 use crate::{
     bitboard::BitBoard,
-    board::State,
     castling::{self, CastleSide},
     game::Game,
     movegen::{
