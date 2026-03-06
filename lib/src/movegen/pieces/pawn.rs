@@ -277,56 +277,17 @@ mod tests {
             capture: Some(PieceType::Rook),
         };
 
-        for m in [
-            Move {
-                from: Square::H2,
-                to: Square::H4,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::G7,
-                to: Square::G5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::H4,
-                to: Square::G5,
-                variant: MoveType::Normal,
-                capture: Some(PieceType::Pawn),
-            },
-            Move {
-                from: Square::H7,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::G5,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: Some(PieceType::Pawn),
-            },
-            Move {
-                from: Square::F8,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::H6,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: Some(PieceType::Bishop),
-            },
-            Move {
-                from: Square::E7,
-                to: Square::E5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
+        for (from, to) in [
+            (Square::H2, Square::H4),
+            (Square::G7, Square::G5),
+            (Square::H4, Square::G5),
+            (Square::H7, Square::H6),
+            (Square::G5, Square::H6),
+            (Square::F8, Square::G7),
+            (Square::H6, Square::G7),
+            (Square::E7, Square::E5),
         ] {
+            let m = Move::new(from, to, &game.position);
             game.play(&m);
         }
 
