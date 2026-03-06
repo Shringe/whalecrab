@@ -284,56 +284,17 @@ mod tests {
             capture: Some(PieceType::Rook),
         };
 
-        for m in [
-            Move {
-                from: Square::H2,
-                to: Square::H4,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::G7,
-                to: Square::G5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
-            Move {
-                from: Square::H4,
-                to: Square::G5,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::H7,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::G5,
-                to: Square::H6,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::F8,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::H6,
-                to: Square::G7,
-                variant: MoveType::Normal,
-                capture: None,
-            },
-            Move {
-                from: Square::E7,
-                to: Square::E5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
-            },
+        for (from, to) in [
+            (Square::H2, Square::H4),
+            (Square::G7, Square::G5),
+            (Square::H4, Square::G5),
+            (Square::H7, Square::H6),
+            (Square::G5, Square::H6),
+            (Square::F8, Square::G7),
+            (Square::H6, Square::G7),
+            (Square::E7, Square::E5),
         ] {
+            let m = Move::new(from, to, &game.position);
             game.play(&m);
         }
 
@@ -373,9 +334,6 @@ mod tests {
 
     #[test]
     fn make_moves() {
-        let mut game = Game::default();
-        let original = game.position.clone();
-
         let pawn = Move {
             from: Square::C2,
             to: Square::C3,
@@ -395,14 +353,18 @@ mod tests {
             capture: None,
         };
 
+        let mut game = Game::default();
+        let original = game.position.clone();
         game.play(&pawn);
         let after_pawn = game.position.clone();
 
         game = Game::default();
+        game.play(&Move::new(Square::E2, Square::E3, &game.position));
         game.play(&knight);
         let after_knight = game.position.clone();
 
-        game = Game::default();
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1";
+        game = Game::from_position(Board::from_fen(fen).unwrap());
         game.play(&king);
         let after_king = game.position.clone();
 
