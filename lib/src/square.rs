@@ -354,7 +354,13 @@ impl Square {
     /// or it ends right on an enemy piece. Used for ray pieces in move generation.
     pub fn ray(&self, direction: &Direction, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
-        let enemy = game.position.turn;
+        let selfbb = BitBoard::from_square(*self);
+
+        // Maybe I should take in color as a parameter?
+        let enemy = game
+            .determine_color(&selfbb)
+            .unwrap_or(game.position.turn)
+            .opponent();
 
         let mut current = *self;
         let mut is_check = false;
@@ -375,8 +381,9 @@ impl Square {
                     } else if let Some(extra) = forward.walk(direction) {
                         let extrabb = BitBoard::from_square(extra);
                         moveinfo.check_rays |= extrabb;
-                        is_check =
-                            matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
+                        is_check = game.determine_piece(&extrabb) == Some((PieceType::King, enemy));
+                        // is_check =
+                        //     matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
                     }
                 }
 
@@ -465,5 +472,24 @@ mod tests {
         assert_eq!(Square::C3, Square::C6.flip_side());
         assert_eq!(Square::G7, Square::G2.flip_side());
         assert_eq!(Square::H3, Square::H3.flip_side().flip_side())
+    }
+
+    #[test]
+    fn ray() {
+        let fen = "r1bq1r1k/1p4pp/1pnp4/2p1pNb1/2B1P3/P1PP4/1P3PPP/R1BQ1RK1 b - - 0 14";
+        let game = Game::from_position(Board::from_fen(fen).unwrap());
+
+        let rook = Square::F8;
+        let direction = Direction::South;
+        let mut expected = PieceMoveInfo::default();
+        expected.targets.set(Square::F7);
+        expected.targets.set(Square::F6);
+        expected.targets.set(Square::F5);
+        expected.attacks.set(Square::F7);
+        expected.attacks.set(Square::F6);
+        expected.attacks.set(Square::F5);
+
+        let actual = rook.ray(&direction, &game);
+        assert_eq!(actual, expected);
     }
 }

@@ -101,6 +101,34 @@ impl Piece for King {
             }
         }
 
+        let occupied = &game.occupied;
+        match game.position.turn {
+            Color::White => {
+                if game.position.castling_rights.white_queenside
+                    && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+                {
+                    moveinfo.targets |= castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB;
+                }
+                if game.position.castling_rights.white_kingside
+                    && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
+                {
+                    moveinfo.targets |= castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB;
+                }
+            }
+            Color::Black => {
+                if game.position.castling_rights.black_queenside
+                    && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+                {
+                    moveinfo.targets |= castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB;
+                }
+                if game.position.castling_rights.black_kingside
+                    && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
+                {
+                    moveinfo.targets |= castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB;
+                }
+            }
+        }
+
         moveinfo
     }
 }
@@ -134,6 +162,26 @@ mod tests {
         let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&mut game);
         should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
         shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
+    }
+
+    #[test]
+    fn black_sees_castling_queenside_fast() {
+        let game = Game::from_position(
+            Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
+                .unwrap(),
+        );
+
+        let mut expected = PieceMoveInfo::default();
+        expected.targets.set(Square::D8);
+        expected.targets.set(Square::C8);
+        expected.attacks.set(Square::D8);
+        expected.attacks.set(Square::F8);
+        expected.attacks.set(Square::F7);
+        expected.attacks.set(Square::D7);
+        expected.attacks.set(Square::E7);
+
+        let actual = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_targets_fast(&game);
+        assert_eq!(actual, expected);
     }
 
     #[test]

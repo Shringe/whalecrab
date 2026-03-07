@@ -398,17 +398,18 @@ impl Game {
 
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let occupied = self.get_occupied(&self.position.turn);
-
-        for sq in *occupied {
-            let sqbb = BitBoard::from_square(sq);
-            if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.psuedo_legal_moves(self, sq))
-            }
-        }
-
-        moves
+        self.generate_all_psuedo_legal_fast()
+        // let mut moves = Vec::new();
+        // let occupied = self.get_occupied(&self.position.turn);
+        //
+        // for sq in *occupied {
+        //     let sqbb = BitBoard::from_square(sq);
+        //     if let Some((piece, _)) = self.determine_piece(&sqbb) {
+        //         moves.extend(piece.psuedo_legal_moves(self, sq))
+        //     }
+        // }
+        //
+        // moves
     }
 
     /// Generates all legal moves for the current player. This also updates position state

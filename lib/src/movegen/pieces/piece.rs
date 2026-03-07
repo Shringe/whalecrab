@@ -52,36 +52,65 @@ pub enum PieceType {
     King,
 }
 
-macro_rules! dispatch_method_to_pieces {
-    ($self:expr, $game:expr, $square:expr, $method:ident) => {
-        match $self {
-            PieceType::Pawn => Pawn($square).$method($game),
-            PieceType::Knight => Knight($square).$method($game),
-            PieceType::Bishop => Bishop($square).$method($game),
-            PieceType::Rook => Rook($square).$method($game),
-            PieceType::Queen => Queen($square).$method($game),
-            PieceType::King => King($square).$method($game),
-        }
-    };
-}
+// macro_rules! dispatch_method_to_pieces {
+//     ($self:expr, $game:expr, $square:expr, $method:ident) => {
+//         match $self {
+//             PieceType::Pawn => Pawn($square).$method($game),
+//             PieceType::Knight => Knight($square).$method($game),
+//             PieceType::Bishop => Bishop($square).$method($game),
+//             PieceType::Rook => Rook($square).$method($game),
+//             PieceType::Queen => Queen($square).$method($game),
+//             PieceType::King => King($square).$method($game),
+//         }
+//     };
+// }
 
-macro_rules! dispatch_piece_method {
-    ($method:ident, $out:ty, mut) => {
-        pub fn $method(&self, game: &mut Game, square: Square) -> $out {
-            dispatch_method_to_pieces!(self, game, square, $method)
-        }
-    };
-    ($method:ident, $out:ty) => {
-        pub fn $method(&self, game: &Game, square: Square) -> $out {
-            dispatch_method_to_pieces!(self, game, square, $method)
-        }
-    };
-}
+// macro_rules! dispatch_piece_method {
+//     ($method:ident, $out:ty, mut) => {
+//         pub fn $method(&self, game: &mut Game, square: Square) -> $out {
+//             dispatch_method_to_pieces!(self, game, square, $method)
+//         }
+//     };
+//     ($method:ident, $out:ty) => {
+//         pub fn $method(&self, game: &Game, square: Square) -> $out {
+//             dispatch_method_to_pieces!(self, game, square, $method)
+//         }
+//     };
+// }
 
 impl PieceType {
-    dispatch_piece_method!(psuedo_legal_moves, Vec<Move>, mut);
-    dispatch_piece_method!(legal_moves, Vec<Move>, mut);
-    dispatch_piece_method!(psuedo_legal_targets_fast, PieceMoveInfo);
+    pub fn psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).psuedo_legal_moves(game),
+            PieceType::Knight => Knight(square).psuedo_legal_moves(game),
+            PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
+            PieceType::Rook => Rook(square).psuedo_legal_moves(game),
+            PieceType::Queen => Queen(square).psuedo_legal_moves(game),
+            PieceType::King => King(square).psuedo_legal_moves(game),
+        }
+    }
+
+    pub fn legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
+        match self {
+            PieceType::Pawn => Pawn(square).legal_moves(game),
+            PieceType::Knight => Knight(square).legal_moves(game),
+            PieceType::Bishop => Bishop(square).legal_moves(game),
+            PieceType::Rook => Rook(square).legal_moves(game),
+            PieceType::Queen => Queen(square).legal_moves(game),
+            PieceType::King => King(square).legal_moves(game),
+        }
+    }
+
+    pub fn psuedo_legal_targets_fast(&self, game: &Game, square: Square) -> PieceMoveInfo {
+        match self {
+            PieceType::Pawn => Pawn(square).psuedo_legal_targets_fast(game),
+            PieceType::Knight => Knight(square).psuedo_legal_targets_fast(game),
+            PieceType::Bishop => Bishop(square).psuedo_legal_targets_fast(game),
+            PieceType::Rook => Rook(square).psuedo_legal_targets_fast(game),
+            PieceType::Queen => Queen(square).psuedo_legal_targets_fast(game),
+            PieceType::King => King(square).psuedo_legal_targets_fast(game),
+        }
+    }
 
     pub fn is_ray_piece(&self) -> bool {
         match self {
@@ -92,7 +121,7 @@ impl PieceType {
 }
 
 /// Stores where a piece could move to and what squares it currently defends
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq, Debug)]
 pub struct PieceMoveInfo {
     /// The possible squares a piece can move to
     pub targets: BitBoard,
@@ -208,8 +237,8 @@ mod tests {
 
         let legal_looking_for = vec![Move::new(Square::A1, Square::A2, &game.position)];
         let psuedo_legal_looking_for = vec![
-            Move::new(Square::A1, Square::A2, &game.position),
             Move::new(Square::A1, Square::B1, &game.position),
+            Move::new(Square::A1, Square::A2, &game.position),
             Move::new(Square::A1, Square::B2, &game.position),
         ];
 
