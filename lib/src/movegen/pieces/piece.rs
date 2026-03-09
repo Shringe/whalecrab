@@ -566,7 +566,7 @@ Available moves: {}
             (Square::F2, Square::F4),
         ] {
             let m = Move::new(from, to, &game.position);
-            m.play(&mut game);
+            game.play(&m);
             let moves = game.generate_all_legal_moves();
             let engine_move = game.get_engine_move_minimax(2);
             assert_eq!(game.position.state, State::InProgress);

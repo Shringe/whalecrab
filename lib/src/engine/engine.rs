@@ -14,14 +14,14 @@ macro_rules! search_move {
         #[cfg(debug_assertions)]
         let before = $self.position.clone();
 
-        $move.play($self);
+        $self.play(&$move);
 
         #[cfg(debug_assertions)]
         let during = $self.position.clone();
 
         $self.nodes_seached += 1;
         let score = $self.$method($($args),*);
-        $move.unplay($self);
+        $self.unplay(&$move);
 
         #[cfg(debug_assertions)]
         assert_eq!(
@@ -321,7 +321,7 @@ mod tests {
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let white_moves = game.generate_all_legal_moves();
         for m in white_moves {
-            m.play(&mut game);
+            game.play(&m);
             let result = game.get_engine_move_minimax(0).unwrap();
             assert!(
                 matches!(
@@ -334,7 +334,7 @@ mod tests {
                 "Expected black to capture the king, got {:?}",
                 result
             );
-            m.unplay(&mut game);
+            game.unplay(&m);
         }
     }
 
@@ -344,11 +344,11 @@ mod tests {
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let black_moves = game.generate_all_legal_moves();
         for m in black_moves {
-            m.play(&mut game);
+            game.play(&m);
             let looking_for = Move::new(Square::F2, Square::H2, &game.position);
             let result = game.get_engine_move_minimax(1).unwrap();
             assert_eq!(result, looking_for);
-            m.unplay(&mut game);
+            game.unplay(&m);
         }
     }
 

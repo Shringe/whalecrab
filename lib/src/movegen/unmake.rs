@@ -10,30 +10,30 @@ use crate::{
     square::Square,
 };
 
-impl Move {
+impl Game {
     /// Unplays a move on the board.
-    pub fn unplay(&self, game: &mut Game) {
-        game.restore_position();
+    pub fn unplay(&mut self, m: &Move) {
+        self.restore_position();
 
-        match self {
+        match m {
             Move::Normal { from, to, capture } => {
                 let frombb = BitBoard::from_square(*from);
                 let tobb = BitBoard::from_square(*to);
-                let (piece, color) = game
+                let (piece, color) = self
                     .determine_piece(&tobb)
                     .expect("Couldn't find piece to unmove!");
 
-                let pieces = game.get_pieces_mut(&piece, &color);
+                let pieces = self.get_pieces_mut(&piece, &color);
                 *pieces ^= tobb;
                 *pieces |= frombb;
 
                 if let Some(enemy) = capture {
-                    let pieces = game.get_pieces_mut(enemy, &color.opponent());
+                    let pieces = self.get_pieces_mut(enemy, &color.opponent());
                     *pieces |= tobb;
                 }
             }
             Move::CreateEnPassant { at } => {
-                let color = game.position.turn.opponent();
+                let color = self.position.turn.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Second, *at),
@@ -47,23 +47,23 @@ impl Move {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color);
                 *pawns ^= tobb;
                 *pawns |= frombb;
             }
             Move::CaptureEnPassant { from: from_file } => {
-                let color = game.position.turn.opponent();
+                let color = self.position.turn.opponent();
                 let enemy_color = color.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Fifth, *from_file),
-                        game.position
+                        self.position
                             .en_passant_target
                             .expect("CaptureEnPassant unplayed with no en passant target"),
                     ),
                     PieceColor::Black => (
                         Square::make_square(Rank::Fourth, *from_file),
-                        game.position
+                        self.position
                             .en_passant_target
                             .expect("CaptureEnPassant unplayed with no en passant target"),
                     ),
@@ -72,7 +72,7 @@ impl Move {
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
 
-                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color);
                 *pawns ^= tobb;
                 *pawns |= frombb;
 
@@ -81,7 +81,7 @@ impl Move {
                     to.backward(&color)
                         .expect("Can't find pawn behind en_passant_target!"),
                 );
-                let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
+                let enemy_pawns = self.get_pieces_mut(&PieceType::Pawn, &enemy_color);
                 *enemy_pawns |= en_passant_bb;
             }
             Move::Promotion {
@@ -90,7 +90,7 @@ impl Move {
                 piece,
                 capture,
             } => {
-                let color = game.position.turn.opponent();
+                let color = self.position.turn.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Seventh, *from_file),
@@ -106,50 +106,50 @@ impl Move {
                 let tobb = BitBoard::from_square(to);
 
                 // Remove promoted piece from destination square
-                let promoted_pieces = game.get_pieces_mut(piece, &color);
+                let promoted_pieces = self.get_pieces_mut(piece, &color);
                 *promoted_pieces ^= tobb;
 
                 // Restore original pawn
-                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color);
                 *pawns |= frombb;
 
                 if let Some(enemy) = capture {
-                    let pieces = game.get_pieces_mut(enemy, &color.opponent());
+                    let pieces = self.get_pieces_mut(enemy, &color.opponent());
                     *pieces |= tobb;
                 }
             }
             Move::Castle { side } => {
-                let color = game.position.turn.opponent();
+                let color = self.position.turn.opponent();
                 match color {
                     PieceColor::White => match side {
                         CastleSide::Queenside => {
-                            game.position.white_kings ^=
+                            self.position.white_kings ^=
                                 castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                            game.position.white_rooks ^=
+                            self.position.white_rooks ^=
                                 castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
                         }
                         CastleSide::Kingside => {
-                            game.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                            game.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            self.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                            self.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
                         }
                     },
                     PieceColor::Black => match side {
                         CastleSide::Queenside => {
-                            game.position.black_kings ^=
+                            self.position.black_kings ^=
                                 castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                            game.position.black_rooks ^=
+                            self.position.black_rooks ^=
                                 castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
                         }
                         CastleSide::Kingside => {
-                            game.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                            game.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                            self.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                            self.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
                         }
                     },
                 }
             }
         }
 
-        game.previous_turn();
+        self.previous_turn();
     }
 }
 
@@ -168,13 +168,13 @@ mod tests {
             let mut has_played = Vec::new();
             for (from, to) in $sequence {
                 let m = Move::new(from, to, &game.position);
-                m.play(&mut game);
+                game.play(&m);
                 has_played.push(m);
             }
 
             has_played.reverse();
             for m in has_played {
-                m.unplay(&mut game);
+                game.unplay(&m);
             }
 
             compare_games(&before, &game);
@@ -257,8 +257,8 @@ mod tests {
         let mut game = Game::default();
         let m = Move::new(Square::E2, Square::E4, &game.position);
         for _ in 0..5 {
-            m.play(&mut game);
-            m.unplay(&mut game);
+            game.play(&m);
+            game.unplay(&m);
             assert_eq!(game.position.state, State::InProgress);
         }
     }
@@ -268,9 +268,9 @@ mod tests {
         let mut game = Game::default();
         let m = Move::CreateEnPassant { at: File::E };
         assert_eq!(game.position.en_passant_target, None);
-        m.play(&mut game);
+        game.play(&m);
         assert_eq!(game.position.en_passant_target, Some(Square::E3));
-        m.unplay(&mut game);
+        game.unplay(&m);
         assert_eq!(game.position.en_passant_target, None);
     }
 
@@ -280,9 +280,9 @@ mod tests {
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let m = Move::CaptureEnPassant { from: File::E };
         assert_eq!(game.position.en_passant_target, Some(Square::F6));
-        m.play(&mut game);
+        game.play(&m);
         assert_eq!(game.position.en_passant_target, None);
-        m.unplay(&mut game);
+        game.unplay(&m);
         assert_eq!(game.position.en_passant_target, Some(Square::F6));
     }
 }

@@ -4,7 +4,6 @@ use crate::{
     board::Board,
     castling::{self, CastleSide},
     file::File,
-    game::Game,
     movegen::pieces::piece::{PieceColor, PieceType},
     rank::Rank,
     square::Square,
@@ -229,14 +228,6 @@ impl Move {
             Square::from_str(&uci[2..])?,
             position,
         ))
-    }
-}
-
-impl Game {
-    /// Plays a move on the board, updating the position and engine values
-    /// Deprecated, but exists for compatibility
-    pub fn play(&mut self, m: &Move) {
-        m.play(self);
     }
 }
 

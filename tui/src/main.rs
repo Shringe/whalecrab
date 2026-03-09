@@ -421,7 +421,7 @@ impl App {
                 KeyCode::Char('v') => self.verbose = !self.verbose,
                 KeyCode::Char('u') => {
                     if let Some(m) = &self.last {
-                        m.unplay(&mut self.game);
+                        self.game.unplay(m);
                         self.last = None;
                     }
                 }

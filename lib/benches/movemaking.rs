@@ -1,5 +1,5 @@
 mod common;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 fn bench(c: &mut Criterion) {
     let mut game = common::midgame();
@@ -7,8 +7,8 @@ fn bench(c: &mut Criterion) {
     c.bench_function("Make/Unmake all legal moves", |b| {
         b.iter(|| {
             for m in &moves {
-                m.play(&mut game);
-                m.unplay(&mut game);
+                game.play(m);
+                game.unplay(m);
             }
         });
     });
