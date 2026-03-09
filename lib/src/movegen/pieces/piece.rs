@@ -14,14 +14,14 @@ pub enum Color {
 
 impl Color {
     pub fn opponent(&self) -> Color {
-        match &self {
+        match self {
             Color::White => Color::Black,
             Color::Black => Color::White,
         }
     }
 
     pub fn final_rank(&self) -> Rank {
-        match &self {
+        match self {
             Color::White => Rank::Eighth,
             Color::Black => Rank::First,
         }
@@ -47,34 +47,8 @@ pub enum PieceType {
     King,
 }
 
-// macro_rules! dispatch_method_to_pieces {
-//     ($self:expr, $game:expr, $square:expr, $method:ident) => {
-//         match $self {
-//             PieceType::Pawn => Pawn($square).$method($game),
-//             PieceType::Knight => Knight($square).$method($game),
-//             PieceType::Bishop => Bishop($square).$method($game),
-//             PieceType::Rook => Rook($square).$method($game),
-//             PieceType::Queen => Queen($square).$method($game),
-//             PieceType::King => King($square).$method($game),
-//         }
-//     };
-// }
-
-// macro_rules! dispatch_piece_method {
-//     ($method:ident, $out:ty, mut) => {
-//         pub fn $method(&self, game: &mut Game, square: Square) -> $out {
-//             dispatch_method_to_pieces!(self, game, square, $method)
-//         }
-//     };
-//     ($method:ident, $out:ty) => {
-//         pub fn $method(&self, game: &Game, square: Square) -> $out {
-//             dispatch_method_to_pieces!(self, game, square, $method)
-//         }
-//     };
-// }
-
 impl PieceType {
-    pub fn psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
+    pub fn psuedo_legal_moves(&self, game: &Game, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_moves(game),
             PieceType::Knight => square.knight_psuedo_legal_moves(game),
@@ -82,17 +56,6 @@ impl PieceType {
             PieceType::Rook => square.rook_psuedo_legal_moves(game),
             PieceType::Queen => square.queen_psuedo_legal_moves(game),
             PieceType::King => square.king_psuedo_legal_moves(game),
-        }
-    }
-
-    pub fn legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
-        match self {
-            PieceType::Pawn => game.legal_moves(square.pawn_psuedo_legal_moves(game)),
-            PieceType::Knight => game.legal_moves(square.knight_psuedo_legal_moves(game)),
-            PieceType::Bishop => game.legal_moves(square.bishop_psuedo_legal_moves(game)),
-            PieceType::Rook => game.legal_moves(square.rook_psuedo_legal_moves(game)),
-            PieceType::Queen => game.legal_moves(square.queen_psuedo_legal_moves(game)),
-            PieceType::King => game.legal_moves(square.king_psuedo_legal_moves(game)),
         }
     }
 
@@ -105,6 +68,10 @@ impl PieceType {
             PieceType::Queen => square.queen_psuedo_legal_targets_fast(game),
             PieceType::King => square.king_psuedo_legal_targets_fast(game),
         }
+    }
+
+    pub fn legal_moves(&self, game: &Game, square: Square) -> Vec<Move> {
+        game.legal_moves_filter(self.psuedo_legal_moves(game, square))
     }
 
     pub fn is_ray_piece(&self) -> bool {
@@ -141,7 +108,7 @@ fn between_two_squares(from: Square, to: Square) -> BitBoard {
 
 impl Game {
     /// Filters out psuedo_legal moves that are found to be illegal
-    pub fn legal_moves(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
+    fn legal_moves_filter(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
         // TODO: benchmark Vec::with_capacity(psuedo_legal.len()) + Vec::shrink_to_fit
         let mut legal = Vec::new();
 
@@ -157,77 +124,6 @@ impl Game {
             let frombb = BitBoard::from_square(m.from);
             let tobb = BitBoard::from_square(m.to);
             let (piece, _) = self
-                .determine_piece(&frombb)
-                .expect("Can't move nonexisting piece!");
-
-            let is_moving_king = piece == PieceType::King;
-
-            // Handle being in check
-            match king_attackers.popcnt() {
-                1 => {
-                    let is_blocking = (between_two_squares(king, king_attackers.to_square())
-                        & checks)
-                        .has_square(&tobb);
-                    let is_capturing = m.capture.is_some();
-                    let is_capturing_attacking_piece =
-                        is_capturing && king_attackers.has_square(&tobb);
-
-                    if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
-                        continue;
-                    }
-                }
-                2 => {
-                    if !is_moving_king {
-                        continue;
-                    }
-                }
-                _ => {}
-            }
-
-            if is_moving_king {
-                // Prevent moving into check
-                if attack_board.has_square(&tobb) {
-                    continue;
-                }
-            } else {
-                // Prevent moving piece blocking check (pin)
-                if checks.has_square(&frombb) {
-                    continue;
-                }
-            }
-
-            legal.push(m);
-        }
-
-        legal
-    }
-}
-
-pub trait Piece {
-    /// Generates psuedo legal moves not considering king safety.
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move>;
-
-    /// Generates the attack and target board for a piece without updating game
-    /// Warning: Highly expiremental
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo;
-
-    /// Generates legal moves considering king safety.
-    fn legal_moves(&self, game: &Game) -> Vec<Move> {
-        let psuedo_legal = self.psuedo_legal_moves(game);
-        let mut legal = Vec::new();
-
-        let enemy = game.position.turn.opponent();
-        let attack_board = game.get_attacks(&enemy);
-        let checks = game.get_check_rays(&enemy);
-
-        let kingbb = game.get_pieces(&PieceType::King, &game.position.turn);
-        let king = kingbb.to_square();
-        let king_attackers = game.attackers(king);
-
-        for m in psuedo_legal {
-            let frombb = BitBoard::from_square(m.from);
-            let tobb = BitBoard::from_square(m.to);
-            let (piece, _) = game
                 .determine_piece(&frombb)
                 .expect("Can't move nonexisting piece!");
 
