@@ -76,7 +76,7 @@ impl Game {
             nodes_seached: 0,
         };
 
-        game.reinitialize();
+        game.refresh();
         game.position.seen_positions.insert(game.position.hash, 1);
         game
     }
@@ -106,7 +106,7 @@ impl Game {
 
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
-    pub fn refresh(&mut self) {
+    fn refresh(&mut self) {
         let white_pieces = self.position.white_pawns
             | self.position.white_knights
             | self.position.white_bishops
@@ -168,20 +168,6 @@ impl Game {
             *self.get_attacks_mut(&enemy),
             *self.get_check_rays_mut(&enemy),
         ) = self.calculate_attacks(&enemy);
-    }
-
-    /// Reinitializes the game and its metadata. This is slow and unnecessary if you generate each
-    /// move before playing it through self.generate(_psuedo)_legal_moves()
-    pub fn reinitialize(&mut self) {
-        self.refresh();
-        // let enemy = self.position.turn;
-        // *self.get_attacks_mut(&enemy) = self.calculate_attacks(&enemy);
-
-        // HACK: populating check and attacks boards
-        // self.generate_all_psuedo_legal_moves();
-        // self.position.turn = self.position.turn.opponent();
-        // self.generate_all_psuedo_legal_moves();
-        // self.position.turn = self.position.turn.opponent();
     }
 
     /// Returns a bitboard of every piece attacking the given square
@@ -382,7 +368,7 @@ impl Game {
     }
 
     /// Generates all psuedo legal moves for the current player
-    pub fn generate_all_psuedo_legal_fast(&self) -> Vec<Move> {
+    pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
         let color = &self.position.turn;
         let occupied = self.get_occupied(color);
@@ -398,22 +384,6 @@ impl Game {
         }
 
         moves
-    }
-
-    /// Generates all psuedo legal moves for the current player
-    pub fn generate_all_psuedo_legal_moves(&mut self) -> Vec<Move> {
-        self.generate_all_psuedo_legal_fast()
-        // let mut moves = Vec::new();
-        // let occupied = self.get_occupied(&self.position.turn);
-        //
-        // for sq in *occupied {
-        //     let sqbb = BitBoard::from_square(sq);
-        //     if let Some((piece, _)) = self.determine_piece(&sqbb) {
-        //         moves.extend(piece.psuedo_legal_moves(self, sq))
-        //     }
-        // }
-        //
-        // moves
     }
 
     /// Generates all legal moves for the current player. This also updates position state
@@ -468,7 +438,6 @@ mod tests {
             game.play(&m);
         }
 
-        game.reinitialize();
         game.generate_all_legal_moves();
         assert_eq!(game.position.turn, PieceColor::White);
         assert_eq!(game.position.state, State::Checkmate);
