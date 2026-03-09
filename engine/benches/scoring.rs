@@ -1,34 +1,34 @@
 mod common;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 fn bench(c: &mut Criterion) {
-    let mut game = common::midgame();
+    let mut engine = common::midgame();
     c.bench_function(
         "Scoring middle game position with transposition table",
-        |b| b.iter(|| game.grade_position()),
+        |b| b.iter(|| engine.grade_position()),
     );
 
-    let mut game = common::midgame();
+    let mut engine = common::midgame();
     c.bench_function("Scoring middle game position", |b| {
         b.iter(|| {
-            game.transposition_table.clear();
-            game.grade_position()
+            engine.clear_persistant_cache();
+            engine.grade_position()
         })
     });
 
-    let mut board = common::earlygame();
+    let mut engine = common::earlygame();
     c.bench_function("Scoring early game position", |b| {
         b.iter(|| {
-            board.transposition_table.clear();
-            board.grade_position()
+            engine.clear_persistant_cache();
+            engine.grade_position()
         })
     });
 
-    let mut game = common::lategame();
+    let mut engine = common::lategame();
     c.bench_function("Scoring late game position", |b| {
         b.iter(|| {
-            game.transposition_table.clear();
-            game.grade_position()
+            engine.clear_persistant_cache();
+            engine.grade_position()
         })
     });
 }

@@ -6,7 +6,7 @@ use crate::{
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
-    board::State,
+    board::{Board, State},
     game::Game,
     movegen::{moves::Move, pieces::piece::PieceColor},
     square::Square,
@@ -70,10 +70,26 @@ impl Engine {
         }
     }
 
+    /// Creates a game with the position and wraps the engine around it
+    pub fn from_position(position: Board) -> Engine {
+        Engine::from_game(Game::from_position(position))
+    }
+
+    /// Creates a position from fen and wraps the engine around it
+    pub fn from_fen(fen: &str) -> Option<Engine> {
+        Some(Engine::from_position(Board::from_fen(fen)?))
+    }
+
     /// Resets any temporary engine values or caches and switches over to analyzing the new game.
     /// This should be used over replacing self.game manually
     pub fn with_new_game(&mut self, game: Game) {
         self.game = game
+    }
+
+    /// Clears caches that do not need bo be reset each game. This should only be called for
+    /// testing and benchmarking purposes
+    pub fn clear_persistant_cache(&mut self) {
+        self.transposition_table.clear();
     }
 
     /// Score material based on its value and position on the board

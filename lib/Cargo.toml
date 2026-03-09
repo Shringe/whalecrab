@@ -11,10 +11,6 @@ harness = false
 name = "movemaking"
 harness = false
 
-[[bench]]
-name = "scoring"
-harness = false
-
 [dependencies]
 paste = "1.0.15"
 
