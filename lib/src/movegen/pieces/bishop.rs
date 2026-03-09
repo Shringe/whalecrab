@@ -4,7 +4,7 @@ use crate::{
     square::{Direction, Square},
 };
 
-use super::piece::{Piece, PieceMoveInfo};
+use super::piece::PieceMoveInfo;
 
 const DIRECTIONS: [Direction; 4] = [
     Direction::NorthEast,
@@ -13,15 +13,13 @@ const DIRECTIONS: [Direction; 4] = [
     Direction::SouthWest,
 ];
 
-pub struct Bishop(pub Square);
-
-impl Piece for Bishop {
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        self.0.ray_moves(&DIRECTIONS, game)
+impl Square {
+    pub fn bishop_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+        self.ray_moves(&DIRECTIONS, game)
     }
 
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
-        self.0.rays(&DIRECTIONS, game)
+    pub fn bishop_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+        self.rays(&DIRECTIONS, game)
     }
 }
 
@@ -51,7 +49,7 @@ mod tests {
             let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::Bishop, _))) {
-                let moves = Bishop(m.from).psuedo_legal_moves(&mut game);
+                let moves = m.from.bishop_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

@@ -1,10 +1,7 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     game::Game,
-    movegen::{
-        moves::Move,
-        pieces::{bishop::Bishop, queen::Queen},
-    },
+    movegen::{moves::Move, pieces::queen::Queen},
     rank::Rank,
     square::Square,
 };
@@ -81,7 +78,7 @@ impl PieceType {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_moves(game),
             PieceType::Knight => square.knight_psuedo_legal_moves(game),
-            PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
+            PieceType::Bishop => square.bishop_psuedo_legal_moves(game),
             PieceType::Rook => square.rook_psuedo_legal_moves(game),
             PieceType::Queen => Queen(square).psuedo_legal_moves(game),
             PieceType::King => square.king_psuedo_legal_moves(game),
@@ -92,7 +89,7 @@ impl PieceType {
         match self {
             PieceType::Pawn => game.legal_moves(square.pawn_psuedo_legal_moves(game)),
             PieceType::Knight => game.legal_moves(square.knight_psuedo_legal_moves(game)),
-            PieceType::Bishop => Bishop(square).legal_moves(game),
+            PieceType::Bishop => game.legal_moves(square.bishop_psuedo_legal_moves(game)),
             PieceType::Rook => game.legal_moves(square.rook_psuedo_legal_moves(game)),
             PieceType::Queen => Queen(square).legal_moves(game),
             PieceType::King => game.legal_moves(square.king_psuedo_legal_moves(game)),
@@ -103,7 +100,7 @@ impl PieceType {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_targets_fast(game),
             PieceType::Knight => square.knight_psuedo_legal_targets_fast(game),
-            PieceType::Bishop => Bishop(square).psuedo_legal_targets_fast(game),
+            PieceType::Bishop => square.bishop_psuedo_legal_targets_fast(game),
             PieceType::Rook => square.rook_psuedo_legal_targets_fast(game),
             PieceType::Queen => Queen(square).psuedo_legal_targets_fast(game),
             PieceType::King => square.king_psuedo_legal_targets_fast(game),
