@@ -161,7 +161,7 @@ mod tests {
             let before = game.clone();
             let mut has_played = Vec::new();
             for (from, to) in $sequence {
-                let m = Move::new(from, to, &game);
+                let m = Move::infer(from, to, &game);
                 game.play(&m);
                 has_played.push(m);
             }
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn no_repetition() {
         let mut game = Game::default();
-        let m = Move::new(Square::E2, Square::E4, &game);
+        let m = Move::infer(Square::E2, Square::E4, &game);
         for _ in 0..5 {
             game.play(&m);
             game.unplay(&m);

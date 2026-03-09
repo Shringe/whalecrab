@@ -219,7 +219,7 @@ mod tests {
         let fen = "rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let black_moves = Move::new(Square::E8, Square::D7, &game);
+        let black_moves = Move::infer(Square::E8, Square::D7, &game);
         game.play(&black_moves);
 
         compare_to_fen(
@@ -227,7 +227,7 @@ mod tests {
             "rnbq1b1r/pppkpppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 1 2",
         );
 
-        let white_moves = Move::new(Square::E1, Square::E2, &game);
+        let white_moves = Move::infer(Square::E1, Square::E2, &game);
         game.play(&white_moves);
 
         compare_to_fen(
@@ -241,7 +241,7 @@ mod tests {
         let fen = "rnbqkb1r/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let black_moves = Move::new(Square::H8, Square::G8, &game);
+        let black_moves = Move::infer(Square::H8, Square::G8, &game);
         game.play(&black_moves);
 
         compare_to_fen(
@@ -249,7 +249,7 @@ mod tests {
             "rnbqkbr1/ppp1pppp/3p4/3nP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQq - 1 2",
         );
 
-        let white_moves = Move::new(Square::H1, Square::G1, &game);
+        let white_moves = Move::infer(Square::H1, Square::G1, &game);
         game.play(&white_moves);
 
         compare_to_fen(
@@ -311,7 +311,7 @@ mod tests {
             (Square::H6, Square::G7),
             (Square::E7, Square::E5),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 
@@ -367,7 +367,7 @@ mod tests {
         let after_pawn = game.clone();
 
         game = Game::default();
-        game.play(&Move::new(Square::E2, Square::E3, &game));
+        game.play(&Move::infer(Square::E2, Square::E3, &game));
         game.play(&knight);
         let after_knight = game.clone();
 
@@ -407,11 +407,11 @@ mod tests {
         let black_pawns_before = game.black_pawns.popcnt();
 
         for (from, to) in [(Square::B2, Square::B4), (Square::C7, Square::C5)] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 
-        let capture = Move::new(Square::B4, Square::C5, &game);
+        let capture = Move::infer(Square::B4, Square::C5, &game);
         game.play(&capture);
 
         let white_pawns_after = game.white_pawns.popcnt();

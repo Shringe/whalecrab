@@ -129,9 +129,8 @@ impl fmt::Debug for Move {
 }
 
 impl Move {
-    /// Infers the type of move. This is likely already known during move generation, and in that
-    /// case it is recommended to skip using this constructor.
-    pub fn new(from: Square, to: Square, game: &Game) -> Self {
+    /// Infers the type of move from only the starting and destination square
+    pub fn infer(from: Square, to: Square, game: &Game) -> Self {
         match (&game.turn, from, to) {
             (PieceColor::White, Square::E1, Square::C1) if game.castling_rights.white_queenside => {
                 Move::Castle {
@@ -227,7 +226,7 @@ impl Move {
 
     /// Returns a move from a uci string
     pub fn from_uci(uci: &str, game: &Game) -> Result<Self, ()> {
-        Ok(Move::new(
+        Ok(Move::infer(
             Square::from_str(&uci[..2])?,
             Square::from_str(&uci[2..])?,
             game,
@@ -244,7 +243,7 @@ mod tests {
     fn should_be_promotion() {
         let fen = "5q2/6P1/8/8/8/6rr/RR6/KN4nk w - - 0 1";
         let game = Game::from_fen(fen).unwrap();
-        let m = Move::new(Square::G7, Square::F8, &game);
+        let m = Move::infer(Square::G7, Square::F8, &game);
         assert_eq!(
             m,
             Move::Promotion {

@@ -37,7 +37,7 @@ mod tests {
             (Square::F6, Square::G8),
             (Square::A3, Square::A1),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             let frombb = BitBoard::from_square(m.from(&game));
             if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
                 let moves = m.from(&game).queen_psuedo_legal_moves(&mut game);
@@ -67,7 +67,7 @@ mod tests {
             (Square::F6, Square::G8),
             (Square::G2, Square::F1),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             let frombb = BitBoard::from_square(m.from(&game));
             if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
                 let moves = m.from(&game).queen_psuedo_legal_moves(&mut game);

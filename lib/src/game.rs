@@ -709,7 +709,7 @@ impl Game {
             if let Some((piece, _)) = self.determine_piece(&sqbb) {
                 let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
                 for t in moveinfo.targets {
-                    moves.push(Move::new(sq, t, self));
+                    moves.push(Move::infer(sq, t, self));
                 }
             }
         }
@@ -766,7 +766,7 @@ mod tests {
         assert_eq!(game.state, State::InProgress);
         let moves = [(Square::H1, Square::H2), (Square::C8, Square::H8)];
         for (from, to) in moves {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 
@@ -779,7 +779,7 @@ mod tests {
     fn black_gets_stalemated() {
         let fen = "4k3/4P3/5K2/8/8/8/8/8 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
-        let to_play = Move::new(Square::F6, Square::E6, &game);
+        let to_play = Move::infer(Square::F6, Square::E6, &game);
 
         assert_eq!(game.state, State::InProgress);
         should_generate(&game.generate_all_legal_moves(), &to_play);
@@ -799,7 +799,7 @@ mod tests {
         let fen = "4k3/8/8/8/8/8/1NNN1KN1/8 w - - 49 1";
         let mut game = Game::from_fen(fen).unwrap();
         assert_eq!(game.state, State::InProgress);
-        let to_play = Move::new(Square::F2, Square::F3, &game);
+        let to_play = Move::infer(Square::F2, Square::F3, &game);
         should_generate(&game.generate_all_legal_moves(), &to_play);
         game.play(&to_play);
         assert_eq!(game.state, State::Timeout);
@@ -821,7 +821,7 @@ mod tests {
 
         for (from, to) in moves {
             // assert_eq!(game.state, State::InProgress);
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             should_generate(&game.generate_all_legal_moves(), &m);
             game.play(&m);
         }
@@ -904,7 +904,7 @@ mod tests {
             (Square::E4, Square::E5),
             (Square::F7, Square::F5),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 
@@ -936,7 +936,7 @@ mod tests {
             (Square::B8, Square::C6),
             (Square::F1, Square::B5),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 
@@ -1018,7 +1018,7 @@ mod tests {
     fn hash_determinism() {
         let fen_after = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
         let mut game = Game::default();
-        game.play(&Move::new(Square::E2, Square::E4, &game));
+        game.play(&Move::infer(Square::E2, Square::E4, &game));
         let fen_game = Game::from_fen(fen_after).unwrap();
         let mut game_after_refresh = game.clone();
         let mut fen_game_after_refresh = fen_game.clone();

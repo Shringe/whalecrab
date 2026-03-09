@@ -252,7 +252,7 @@ mod tests {
             (Square::H6, Square::G7),
             (Square::E7, Square::E5),
         ] {
-            let m = Move::new(from, to, &game);
+            let m = Move::infer(from, to, &game);
             game.play(&m);
         }
 

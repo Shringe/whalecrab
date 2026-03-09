@@ -188,11 +188,11 @@ mod tests {
         let psuedo_legal = game.generate_all_psuedo_legal_moves();
         let legal = game.generate_all_legal_moves();
 
-        let legal_looking_for = vec![Move::new(Square::A1, Square::A2, &game)];
+        let legal_looking_for = vec![Move::infer(Square::A1, Square::A2, &game)];
         let psuedo_legal_looking_for = vec![
-            Move::new(Square::A1, Square::B1, &game),
-            Move::new(Square::A1, Square::A2, &game),
-            Move::new(Square::A1, Square::B2, &game),
+            Move::infer(Square::A1, Square::B1, &game),
+            Move::infer(Square::A1, Square::A2, &game),
+            Move::infer(Square::A1, Square::B2, &game),
         ];
 
         assert_eq!(
@@ -212,7 +212,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
 
         let legal_moves = game.generate_all_legal_moves();
-        let looking_for = Move::new(Square::C4, Square::E3, &game);
+        let looking_for = Move::infer(Square::C4, Square::E3, &game);
 
         should_generate(&legal_moves, &looking_for);
     }
@@ -223,7 +223,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
 
         let legal_moves = game.generate_all_legal_moves();
-        let looking_for = [Move::new(Square::E2, Square::D2, &game)];
+        let looking_for = [Move::infer(Square::E2, Square::D2, &game)];
 
         assert_eq!(legal_moves, looking_for);
     }
@@ -234,7 +234,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
 
         let legal_moves = game.generate_all_legal_moves();
-        let looking_for = [Move::new(Square::B4, Square::E7, &game)];
+        let looking_for = [Move::infer(Square::B4, Square::E7, &game)];
 
         assert_eq!(legal_moves, looking_for);
     }
@@ -245,7 +245,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
 
         let legal_moves = game.generate_all_legal_moves();
-        let looking_for = Move::new(Square::E3, Square::F2, &game);
+        let looking_for = Move::infer(Square::E3, Square::F2, &game);
 
         shouldnt_generate(&legal_moves, &looking_for);
     }
@@ -257,8 +257,8 @@ mod tests {
 
         let legal_moves = game.generate_all_legal_moves();
         let looking_for = [
-            Move::new(Square::E2, Square::E1, &game),
-            Move::new(Square::E2, Square::E3, &game),
+            Move::infer(Square::E2, Square::E1, &game),
+            Move::infer(Square::E2, Square::E3, &game),
         ];
 
         for m in looking_for {
@@ -288,7 +288,7 @@ mod tests {
         let mut psuedo_illegal_moves = HashMap::new();
         let mut illegal_moves = HashMap::new();
         for (i, to_play) in game_turns.iter().enumerate() {
-            let to_play = Move::new(to_play.0, to_play.1, &game);
+            let to_play = Move::infer(to_play.0, to_play.1, &game);
             let to_play_from = to_play.from(&game);
             let frombb = BitBoard::from_square(to_play_from);
             let fen = game.to_fen();

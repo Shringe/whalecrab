@@ -335,7 +335,7 @@ mod tests {
     fn minimax_engine_takes_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
-        let looking_for = Move::new(Square::C1, Square::G5, &engine.game);
+        let looking_for = Move::infer(Square::C1, Square::G5, &engine.game);
         let result = engine.get_engine_move_minimax(2).expect("No moves found");
         println!("State: {:?}", engine.game.state);
         assert_eq!(result, looking_for);
@@ -381,7 +381,7 @@ mod tests {
         let black_moves = engine.game.generate_all_legal_moves();
         for m in black_moves {
             engine.game.play(&m);
-            let looking_for = Move::new(Square::F2, Square::H2, &engine.game);
+            let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
             let result = engine.get_engine_move_minimax(1).unwrap();
             assert_eq!(result, looking_for);
             engine.game.unplay(&m);
@@ -463,7 +463,7 @@ mod tests {
             (Square::C7, Square::C6),
             (Square::F2, Square::F4),
         ] {
-            let m = Move::new(from, to, &engine.game);
+            let m = Move::infer(from, to, &engine.game);
             engine.game.play(&m);
             let moves = engine.game.generate_all_legal_moves();
             let engine_move = engine.get_engine_move_minimax(2);

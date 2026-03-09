@@ -375,7 +375,7 @@ impl App {
 
         if self.selected_square.is_some() {
             if self.potential_targets.contains(&self.highlighted_square) {
-                let m = Move::new(
+                let m = Move::infer(
                     self.selected_square.unwrap(),
                     self.highlighted_square,
                     &self.engine.game,
