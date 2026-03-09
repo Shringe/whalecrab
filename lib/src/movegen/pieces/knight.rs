@@ -8,15 +8,11 @@ use crate::{
     square::Square,
 };
 
-use super::piece::Piece;
-
-pub struct Knight(pub Square);
-
-impl Piece for Knight {
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+impl Square {
+    pub fn knight_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
-        let rank = self.0.get_rank();
-        let file = self.0.get_file();
+        let rank = self.get_rank();
+        let file = self.get_file();
 
         let friendly = game.position.turn;
 
@@ -29,14 +25,14 @@ impl Piece for Knight {
                 }
 
                 moves.push(Move {
-                    from: self.0,
+                    from: *self,
                     to: t,
                     variant: MoveType::Normal,
                     capture: Some(piece),
                 });
             } else {
                 moves.push(Move {
-                    from: self.0,
+                    from: *self,
                     to: t,
                     variant: MoveType::Normal,
                     capture: None,
@@ -75,11 +71,11 @@ impl Piece for Knight {
         moves
     }
 
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn knight_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
-        let rank = self.0.get_rank();
-        let file = self.0.get_file();
+        let rank = self.get_rank();
+        let file = self.get_file();
 
         let enemy = game.position.turn.opponent();
 
@@ -173,7 +169,7 @@ mod tests {
             game.play(&m);
         }
 
-        let moves = Knight(avoid.from).psuedo_legal_moves(&mut game);
+        let moves = avoid.from.knight_psuedo_legal_moves(&mut game);
         assert!(!moves.contains(&avoid));
     }
 
@@ -226,7 +222,7 @@ mod tests {
             },
         ] {
             if game.position.turn == Color::White {
-                let moves = Knight(m.from).psuedo_legal_moves(&mut game);
+                let moves = m.from.knight_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -237,7 +233,7 @@ mod tests {
             game.play(&m);
         }
 
-        let moves = Knight(capture.from).psuedo_legal_moves(&mut game);
+        let moves = capture.from.knight_psuedo_legal_moves(&mut game);
 
         assert!(
             moves.contains(&capture),

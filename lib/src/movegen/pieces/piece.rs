@@ -3,7 +3,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::Move,
-        pieces::{bishop::Bishop, king::King, knight::Knight, queen::Queen, rook::Rook},
+        pieces::{bishop::Bishop, king::King, queen::Queen, rook::Rook},
     },
     rank::Rank,
     square::Square,
@@ -80,7 +80,7 @@ impl PieceType {
     pub fn psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_moves(game),
-            PieceType::Knight => Knight(square).psuedo_legal_moves(game),
+            PieceType::Knight => square.knight_psuedo_legal_moves(game),
             PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
             PieceType::Rook => Rook(square).psuedo_legal_moves(game),
             PieceType::Queen => Queen(square).psuedo_legal_moves(game),
@@ -91,7 +91,7 @@ impl PieceType {
     pub fn legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => game.legal_moves(square.pawn_psuedo_legal_moves(game)),
-            PieceType::Knight => Knight(square).legal_moves(game),
+            PieceType::Knight => game.legal_moves(square.knight_psuedo_legal_moves(game)),
             PieceType::Bishop => Bishop(square).legal_moves(game),
             PieceType::Rook => Rook(square).legal_moves(game),
             PieceType::Queen => Queen(square).legal_moves(game),
@@ -102,7 +102,7 @@ impl PieceType {
     pub fn psuedo_legal_targets_fast(&self, game: &Game, square: Square) -> PieceMoveInfo {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_targets_fast(game),
-            PieceType::Knight => Knight(square).psuedo_legal_targets_fast(game),
+            PieceType::Knight => square.knight_psuedo_legal_targets_fast(game),
             PieceType::Bishop => Bishop(square).psuedo_legal_targets_fast(game),
             PieceType::Rook => Rook(square).psuedo_legal_targets_fast(game),
             PieceType::Queen => Queen(square).psuedo_legal_targets_fast(game),
