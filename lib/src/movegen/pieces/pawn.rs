@@ -2,7 +2,7 @@ use crate::{
     bitboard::BitBoard,
     game::Game,
     movegen::{
-        moves::{Move, MoveType},
+        moves::Move,
         pieces::piece::{PieceColor, PieceMoveInfo, PieceType},
     },
     square::Square,
@@ -32,17 +32,15 @@ impl Square {
             if game.determine_piece(&oncebb).is_none() {
                 if once.get_rank() == final_rank {
                     // TODO: Add promotion for pieces other than queen
-                    moves.push(Move {
-                        from: *self,
-                        to: once,
-                        variant: MoveType::Promotion(PieceType::Queen),
+                    moves.push(Move::Promotion {
+                        at: self.get_file(),
+                        piece: PieceType::Queen,
                         capture: None,
                     });
                 } else {
-                    moves.push(Move {
+                    moves.push(Move::Normal {
                         from: *self,
                         to: once,
-                        variant: MoveType::Normal,
                         capture: None,
                     });
                 }
@@ -53,11 +51,8 @@ impl Square {
                 let twice = once.forward(&friendly).unwrap();
                 let twicebb = BitBoard::from_square(twice);
                 if game.determine_piece(&twicebb).is_none() {
-                    moves.push(Move {
-                        from: *self,
-                        to: twice,
-                        variant: MoveType::CreateEnPassant,
-                        capture: None,
+                    moves.push(Move::CreateEnPassant {
+                        at: self.get_file(),
                     });
                 }
             }
@@ -70,27 +65,23 @@ impl Square {
             .flatten()
         {
             let diagnolbb = BitBoard::from_square(diagnol);
-            // let attack_bitboard = game.get_attacks_mut(&friendly);
-            // attack_bitboard.set(diagnol);
             if let Some((piece, enemy)) = game.determine_piece(&diagnolbb) {
                 if enemy == enemy_color {
                     if diagnol.get_rank() == final_rank {
-                        moves.push(Move {
-                            from: *self,
-                            to: diagnol,
-                            variant: MoveType::Promotion(PieceType::Queen),
+                        moves.push(Move::Promotion {
+                            at: self.get_file(),
+                            piece: PieceType::Queen,
                             capture: Some(piece),
                         });
                     } else {
-                        if piece == PieceType::King {
-                            // let num_checks = game.get_num_checks_mut(&enemy);
-                            // *num_checks += 1;
-                        }
+                        // if piece == PieceType::King {
+                        //     let num_checks = game.get_num_checks_mut(&enemy);
+                        //     *num_checks += 1;
+                        // }
 
-                        moves.push(Move {
+                        moves.push(Move::Normal {
                             from: *self,
                             to: diagnol,
-                            variant: MoveType::Normal,
                             capture: Some(piece),
                         });
                     }
@@ -98,11 +89,8 @@ impl Square {
             } else if let Some(target) = game.position.en_passant_target
                 && diagnol == target
             {
-                moves.push(Move {
-                    from: *self,
-                    to: target,
-                    variant: MoveType::CaptureEnPassant,
-                    capture: None,
+                moves.push(Move::CaptureEnPassant {
+                    from: self.get_file(),
                 });
             }
         }
@@ -172,24 +160,21 @@ mod tests {
     #[test]
     fn white_pawn_sees_black_target() {
         let mut game = Game::default();
-        let looking_for = Move {
+        let looking_for = Move::Normal {
             from: Square::H4,
             to: Square::G5,
-            variant: MoveType::Normal,
             capture: Some(PieceType::Pawn),
         };
 
         for m in [
-            Move {
+            Move::Normal {
                 from: Square::H2,
                 to: Square::H4,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::G7,
                 to: Square::G5,
-                variant: MoveType::Normal,
                 capture: None,
             },
         ] {
@@ -197,15 +182,9 @@ mod tests {
         }
 
         assert_eq!(game.position.turn, PieceColor::White);
-        assert!(
-            looking_for.to.in_bitboard(&game.position.black_pawns),
-            "Black pawn not in position"
-        );
-        assert!(
-            looking_for.from.in_bitboard(&game.position.white_pawns),
-            "White pawn not in position"
-        );
-        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
+        let moves = looking_for
+            .from(&game.position)
+            .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -216,30 +195,24 @@ mod tests {
     #[test]
     fn black_pawn_sees_white_target() {
         let mut game = Game::default();
-        let looking_for = Move {
+        let looking_for = Move::Normal {
             from: Square::D5,
             to: Square::C4,
-            variant: MoveType::Normal,
             capture: Some(PieceType::Pawn),
         };
 
         for m in [
-            Move {
-                from: Square::C2,
-                to: Square::C4,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
+            Move::CreateEnPassant {
+                at: Square::C2.get_file(),
             },
-            Move {
+            Move::Normal {
                 from: Square::D7,
                 to: Square::D5,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::H2,
                 to: Square::H3,
-                variant: MoveType::Normal,
                 capture: None,
             },
         ] {
@@ -247,15 +220,9 @@ mod tests {
         }
 
         assert_eq!(game.position.turn, PieceColor::Black);
-        assert!(
-            looking_for.to.in_bitboard(&game.position.white_pawns),
-            "White pawn not in position"
-        );
-        assert!(
-            looking_for.from.in_bitboard(&game.position.black_pawns),
-            "Black pawn not in position"
-        );
-        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
+        let moves = looking_for
+            .from(&game.position)
+            .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -266,10 +233,9 @@ mod tests {
     #[test]
     fn white_pawn_sees_queen_promotion() {
         let mut game = Game::default();
-        let looking_for = Move {
-            from: Square::G7,
-            to: Square::H8,
-            variant: MoveType::Promotion(PieceType::Queen),
+        let looking_for = Move::Promotion {
+            at: Square::G7.get_file(),
+            piece: PieceType::Queen,
             capture: Some(PieceType::Rook),
         };
 
@@ -288,15 +254,9 @@ mod tests {
         }
 
         assert_eq!(game.position.turn, PieceColor::White);
-        assert!(
-            looking_for.from.in_bitboard(&game.position.white_pawns),
-            "White pawn not in position"
-        );
-        assert!(
-            looking_for.to.in_bitboard(&game.position.black_rooks),
-            "Black rook not in position"
-        );
-        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
+        let moves = looking_for
+            .from(&game.position)
+            .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",

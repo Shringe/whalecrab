@@ -47,9 +47,9 @@ mod tests {
             (Square::G2, Square::F1),
         ] {
             let m = Move::new(from, to, &game.position);
-            let frombb = BitBoard::from_square(m.from);
+            let frombb = BitBoard::from_square(m.from(&game.position));
             if matches!(game.determine_piece(&frombb), Some((PieceType::Bishop, _))) {
-                let moves = m.from.bishop_psuedo_legal_moves(&mut game);
+                let moves = m.from(&game.position).bishop_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

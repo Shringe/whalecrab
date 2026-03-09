@@ -1,10 +1,7 @@
 use crate::{
     bitboard::BitBoard,
     game::Game,
-    movegen::{
-        moves::{Move, MoveType},
-        pieces::piece::PieceMoveInfo,
-    },
+    movegen::{moves::Move, pieces::piece::PieceMoveInfo},
     square::Square,
 };
 
@@ -24,17 +21,15 @@ impl Square {
                     return;
                 }
 
-                moves.push(Move {
+                moves.push(Move::Normal {
                     from: *self,
                     to: t,
-                    variant: MoveType::Normal,
                     capture: Some(piece),
                 });
             } else {
-                moves.push(Move {
+                moves.push(Move::Normal {
                     from: *self,
                     to: t,
-                    variant: MoveType::Normal,
                     capture: None,
                 });
             }
@@ -134,95 +129,81 @@ mod tests {
     #[test]
     fn knight_cant_capture_en_passant() {
         let mut game = Game::default();
-        let avoid = Move {
-            from: Square::E5,
-            to: Square::C6,
-            variant: MoveType::CaptureEnPassant,
-            capture: None,
+        let avoid = Move::CaptureEnPassant {
+            from: Square::E5.get_file(),
         };
         for m in [
-            Move {
+            Move::Normal {
                 from: Square::G1,
                 to: Square::F3,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::A7,
                 to: Square::A5,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::F3,
                 to: Square::E5,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
-                from: Square::C7,
-                to: Square::C5,
-                variant: MoveType::CreateEnPassant,
-                capture: None,
+            Move::CreateEnPassant {
+                at: Square::C7.get_file(),
             },
         ] {
             game.play(&m);
         }
 
-        let moves = avoid.from.knight_psuedo_legal_moves(&mut game);
+        let moves = avoid
+            .from(&game.position)
+            .knight_psuedo_legal_moves(&mut game);
         assert!(!moves.contains(&avoid));
     }
 
     #[test]
     fn white_knight_captures_black_pawn() {
         let mut game = Game::default();
-        let capture = dbg!(Move {
+        let capture = dbg!(Move::Normal {
             from: Square::F5,
             to: Square::E7,
-            variant: MoveType::Normal,
             capture: Some(PieceType::Pawn),
         });
 
         for m in [
-            Move {
+            Move::Normal {
                 from: Square::G1,
                 to: Square::F3,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::A7,
                 to: Square::A6,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::F3,
                 to: Square::D4,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::A6,
                 to: Square::A5,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::D4,
                 to: Square::F5,
-                variant: MoveType::Normal,
                 capture: None,
             },
-            Move {
+            Move::Normal {
                 from: Square::A5,
                 to: Square::A4,
-                variant: MoveType::Normal,
                 capture: None,
             },
         ] {
             if game.position.turn == PieceColor::White {
-                let moves = m.from.knight_psuedo_legal_moves(&mut game);
+                let moves = m.from(&game.position).knight_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -233,7 +214,9 @@ mod tests {
             game.play(&m);
         }
 
-        let moves = capture.from.knight_psuedo_legal_moves(&mut game);
+        let moves = capture
+            .from(&game.position)
+            .knight_psuedo_legal_moves(&mut game);
 
         assert!(
             moves.contains(&capture),

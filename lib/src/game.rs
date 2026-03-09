@@ -9,9 +9,10 @@ use crate::{
     castling::CastlingRights,
     engine::score::Score,
     movegen::{
-        moves::{Move, MoveType},
+        moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
     },
+    rank::Rank,
     square::Square,
 };
 
@@ -218,10 +219,12 @@ impl Game {
     /// Finishes a turn and determines game state is possible
     pub fn next_turn(&mut self, last_move: &Move) {
         // Handle en_passant
-        self.position.en_passant_target = if last_move.variant == MoveType::CreateEnPassant {
-            last_move.to.backward(&self.position.turn)
-        } else {
-            None
+        self.position.en_passant_target = match last_move {
+            Move::CreateEnPassant { at } => match self.position.turn {
+                PieceColor::White => Some(Square::make_square(Rank::Third, *at)),
+                PieceColor::Black => Some(Square::make_square(Rank::Sixth, *at)),
+            },
+            _ => None,
         };
 
         // Update position state
@@ -249,12 +252,21 @@ impl Game {
         }
 
         // Half move timeout
-        if last_move.capture.is_some()
-            || matches!(
-                self.determine_piece(&BitBoard::from_square(last_move.to)),
-                Some((PieceType::Pawn, _))
-            )
-        {
+        let should_reset_half_move_timeout = match last_move {
+            Move::Normal { to, capture, .. } => {
+                capture.is_some()
+                    || matches!(
+                        self.determine_piece(&BitBoard::from_square(*to)),
+                        Some((PieceType::Pawn, _))
+                    )
+            }
+            Move::CreateEnPassant { .. } => true,
+            Move::CaptureEnPassant { .. } => true,
+            Move::Promotion { .. } => true,
+            Move::Castle { .. } => false,
+        };
+
+        if should_reset_half_move_timeout {
             self.position.half_move_timeout = 0;
         } else {
             self.position.half_move_timeout += 1;
@@ -448,7 +460,7 @@ impl Game {
 mod tests {
     use crate::board::{Board, State};
     use crate::game::Game;
-    use crate::movegen::moves::{Move, MoveType};
+    use crate::movegen::moves::Move;
     use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::square::Square;
     use crate::test_utils::{format_pretty_list, should_generate};
@@ -562,10 +574,9 @@ mod tests {
         let moves = game.generate_all_legal_moves();
         should_generate(
             &moves,
-            &Move {
+            &Move::Normal {
                 from: Square::A8,
                 to: Square::B8,
-                variant: MoveType::Normal,
                 capture: Some(PieceType::Rook),
             },
         );

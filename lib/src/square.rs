@@ -4,7 +4,7 @@ use std::str::FromStr;
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
 use crate::game::Game;
-use crate::movegen::moves::{Move, MoveType};
+use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::rank::Rank;
 
@@ -333,10 +333,9 @@ impl Square {
                 let sqbb = BitBoard::from_square(sq);
                 let capture = game.determine_piece(&sqbb).map(|(piece, _)| piece);
 
-                let m = Move {
+                let m = Move::Normal {
                     from: *self,
                     to: sq,
-                    variant: MoveType::Normal,
                     capture,
                 };
 

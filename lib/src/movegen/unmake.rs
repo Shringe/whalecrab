@@ -3,120 +3,143 @@ use crate::{
     castling::{self, CastleSide},
     game::Game,
     movegen::{
-        moves::{Move, MoveType},
+        moves::Move,
         pieces::piece::{PieceColor, PieceType},
     },
+    rank::Rank,
+    square::Square,
 };
 
 impl Move {
-    fn unplay_normal(&self, game: &mut Game) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let (piece, color) = game
-            .determine_piece(&tobb)
-            .expect("Couldn't find piece to unmove!");
-
-        // Move piece back
-        let pieces = game.get_pieces_mut(&piece, &color);
-        *pieces ^= tobb;
-        *pieces |= frombb;
-
-        self.handle_capture(game, &color.opponent(), tobb);
-    }
-
-    fn unplay_create_en_passant(&self, game: &mut Game) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let (piece, color) = game
-            .determine_piece(&tobb)
-            .expect("Couldn't find piece to unmove!");
-
-        // Move piece back
-        let pieces = game.get_pieces_mut(&piece, &color);
-        *pieces ^= tobb;
-        *pieces |= frombb;
-    }
-
-    fn unplay_capture_en_passant(&self, game: &mut Game) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let (piece, color) = game
-            .determine_piece(&tobb)
-            .expect("Couldn't find piece to unmove!");
-        let enemy_color = color.opponent();
-
-        // Move piece back
-        let pieces = game.get_pieces_mut(&piece, &color);
-        *pieces ^= tobb;
-        *pieces |= frombb;
-
-        // Restore the captured pawn
-        let en_passant_bb = BitBoard::from_square(
-            self.to
-                .backward(&color)
-                .expect("Can't find pawn in front of en_passant_target!"),
-        );
-        let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
-        *enemy_pawns |= en_passant_bb;
-    }
-
-    // TODO, either seperate promotion and captures, or somehow restore a potential captured piece on promotion
-    fn unplay_promotion(&self, game: &mut Game, promoted_piece: &PieceType) {
-        let frombb = BitBoard::from_square(self.from);
-        let tobb = BitBoard::from_square(self.to);
-        let color = game
-            .determine_color(&tobb)
-            .expect("Couldn't find piece to unmove!");
-
-        // Remove promoted piece from destination square
-        let promoted_pieces = game.get_pieces_mut(promoted_piece, &color);
-        *promoted_pieces ^= tobb;
-
-        // Restore original pawn
-        let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
-        *pawns |= frombb;
-        self.handle_capture(game, &color.opponent(), tobb);
-    }
-
-    fn unplay_castle(&self, game: &mut Game, castle_side: &CastleSide) {
-        let to = BitBoard::from_square(self.to);
-        let color = game
-            .determine_color(&to)
-            .expect("Couldn't find king to unmove!");
-
-        match &color {
-            PieceColor::White => match castle_side {
-                CastleSide::Queenside => {
-                    game.position.white_kings ^= castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                    game.position.white_rooks ^= castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
-                }
-                CastleSide::Kingside => {
-                    game.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                    game.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
-                }
-            },
-
-            PieceColor::Black => match castle_side {
-                CastleSide::Queenside => {
-                    game.position.black_kings ^= castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                    game.position.black_rooks ^= castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
-                }
-                CastleSide::Kingside => {
-                    game.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                    game.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
-                }
-            },
-        }
-    }
-
     /// Unplays a move on the board.
     pub fn unplay(&self, game: &mut Game) {
-        match &self.variant {
-            MoveType::Normal => self.unplay_normal(game),
-            MoveType::CreateEnPassant => self.unplay_create_en_passant(game),
-            MoveType::CaptureEnPassant => self.unplay_capture_en_passant(game),
-            MoveType::Promotion(piece_type) => self.unplay_promotion(game, piece_type),
-            MoveType::Castle(castle_side) => self.unplay_castle(game, castle_side),
+        match self {
+            Move::Normal { from, to, capture } => {
+                let frombb = BitBoard::from_square(*from);
+                let tobb = BitBoard::from_square(*to);
+                let (piece, color) = game
+                    .determine_piece(&tobb)
+                    .expect("Couldn't find piece to unmove!");
+
+                let pieces = game.get_pieces_mut(&piece, &color);
+                *pieces ^= tobb;
+                *pieces |= frombb;
+
+                if let Some(enemy) = capture {
+                    let pieces = game.get_pieces_mut(enemy, &color.opponent());
+                    *pieces |= tobb;
+                }
+            }
+            Move::CreateEnPassant { at } => {
+                let color = game.position.turn.opponent();
+                let (from, to) = match color {
+                    PieceColor::White => (
+                        Square::make_square(Rank::Second, *at),
+                        Square::make_square(Rank::Fourth, *at),
+                    ),
+                    PieceColor::Black => (
+                        Square::make_square(Rank::Seventh, *at),
+                        Square::make_square(Rank::Fifth, *at),
+                    ),
+                };
+
+                let frombb = BitBoard::from_square(from);
+                let tobb = BitBoard::from_square(to);
+                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                *pawns ^= tobb;
+                *pawns |= frombb;
+            }
+            Move::CaptureEnPassant { from: from_file } => {
+                let color = game.position.turn.opponent();
+                let enemy_color = color.opponent();
+                let (from, to) = match color {
+                    PieceColor::White => (
+                        Square::make_square(Rank::Fifth, *from_file),
+                        game.position
+                            .en_passant_target
+                            .expect("CaptureEnPassant unplayed with no en passant target"),
+                    ),
+                    PieceColor::Black => (
+                        Square::make_square(Rank::Fourth, *from_file),
+                        game.position
+                            .en_passant_target
+                            .expect("CaptureEnPassant unplayed with no en passant target"),
+                    ),
+                };
+
+                let frombb = BitBoard::from_square(from);
+                let tobb = BitBoard::from_square(to);
+
+                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                *pawns ^= tobb;
+                *pawns |= frombb;
+
+                // Restore the captured pawn
+                let captured_pawn_bb = BitBoard::from_square(
+                    to.backward(&color)
+                        .expect("Can't find pawn behind en_passant_target!"),
+                );
+                let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &enemy_color);
+                *enemy_pawns |= captured_pawn_bb;
+            }
+            Move::Promotion { at, piece, capture } => {
+                let color = game.position.turn.opponent();
+                let (from, to) = match color {
+                    PieceColor::White => (
+                        Square::make_square(Rank::Seventh, *at),
+                        Square::make_square(Rank::Eighth, *at),
+                    ),
+                    PieceColor::Black => (
+                        Square::make_square(Rank::Second, *at),
+                        Square::make_square(Rank::First, *at),
+                    ),
+                };
+
+                let frombb = BitBoard::from_square(from);
+                let tobb = BitBoard::from_square(to);
+
+                // Remove promoted piece from destination square
+                let promoted_pieces = game.get_pieces_mut(piece, &color);
+                *promoted_pieces ^= tobb;
+
+                // Restore original pawn
+                let pawns = game.get_pieces_mut(&PieceType::Pawn, &color);
+                *pawns |= frombb;
+
+                if let Some(enemy) = capture {
+                    let pieces = game.get_pieces_mut(enemy, &color.opponent());
+                    *pieces |= tobb;
+                }
+            }
+            Move::Castle { side } => {
+                let color = game.position.turn.opponent();
+                match color {
+                    PieceColor::White => match side {
+                        CastleSide::Queenside => {
+                            game.position.white_kings ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                            game.position.white_rooks ^=
+                                castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                        }
+                        CastleSide::Kingside => {
+                            game.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                            game.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                        }
+                    },
+                    PieceColor::Black => match side {
+                        CastleSide::Queenside => {
+                            game.position.black_kings ^=
+                                castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                            game.position.black_rooks ^=
+                                castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                        }
+                        CastleSide::Kingside => {
+                            game.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                            game.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                        }
+                    },
+                }
+            }
         }
 
         game.restore_position();

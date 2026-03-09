@@ -1,8 +1,4 @@
-use crate::{
-    bitboard::BitBoard,
-    movegen::moves::{Move, MoveType},
-    square::Square,
-};
+use crate::{bitboard::BitBoard, square::Square};
 
 pub const BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR: BitBoard =
     BitBoard(0b01100000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
@@ -31,6 +27,11 @@ pub const WHITE_CASTLE_KINGSIDE_KING_TO_BB: BitBoard =
 pub const WHITE_CASTLE_QUEENSIDE_KING_TO_BB: BitBoard =
     BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000100);
 
+pub const BLACK_CASTLE_KINGSIDE_KING_TO: Square = Square::G8;
+pub const BLACK_CASTLE_QUEENSIDE_KING_TO: Square = Square::C8;
+pub const WHITE_CASTLE_KINGSIDE_KING_TO: Square = Square::G1;
+pub const WHITE_CASTLE_QUEENSIDE_KING_TO: Square = Square::C1;
+
 pub const BLACK_CASTLE_KINGSIDE_ROOK_MOVES: BitBoard =
     BitBoard(0b10100000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
 pub const BLACK_CASTLE_QUEENSIDE_ROOK_MOVES: BitBoard =
@@ -39,34 +40,6 @@ pub const WHITE_CASTLE_KINGSIDE_ROOK_MOVES: BitBoard =
     BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_10100000);
 pub const WHITE_CASTLE_QUEENSIDE_ROOK_MOVES: BitBoard =
     BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001001);
-
-pub const WHITE_CASTLES_QUEENSIDE: Move = Move {
-    from: Square::E1,
-    to: Square::C1,
-    variant: MoveType::Castle(CastleSide::Queenside),
-    capture: None,
-};
-
-pub const WHITE_CASTLES_KINGSIDE: Move = Move {
-    from: Square::E1,
-    to: Square::G1,
-    variant: MoveType::Castle(CastleSide::Kingside),
-    capture: None,
-};
-
-pub const BLACK_CASTLES_QUEENSIDE: Move = Move {
-    from: Square::E8,
-    to: Square::C8,
-    variant: MoveType::Castle(CastleSide::Queenside),
-    capture: None,
-};
-
-pub const BLACK_CASTLES_KINGSIDE: Move = Move {
-    from: Square::E8,
-    to: Square::G8,
-    variant: MoveType::Castle(CastleSide::Kingside),
-    capture: None,
-};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CastleSide {

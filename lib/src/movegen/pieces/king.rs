@@ -2,10 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling,
     game::Game,
-    movegen::{
-        moves::{Move, MoveType},
-        pieces::piece::PieceColor,
-    },
+    movegen::{moves::Move, pieces::piece::PieceColor},
     square::{ALL_DIRECTIONS, Square},
 };
 
@@ -22,23 +19,19 @@ impl Square {
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.walk(&d) {
                 let sqbb = BitBoard::from_square(sq);
-                // let attack_bitboard = game.get_attacks_mut(&friendly);
-                // attack_bitboard.set(sq);
 
                 if let Some((piece, color)) = game.determine_piece(&sqbb) {
                     if color == enemy {
-                        moves.push(Move {
+                        moves.push(Move::Normal {
                             from: *self,
                             to: sq,
-                            variant: MoveType::Normal,
                             capture: Some(piece),
                         })
                     }
                 } else {
-                    moves.push(Move {
+                    moves.push(Move::Normal {
                         from: *self,
                         to: sq,
-                        variant: MoveType::Normal,
                         capture: None,
                     })
                 }
@@ -51,13 +44,17 @@ impl Square {
                 if game.position.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(castling::WHITE_CASTLES_QUEENSIDE);
+                    moves.push(Move::Castle {
+                        side: castling::CastleSide::Queenside,
+                    });
                 }
 
                 if game.position.castling_rights.white_kingside
                     && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(castling::WHITE_CASTLES_KINGSIDE);
+                    moves.push(Move::Castle {
+                        side: castling::CastleSide::Kingside,
+                    });
                 }
             }
 
@@ -65,13 +62,17 @@ impl Square {
                 if game.position.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(castling::BLACK_CASTLES_QUEENSIDE);
+                    moves.push(Move::Castle {
+                        side: castling::CastleSide::Queenside,
+                    });
                 }
 
                 if game.position.castling_rights.black_kingside
                     && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
-                    moves.push(castling::BLACK_CASTLES_KINGSIDE);
+                    moves.push(Move::Castle {
+                        side: castling::CastleSide::Kingside,
+                    });
                 }
             }
         }
@@ -146,11 +147,19 @@ mod tests {
             Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
                 .unwrap(),
         );
-        let moves = castling::WHITE_CASTLES_KINGSIDE
-            .from
-            .king_psuedo_legal_moves(&mut game);
-        should_generate(&moves, &castling::WHITE_CASTLES_KINGSIDE);
-        shouldnt_generate(&moves, &castling::WHITE_CASTLES_QUEENSIDE);
+        let moves = Square::E1.king_psuedo_legal_moves(&mut game);
+        should_generate(
+            &moves,
+            &Move::Castle {
+                side: castling::CastleSide::Kingside,
+            },
+        );
+        shouldnt_generate(
+            &moves,
+            &Move::Castle {
+                side: castling::CastleSide::Queenside,
+            },
+        );
     }
 
     #[test]
@@ -159,11 +168,19 @@ mod tests {
             Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
                 .unwrap(),
         );
-        let moves = castling::BLACK_CASTLES_QUEENSIDE
-            .from
-            .king_psuedo_legal_moves(&mut game);
-        should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
-        shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
+        let moves = Square::E8.king_psuedo_legal_moves(&mut game);
+        should_generate(
+            &moves,
+            &Move::Castle {
+                side: castling::CastleSide::Queenside,
+            },
+        );
+        shouldnt_generate(
+            &moves,
+            &Move::Castle {
+                side: castling::CastleSide::Kingside,
+            },
+        );
     }
 
     #[test]
@@ -182,9 +199,7 @@ mod tests {
         expected.attacks.set(Square::D7);
         expected.attacks.set(Square::E7);
 
-        let actual = castling::BLACK_CASTLES_QUEENSIDE
-            .from
-            .king_psuedo_legal_targets_fast(&game);
+        let actual = Square::E8.king_psuedo_legal_targets_fast(&game);
         assert_eq!(actual, expected);
     }
 
@@ -201,9 +216,9 @@ mod tests {
             (Square::E7, Square::F6),
         ] {
             let m = Move::new(from, to, &game.position);
-            let frombb = BitBoard::from_square(m.from);
+            let frombb = BitBoard::from_square(from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
-                let moves = m.from.king_psuedo_legal_moves(&mut game);
+                let moves = from.king_psuedo_legal_moves(&mut game);
                 should_generate(&moves, &m);
             }
             game.play(&m);

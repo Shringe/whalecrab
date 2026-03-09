@@ -3,10 +3,7 @@ use crate::{
     board::State,
     engine::score::Score,
     game::Game,
-    movegen::{
-        moves::{Move, MoveType},
-        pieces::piece::PieceColor,
-    },
+    movegen::{moves::Move, pieces::piece::PieceColor},
     square::Square,
 };
 
@@ -43,10 +40,10 @@ macro_rules! search_move {
 fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
     // return moves;
 
-    moves.sort_unstable_by_key(|m| match m.variant {
-        MoveType::Promotion(_) => 0,
-        _ if m.capture.is_some() => 1,
-        MoveType::Castle(_) => 2,
+    moves.sort_unstable_by_key(|m| match m {
+        Move::Promotion { .. } => 0,
+        _ if m.is_capture() => 1,
+        Move::Castle { .. } => 2,
         _ => 3,
     });
 
@@ -282,11 +279,7 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use super::*;
-    use crate::{
-        board::Board,
-        movegen::{moves::MoveType, pieces::piece::PieceType},
-        square::Square,
-    };
+    use crate::{board::Board, movegen::pieces::piece::PieceType, square::Square};
 
     /// Used for determining cache hit/miss
     fn time_grading(game: &mut Game) -> (Score, Duration) {
@@ -330,8 +323,17 @@ mod tests {
         for m in white_moves {
             m.play(&mut game);
             let result = game.get_engine_move_minimax(0).unwrap();
-            assert_eq!(result.variant, MoveType::Normal);
-            assert_eq!(result.capture, Some(PieceType::King));
+            assert!(
+                matches!(
+                    result,
+                    Move::Normal {
+                        capture: Some(PieceType::King),
+                        ..
+                    }
+                ),
+                "Expected black to capture the king, got {:?}",
+                result
+            );
             m.unplay(&mut game);
         }
     }

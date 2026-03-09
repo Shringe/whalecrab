@@ -137,7 +137,7 @@ fn main() {
                         }
                     };
 
-                    let best_move_uci = best_move.to_uci();
+                    let best_move_uci = best_move.to_uci(&game.position);
                     log!("Playing engine move: {}", best_move);
                     log!("Fen before playing the move: {}", game.position.to_fen());
                     uci_send!("bestmove {}", best_move_uci);

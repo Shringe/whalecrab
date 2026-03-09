@@ -118,13 +118,14 @@ impl Game {
         let king_attackers = self.attackers(king);
 
         for m in psuedo_legal {
-            let frombb = BitBoard::from_square(m.from);
-            let tobb = BitBoard::from_square(m.to);
-            let (piece, _) = self
-                .determine_piece(&frombb)
-                .expect("Can't move nonexisting piece!");
+            let frombb = BitBoard::from_square(m.from(&self.position));
+            let tobb = BitBoard::from_square(m.to(&self.position));
 
-            let is_moving_king = piece == PieceType::King;
+            let is_moving_king = matches!(m, Move::Castle { .. })
+                || self
+                    .determine_piece(&frombb)
+                    .map(|(piece, _)| piece == PieceType::King)
+                    .unwrap_or(false);
 
             // Handle being in check
             match king_attackers.popcnt() {
@@ -132,7 +133,7 @@ impl Game {
                     let is_blocking = (between_two_squares(king, king_attackers.to_square())
                         & checks)
                         .has_square(&tobb);
-                    let is_capturing = m.capture.is_some();
+                    let is_capturing = m.is_capture();
                     let is_capturing_attacking_piece =
                         is_capturing && king_attackers.has_square(&tobb);
 
@@ -173,7 +174,7 @@ mod tests {
 
     use crate::{
         board::{Board, State},
-        movegen::moves::{MoveType, get_targets},
+        movegen::moves::get_targets,
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
     };
@@ -274,7 +275,8 @@ mod tests {
 
         for m in legal_moves {
             assert_eq!(
-                m.from, king,
+                m.from(&game.position),
+                king,
                 "Tried to move piece other than queen while double check. {}",
                 m
             );
@@ -287,7 +289,8 @@ mod tests {
         let mut illegal_moves = HashMap::new();
         for (i, to_play) in game_turns.iter().enumerate() {
             let to_play = Move::new(to_play.0, to_play.1, &game.position);
-            let frombb = BitBoard::from_square(to_play.from);
+            let to_play_from = to_play.from(&game.position);
+            let frombb = BitBoard::from_square(to_play_from);
             let fen = game.position.to_fen();
             let psuedo_legal_moves = game.generate_all_psuedo_legal_moves();
             let legal_moves = game.generate_all_legal_moves();
@@ -317,7 +320,7 @@ mod tests {
             } else {
                 let short = format!(
                     "Move: {}, Turn: {}. Tried to move nonexistant piece at square: {}\n  {}",
-                    move_num, turn, to_play.from, fen
+                    move_num, turn, to_play_from, fen
                 );
                 let long = short.clone();
                 psuedo_illegal_moves.insert(short, long);
@@ -325,11 +328,14 @@ mod tests {
             };
 
             let piece_attacks = BitBoard::from_square_vec(get_targets(
-                piece.psuedo_legal_moves(&mut game, &to_play.from),
+                piece.psuedo_legal_moves(&mut game, &to_play_from),
+                &game.position,
             ));
 
-            let piece_attacks_legal =
-                BitBoard::from_square_vec(get_targets(piece.legal_moves(&mut game, &to_play.from)));
+            let piece_attacks_legal = BitBoard::from_square_vec(get_targets(
+                piece.legal_moves(&mut game, &to_play_from),
+                &game.position,
+            ));
 
             if !legal_moves.contains(&to_play) {
                 let short = format!(
@@ -367,8 +373,8 @@ Available moves: {}
 ",
                     piece,
                     color,
-                    to_play.from,
-                    to_play.to,
+                    to_play_from,
+                    to_play.to(&game.position),
                     piece_attacks,
                     piece_attacks_legal,
                     game.white_check_rays,
@@ -524,16 +530,14 @@ Available moves: {}
         let mut game = Game::from_position(Board::from_fen(fen).unwrap());
         let moves = game.generate_all_legal_moves();
         let possible_moves = vec![
-            Move {
+            Move::Normal {
                 from: Square::D1,
                 to: Square::D2,
-                variant: MoveType::Normal,
                 capture: Some(PieceType::Pawn),
             },
-            Move {
+            Move::Normal {
                 from: Square::C1,
                 to: Square::D2,
-                variant: MoveType::Normal,
                 capture: Some(PieceType::Pawn),
             },
         ];
