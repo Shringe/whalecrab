@@ -49,7 +49,7 @@ mod tests {
             let m = Move::infer(from, to, &game);
             let frombb = BitBoard::from_square(m.from(&game));
             if matches!(game.determine_piece(&frombb), Some((PieceType::Rook, _))) {
-                let moves = m.from(&game).rook_psuedo_legal_moves(&mut game);
+                let moves = m.from(&game).rook_psuedo_legal_moves(&game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

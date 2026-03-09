@@ -283,7 +283,7 @@ mod tests {
         }
     }
 
-    fn ensure_legal_game(mut game: Game, game_turns: &Vec<(Square, Square)>) {
+    fn ensure_legal_game(mut game: Game, game_turns: &[(Square, Square)]) {
         let mut move_num = 0;
         let mut psuedo_illegal_moves = HashMap::new();
         let mut illegal_moves = HashMap::new();
@@ -328,12 +328,12 @@ mod tests {
             };
 
             let piece_attacks = BitBoard::from_square_vec(get_targets(
-                piece.psuedo_legal_moves(&mut game, &to_play_from),
+                piece.psuedo_legal_moves(&game, &to_play_from),
                 &game,
             ));
 
             let piece_attacks_legal = BitBoard::from_square_vec(get_targets(
-                piece.legal_moves(&mut game, &to_play_from),
+                piece.legal_moves(&game, &to_play_from),
                 &game,
             ));
 
@@ -397,7 +397,7 @@ Available moves: {}
                 panic!("{}\n{}", short, long);
             }
             _ => {
-                for (short, _) in &psuedo_illegal_moves {
+                for short in psuedo_illegal_moves.keys() {
                     println!("{}", short);
                 }
                 panic!(
@@ -414,7 +414,7 @@ Available moves: {}
                 panic!("{}\n{}", short, long);
             }
             _ => {
-                for (short, _) in &illegal_moves {
+                for short in illegal_moves.keys() {
                     println!("{}", short);
                 }
                 panic!("{} illegal moves were found", illegal_moves.len());
@@ -529,7 +529,7 @@ Available moves: {}
         let fen = "r2q1rk1/p2n1pp1/1p3n1p/2b5/8/1R3P1N/P2pP1PP/2BQKB1R w K - 0 14";
         let mut game = Game::from_fen(fen).unwrap();
         let moves = game.generate_all_legal_moves();
-        let possible_moves = vec![
+        let possible_moves = [
             Move::Normal {
                 from: Square::D1,
                 to: Square::D2,

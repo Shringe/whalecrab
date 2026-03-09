@@ -143,8 +143,8 @@ mod tests {
     #[test]
     fn white_sees_castling_kingside() {
         let fen = "r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6";
-        let mut game = Game::from_fen(fen).unwrap();
-        let moves = Square::E1.king_psuedo_legal_moves(&mut game);
+        let game = Game::from_fen(fen).unwrap();
+        let moves = Square::E1.king_psuedo_legal_moves(&game);
         should_generate(
             &moves,
             &Move::Castle {
@@ -162,8 +162,8 @@ mod tests {
     #[test]
     fn black_sees_castling_queenside() {
         let fen = "r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6";
-        let mut game = Game::from_fen(fen).unwrap();
-        let moves = Square::E8.king_psuedo_legal_moves(&mut game);
+        let game = Game::from_fen(fen).unwrap();
+        let moves = Square::E8.king_psuedo_legal_moves(&game);
         should_generate(
             &moves,
             &Move::Castle {
@@ -211,7 +211,7 @@ mod tests {
             let m = Move::infer(from, to, &game);
             let frombb = BitBoard::from_square(from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
-                let moves = from.king_psuedo_legal_moves(&mut game);
+                let moves = from.king_psuedo_legal_moves(&game);
                 should_generate(&moves, &m);
             }
             game.play(&m);

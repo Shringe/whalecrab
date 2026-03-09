@@ -451,9 +451,9 @@ mod tests {
         let second = Square::H1;
         let empty = Square::G3;
 
-        assert!(first.in_bitboard(&occupied));
-        assert!(second.in_bitboard(&occupied));
-        assert!(!empty.in_bitboard(&occupied));
+        assert!(first.in_bitboard(occupied));
+        assert!(second.in_bitboard(occupied));
+        assert!(!empty.in_bitboard(occupied));
     }
 
     #[test]

@@ -39,64 +39,6 @@ pub enum Move {
     },
 }
 
-impl Move {
-    /// Returns the destination square of the move. Consumes self
-    pub fn to(self, game: &Game) -> Square {
-        match self {
-            Move::Normal { to, .. } => to,
-            Move::CreateEnPassant { at } => match game.turn {
-                PieceColor::White => Square::make_square(Rank::Fourth, at),
-                PieceColor::Black => Square::make_square(Rank::Fifth, at),
-            },
-            Move::CaptureEnPassant { .. } => game.en_passant_target.expect(
-                "A CaptureEnpassant move was created despite there being no en_passant target on the board",
-            ),
-            Move::Promotion { to, .. } => match game.turn {
-                PieceColor::White => Square::make_square(Rank::Eighth, to),
-                PieceColor::Black => Square::make_square(Rank::First, to),
-            }
-            Move::Castle { side } => match (game.turn, side) {
-                (PieceColor::White, CastleSide::Queenside) => castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
-                (PieceColor::White, CastleSide::Kingside) => castling::WHITE_CASTLE_KINGSIDE_KING_TO,
-                (PieceColor::Black, CastleSide::Queenside) => castling::BLACK_CASTLE_QUEENSIDE_KING_TO,
-                (PieceColor::Black, CastleSide::Kingside) => castling::BLACK_CASTLE_KINGSIDE_KING_TO,
-            }
-        }
-    }
-
-    /// Returns the source square of the move. Consumes self
-    pub fn from(self, game: &Game) -> Square {
-        match self {
-            Move::Normal { from, .. } => from,
-            Move::CreateEnPassant { at } => match game.turn {
-                PieceColor::White => Square::make_square(Rank::Second, at),
-                PieceColor::Black => Square::make_square(Rank::Seventh, at),
-            },
-            Move::CaptureEnPassant { from } => match game.turn {
-                PieceColor::White => Square::make_square(Rank::Fifth, from),
-                PieceColor::Black => Square::make_square(Rank::Fourth, from),
-            },
-            Move::Promotion { from, .. } => match game.turn {
-                PieceColor::White => Square::make_square(Rank::Seventh, from),
-                PieceColor::Black => Square::make_square(Rank::Second, from),
-            },
-            Move::Castle { .. } => match game.turn {
-                PieceColor::White => Square::E1,
-                PieceColor::Black => Square::E8,
-            },
-        }
-    }
-
-    /// Returns true if the move captures a piece
-    pub fn is_capture(&self) -> bool {
-        match self {
-            Move::Normal { capture, .. } => capture.is_some(),
-            Move::Promotion { capture, .. } => capture.is_some(),
-            _ => false,
-        }
-    }
-}
-
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -212,6 +154,62 @@ impl Move {
                     }
                 }
             }
+        }
+    }
+
+    /// Returns the destination square of the move. Consumes self
+    pub fn to(self, game: &Game) -> Square {
+        match self {
+            Move::Normal { to, .. } => to,
+            Move::CreateEnPassant { at } => match game.turn {
+                PieceColor::White => Square::make_square(Rank::Fourth, at),
+                PieceColor::Black => Square::make_square(Rank::Fifth, at),
+            },
+            Move::CaptureEnPassant { .. } => game.en_passant_target.expect(
+                "A CaptureEnpassant move was created despite there being no en_passant target on the board",
+            ),
+            Move::Promotion { to, .. } => match game.turn {
+                PieceColor::White => Square::make_square(Rank::Eighth, to),
+                PieceColor::Black => Square::make_square(Rank::First, to),
+            }
+            Move::Castle { side } => match (game.turn, side) {
+                (PieceColor::White, CastleSide::Queenside) => castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
+                (PieceColor::White, CastleSide::Kingside) => castling::WHITE_CASTLE_KINGSIDE_KING_TO,
+                (PieceColor::Black, CastleSide::Queenside) => castling::BLACK_CASTLE_QUEENSIDE_KING_TO,
+                (PieceColor::Black, CastleSide::Kingside) => castling::BLACK_CASTLE_KINGSIDE_KING_TO,
+            }
+        }
+    }
+
+    /// Returns the source square of the move. Consumes self
+    pub fn from(self, game: &Game) -> Square {
+        match self {
+            Move::Normal { from, .. } => from,
+            Move::CreateEnPassant { at } => match game.turn {
+                PieceColor::White => Square::make_square(Rank::Second, at),
+                PieceColor::Black => Square::make_square(Rank::Seventh, at),
+            },
+            Move::CaptureEnPassant { from } => match game.turn {
+                PieceColor::White => Square::make_square(Rank::Fifth, from),
+                PieceColor::Black => Square::make_square(Rank::Fourth, from),
+            },
+            Move::Promotion { from, .. } => match game.turn {
+                PieceColor::White => Square::make_square(Rank::Seventh, from),
+                PieceColor::Black => Square::make_square(Rank::Second, from),
+            },
+            Move::Castle { .. } => match game.turn {
+                PieceColor::White => Square::E1,
+                PieceColor::Black => Square::E8,
+            },
+        }
+    }
+
+    /// Returns true if the move captures a piece
+    pub fn is_capture(&self) -> bool {
+        match self {
+            Move::Normal { capture, .. } => capture.is_some(),
+            Move::Promotion { capture, .. } => capture.is_some(),
+            _ => false,
         }
     }
 

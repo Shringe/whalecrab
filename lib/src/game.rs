@@ -875,13 +875,13 @@ mod tests {
         let mut game = Game::default();
         loop {
             let moves = game.generate_all_legal_moves();
-            let m = match moves.get(0) {
+            let m = match moves.first() {
                 Some(m) => m,
                 None => break,
             };
 
             println!("Playing: {}", m);
-            game.play(&m);
+            game.play(m);
         }
 
         let moves_left = game.generate_all_legal_moves();

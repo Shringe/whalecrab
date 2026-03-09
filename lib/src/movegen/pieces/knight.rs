@@ -155,9 +155,7 @@ mod tests {
             game.play(&m);
         }
 
-        let moves = avoid
-            .from(&game)
-            .knight_psuedo_legal_moves(&mut game);
+        let moves = avoid.from(&game).knight_psuedo_legal_moves(&game);
         assert!(!moves.contains(&avoid));
     }
 
@@ -203,7 +201,7 @@ mod tests {
             },
         ] {
             if game.turn == PieceColor::White {
-                let moves = m.from(&game).knight_psuedo_legal_moves(&mut game);
+                let moves = m.from(&game).knight_psuedo_legal_moves(&game);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -214,9 +212,7 @@ mod tests {
             game.play(&m);
         }
 
-        let moves = capture
-            .from(&game)
-            .knight_psuedo_legal_moves(&mut game);
+        let moves = capture.from(&game).knight_psuedo_legal_moves(&game);
 
         assert!(
             moves.contains(&capture),
