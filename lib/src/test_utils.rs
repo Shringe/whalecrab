@@ -104,7 +104,7 @@ pub fn shouldnt_generate(moves: &Vec<Move>, m: &Move) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{board::STARTING_FEN, square::Square};
+    use crate::{game::STARTING_FEN, square::Square};
 
     use super::*;
 

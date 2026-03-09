@@ -150,8 +150,8 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::board::State;
     use crate::file::File;
+    use crate::game::State;
     use crate::square::Square;
     use crate::test_utils::compare_games;
 

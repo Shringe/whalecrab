@@ -173,7 +173,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        board::State,
+        game::State,
         movegen::moves::get_targets,
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},

@@ -6,8 +6,8 @@ use crate::{
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
-    board::State,
     game::Game,
+    game::State,
     movegen::{moves::Move, pieces::piece::PieceColor},
     square::Square,
 };
