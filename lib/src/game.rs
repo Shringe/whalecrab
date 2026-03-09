@@ -70,32 +70,7 @@ pub struct Game {
 
 impl PartialEq for Game {
     fn eq(&self, other: &Self) -> bool {
-        self.white_pawns == other.white_pawns
-            && self.white_knights == other.white_knights
-            && self.white_bishops == other.white_bishops
-            && self.white_rooks == other.white_rooks
-            && self.white_queens == other.white_queens
-            && self.white_kings == other.white_kings
-            && self.black_pawns == other.black_pawns
-            && self.black_knights == other.black_knights
-            && self.black_bishops == other.black_bishops
-            && self.black_rooks == other.black_rooks
-            && self.black_queens == other.black_queens
-            && self.black_kings == other.black_kings
-            && self.en_passant_target == other.en_passant_target
-            && self.turn == other.turn
-            && self.castling_rights == other.castling_rights
-            && self.half_move_timeout == other.half_move_timeout
-            && self.full_move_clock == other.full_move_clock
-            && self.state == other.state
-            && self.white_occupied == other.white_occupied
-            && self.black_occupied == other.black_occupied
-            && self.occupied == other.occupied
-            && self.position_history == other.position_history
-            && self.white_attacks == other.white_attacks
-            && self.black_attacks == other.black_attacks
-            && self.white_check_rays == other.white_check_rays
-            && self.black_check_rays == other.black_check_rays
+        self.hash == other.hash
     }
 }
 
@@ -115,9 +90,7 @@ impl Hash for Game {
         self.black_kings.hash(state);
         self.turn.hash(state);
         self.castling_rights.hash(state);
-        // TODO: En passant target should probably be hashed, but uncommenting this breaks things
-        // by messing up the hashes in self.seen_positions and triggering false Repetitions
-        // self.en_passant_target.hash(state);
+        self.en_passant_target.hash(state);
     }
 }
 
@@ -925,12 +898,13 @@ mod tests {
     fn en_passant_fen() {
         let mut game = Game::default();
 
-        for m in [
-            Move::new(Square::E2, Square::E4, &game),
-            Move::new(Square::D7, Square::D5, &game),
-            Move::new(Square::E4, Square::E5, &game),
-            Move::new(Square::F7, Square::F5, &game),
+        for (from, to) in [
+            (Square::E2, Square::E4),
+            (Square::D7, Square::D5),
+            (Square::E4, Square::E5),
+            (Square::F7, Square::F5),
         ] {
+            let m = Move::new(from, to, &game);
             game.play(&m);
         }
 

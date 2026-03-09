@@ -75,9 +75,9 @@ pub fn compare_games(before: &Game, after: &Game) {
 
 /// Compares and actual board to one generated from a fen
 #[track_caller]
-pub fn compare_to_fen(board: &Game, fen: &str) {
+pub fn compare_to_fen(game: &Game, fen: &str) {
     let fen_board = &Game::from_fen(fen).unwrap();
-    assert_eq!(board, fen_board);
+    assert_eq!(game, fen_board);
 }
 
 /// Asserts that moves contains m
