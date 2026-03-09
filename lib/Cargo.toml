@@ -4,10 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [[bench]]
-name = "evaluation"
-harness = false
-
-[[bench]]
 name = "movegen"
 harness = false
 

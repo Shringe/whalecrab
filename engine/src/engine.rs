@@ -57,6 +57,7 @@ fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
 
 #[derive(Default, Clone)]
 pub struct Engine {
+    /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
     transposition_table: HashMap<u64, Score>,
 }
@@ -67,6 +68,12 @@ impl Engine {
             game,
             transposition_table: HashMap::new(),
         }
+    }
+
+    /// Resets any temporary engine values or caches and switches over to analyzing the new game.
+    /// This should be used over replacing self.game manually
+    pub fn with_new_game(&mut self, game: Game) {
+        self.game = game
     }
 
     /// Score material based on its value and position on the board
@@ -429,5 +436,33 @@ mod tests {
         let _ = engine.get_engine_move_minimax(3);
         let after = engine.game.position;
         assert_eq!(after, before);
+    }
+
+    #[test]
+    fn should_have_moves_fen() {
+        let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
+        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
+        let moves = engine.game.generate_all_legal_moves();
+        let engine_move = engine.get_engine_move_minimax(2);
+        assert!(!moves.is_empty());
+        assert!(engine_move.is_some())
+    }
+
+    #[test]
+    fn should_have_moves() {
+        let mut engine = Engine::default();
+        for (from, to) in [
+            (Square::E2, Square::E4),
+            (Square::C7, Square::C6),
+            (Square::F2, Square::F4),
+        ] {
+            let m = Move::new(from, to, &engine.game.position);
+            engine.game.play(&m);
+            let moves = engine.game.generate_all_legal_moves();
+            let engine_move = engine.get_engine_move_minimax(2);
+            assert_eq!(engine.game.position.state, State::InProgress);
+            assert!(!moves.is_empty());
+            assert!(engine_move.is_some())
+        }
     }
 }

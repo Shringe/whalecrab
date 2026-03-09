@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 whalecrab_lib = { path = "../lib" }
+whalecrab_engine = { path = "../engine" }

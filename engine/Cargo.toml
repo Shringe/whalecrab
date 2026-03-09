@@ -3,5 +3,12 @@ name = "whalecrab_engine"
 version = "0.0.1"
 edition.workspace = true
 
+[[bench]]
+name = "evaluation"
+harness = false
+
 [dependencies]
 whalecrab_lib = { path = "../lib" }
+
+[dev-dependencies]
+criterion = { version = "0.7.0", features = ["html_reports"] }

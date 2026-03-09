@@ -72,7 +72,6 @@ pub fn compare_games(before: &Game, after: &Game) {
         "{:?}"
     );
     assert_push!(differences, before, after, position_history, "{:?}");
-    assert_push!(differences, before, after, transposition_table, "{:?}");
 
     if !differences.is_empty() {
         panic!(

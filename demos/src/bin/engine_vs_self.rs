@@ -1,15 +1,15 @@
-use whalecrab_lib::game::Game;
+use whalecrab_engine::engine::Engine;
 
 fn main() {
-    let mut game = Game::default();
+    let mut engine = Engine::default();
 
     for _ in 0..100 {
-        let m = game.get_engine_move_minimax(2).unwrap();
+        let m = engine.get_engine_move_minimax(2).unwrap();
         println!("Chose to play: {}", m);
-        game.play(&m);
+        engine.game.play(&m);
     }
 
     println!("=========================");
-    println!("Final score: {}", game.grade_position());
-    println!("Final fen: {}", game.position.to_fen());
+    println!("Final score: {}", engine.grade_position());
+    println!("Final fen: {}", engine.game.position.to_fen());
 }

@@ -1,15 +1,16 @@
 use rand::Rng;
-use whalecrab_lib::{game::Game, movegen::pieces::piece::PieceColor};
+use whalecrab_engine::engine::Engine;
+use whalecrab_lib::movegen::pieces::piece::PieceColor;
 
 fn main() {
-    let mut game = Game::default();
+    let mut engine = Engine::default();
     let mut rng = rand::rng();
 
     for _ in 0..100 {
-        let m = match game.position.turn {
-            PieceColor::White => game.get_engine_move_minimax(2),
+        let m = match engine.game.position.turn {
+            PieceColor::White => engine.get_engine_move_minimax(2),
             PieceColor::Black => {
-                let moves = game.generate_all_legal_moves();
+                let moves = engine.game.generate_all_legal_moves();
                 if moves.is_empty() {
                     None
                 } else {
@@ -23,16 +24,16 @@ fn main() {
         match m {
             Some(m) => {
                 println!("Chose to play: {}", m);
-                game.play(&m);
+                engine.game.play(&m);
             }
             None => {
-                println!("Game ended in {:?}.", game.position.state);
+                println!("Game ended in {:?}.", engine.game.position.state);
                 break;
             }
         }
     }
 
     println!("=========================");
-    println!("Final score: {}", game.grade_position());
-    println!("Final fen: {}", game.position.to_fen());
+    println!("Final score: {}", engine.grade_position());
+    println!("Final fen: {}", engine.game.position.to_fen());
 }

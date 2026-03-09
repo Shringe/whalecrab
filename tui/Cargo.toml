@@ -5,5 +5,6 @@ edition.workspace = true
 
 [dependencies]
 whalecrab_lib = { path = "../lib" }
+whalecrab_engine = { path = "../engine" }
 crossterm = "0.29.0"
 ratatui = "0.29.0"

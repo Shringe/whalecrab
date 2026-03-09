@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
@@ -46,13 +43,11 @@ impl PartialEq for Game {
             && self.white_occupied == other.white_occupied
             && self.black_occupied == other.black_occupied
             && self.occupied == other.occupied
-            // && self.transposition_table == other.transposition_table
             && self.position_history == other.position_history
             && self.white_attacks == other.white_attacks
             && self.black_attacks == other.black_attacks
             && self.white_check_rays == other.white_check_rays
             && self.black_check_rays == other.black_check_rays
-        // && self.nodes_seached == other.nodes_seached
     }
 }
 

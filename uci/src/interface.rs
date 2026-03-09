@@ -1,7 +1,7 @@
-use whalecrab_lib::game::Game;
+use whalecrab_engine::engine::Engine;
 
 /// Stores the state of the uci interface
 pub struct UciInterface {
-    pub game: Option<Game>,
+    pub engine: Option<Engine>,
     pub depth: u16,
 }
