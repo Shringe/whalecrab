@@ -1,10 +1,7 @@
 mod common;
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::time::Duration;
-use whalecrab_lib::{
-    game::Game,
-    movegen::pieces::{piece::Piece, queen::Queen},
-};
+use whalecrab_lib::game::Game;
 
 fn generate_all_psuedo_legal_pawn_moves(game: &mut Game) {
     for sq in game.position.white_pawns | game.position.black_pawns {
@@ -32,7 +29,7 @@ fn generate_all_psuedo_legal_bishop_moves(game: &mut Game) {
 
 fn generate_all_psuedo_legal_queen_moves(game: &mut Game) {
     for sq in game.position.white_queens | game.position.black_queens {
-        Queen(sq).psuedo_legal_moves(game);
+        sq.queen_psuedo_legal_moves(game);
     }
 }
 

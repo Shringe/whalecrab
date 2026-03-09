@@ -1,20 +1,16 @@
 use crate::{
     game::Game,
     movegen::{moves::Move, pieces::piece::PieceMoveInfo},
-    square::{Square, ALL_DIRECTIONS},
+    square::{ALL_DIRECTIONS, Square},
 };
 
-use super::piece::Piece;
-
-pub struct Queen(pub Square);
-
-impl Piece for Queen {
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        self.0.ray_moves(&ALL_DIRECTIONS, game)
+impl Square {
+    pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+        self.ray_moves(&ALL_DIRECTIONS, game)
     }
 
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
-        self.0.rays(&ALL_DIRECTIONS, game)
+    pub fn queen_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+        self.rays(&ALL_DIRECTIONS, game)
     }
 }
 
@@ -44,7 +40,7 @@ mod tests {
             let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
-                let moves = Queen(m.from).psuedo_legal_moves(&mut game);
+                let moves = m.from.queen_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",
@@ -74,7 +70,7 @@ mod tests {
             let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
-                let moves = Queen(m.from).psuedo_legal_moves(&mut game);
+                let moves = m.from.queen_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",
