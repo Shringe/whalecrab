@@ -9,20 +9,18 @@ use crate::{
     square::{ALL_DIRECTIONS, Square},
 };
 
-use super::piece::{Piece, PieceMoveInfo};
+use super::piece::PieceMoveInfo;
 
-pub struct King(pub Square);
-
-impl Piece for King {
+impl Square {
     /// King safety not considered.
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+    pub fn king_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let friendly = game.position.turn;
         let enemy = friendly.opponent();
 
         for d in ALL_DIRECTIONS {
-            if let Some(sq) = self.0.walk(&d) {
+            if let Some(sq) = self.walk(&d) {
                 let sqbb = BitBoard::from_square(sq);
                 // let attack_bitboard = game.get_attacks_mut(&friendly);
                 // attack_bitboard.set(sq);
@@ -30,7 +28,7 @@ impl Piece for King {
                 if let Some((piece, color)) = game.determine_piece(&sqbb) {
                     if color == enemy {
                         moves.push(Move {
-                            from: self.0,
+                            from: *self,
                             to: sq,
                             variant: MoveType::Normal,
                             capture: Some(piece),
@@ -38,7 +36,7 @@ impl Piece for King {
                     }
                 } else {
                     moves.push(Move {
-                        from: self.0,
+                        from: *self,
                         to: sq,
                         variant: MoveType::Normal,
                         capture: None,
@@ -81,13 +79,13 @@ impl Piece for King {
         moves
     }
 
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn king_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let enemy = game.position.turn.opponent();
 
         for d in ALL_DIRECTIONS {
-            if let Some(sq) = self.0.walk(&d) {
+            if let Some(sq) = self.walk(&d) {
                 let sqbb = BitBoard::from_square(sq);
                 moveinfo.attacks |= sqbb;
 
@@ -148,7 +146,9 @@ mod tests {
             Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
                 .unwrap(),
         );
-        let moves = King(castling::WHITE_CASTLES_KINGSIDE.from).psuedo_legal_moves(&mut game);
+        let moves = castling::WHITE_CASTLES_KINGSIDE
+            .from
+            .king_psuedo_legal_moves(&mut game);
         should_generate(&moves, &castling::WHITE_CASTLES_KINGSIDE);
         shouldnt_generate(&moves, &castling::WHITE_CASTLES_QUEENSIDE);
     }
@@ -159,7 +159,9 @@ mod tests {
             Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
                 .unwrap(),
         );
-        let moves = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_moves(&mut game);
+        let moves = castling::BLACK_CASTLES_QUEENSIDE
+            .from
+            .king_psuedo_legal_moves(&mut game);
         should_generate(&moves, &castling::BLACK_CASTLES_QUEENSIDE);
         shouldnt_generate(&moves, &castling::BLACK_CASTLES_KINGSIDE);
     }
@@ -180,7 +182,9 @@ mod tests {
         expected.attacks.set(Square::D7);
         expected.attacks.set(Square::E7);
 
-        let actual = King(castling::BLACK_CASTLES_QUEENSIDE.from).psuedo_legal_targets_fast(&game);
+        let actual = castling::BLACK_CASTLES_QUEENSIDE
+            .from
+            .king_psuedo_legal_targets_fast(&game);
         assert_eq!(actual, expected);
     }
 
@@ -199,7 +203,7 @@ mod tests {
             let m = Move::new(from, to, &game.position);
             let frombb = BitBoard::from_square(m.from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
-                let moves = King(m.from).psuedo_legal_moves(&mut game);
+                let moves = m.from.king_psuedo_legal_moves(&mut game);
                 should_generate(&moves, &m);
             }
             game.play(&m);

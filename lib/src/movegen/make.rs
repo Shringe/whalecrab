@@ -192,8 +192,6 @@ mod tests {
     use crate::board::Board;
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
-    use crate::movegen::pieces::king::King;
-    use crate::movegen::pieces::piece::Piece;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
     #[test]
@@ -251,7 +249,7 @@ mod tests {
         let to_play = &WHITE_CASTLES_QUEENSIDE;
         let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
+        let moves = to_play.from.king_psuedo_legal_moves(&game);
         should_generate(&moves, to_play);
 
         game.play(to_play);
@@ -265,7 +263,7 @@ mod tests {
         let to_play = &BLACK_CASTLES_KINGSIDE;
         let mut game = Game::from_position(Board::from_fen(fen_before).unwrap());
 
-        let moves = King(to_play.from).psuedo_legal_moves(&mut game);
+        let moves = to_play.from.king_psuedo_legal_moves(&game);
         should_generate(&moves, to_play);
 
         game.play(to_play);
