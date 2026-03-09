@@ -113,7 +113,7 @@ fn main() {
                 // Play all moves in sequence
                 log!("{:#?}", uci_moves);
                 for uci_move in uci_moves.split(' ') {
-                    let move_to_play = match Move::from_uci(uci_move, &game.game.position) {
+                    let move_to_play = match Move::from_uci(uci_move, &game.game) {
                         Ok(m) => m,
                         Err(e) => {
                             log!("Failed to parse uci move '{}': {:?}", uci_move, e);
@@ -123,8 +123,8 @@ fn main() {
                     log!("Playing move: {}", move_to_play);
                     game.game.play(&move_to_play);
                 }
-                log!("Final position FEN: {}", game.game.position.to_fen());
-                log!("Game state: {:?}", game.game.position.state);
+                log!("Final position FEN: {}", game.game.to_fen());
+                log!("Game state: {:?}", game.game.state);
             }
 
             UciCommand::Go => match &mut uci.engine {
@@ -133,16 +133,16 @@ fn main() {
                         Some(m) => m,
                         None => {
                             log!("No engine move found. Maybe the game is finished?");
-                            log!("Game state: {:?}", game.game.position.state);
+                            log!("Game state: {:?}", game.game.state);
                             continue;
                         }
                     };
 
-                    let best_move_uci = best_move.to_uci(&game.game.position);
+                    let best_move_uci = best_move.to_uci(&game.game);
                     log!("Playing engine move: {}", best_move);
                     log!(
                         "Fen before playing the move: {}",
-                        game.game.position.to_fen()
+                        game.game.to_fen()
                     );
                     uci_send!("bestmove {}", best_move_uci);
                     game.game.play(&best_move);

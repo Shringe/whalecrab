@@ -14,7 +14,6 @@ use whalecrab_engine::score::Score;
 use whalecrab_lib::movegen::pieces::piece;
 use whalecrab_lib::{
     bitboard::BitBoard,
-    board::Board,
     file::File,
     game::Game,
     movegen::moves::{Move, get_targets},
@@ -352,12 +351,12 @@ impl App {
     fn play_move(&mut self, m: &Move) {
         self.engine.game.play(m);
         self.score = self.engine.grade_position();
-        self.fen.input = self.engine.game.position.to_fen();
+        self.fen.input = self.engine.game.to_fen();
         if let Some(sm) = self.engine.get_engine_move_minimax(4) {
             self.suggested = Some(sm)
         }
 
-        let player = match self.engine.game.position.turn {
+        let player = match self.engine.game.turn {
             piece::PieceColor::White => &self.player_white,
             piece::PieceColor::Black => &self.player_black,
         };
@@ -379,7 +378,7 @@ impl App {
                 let m = Move::new(
                     self.selected_square.unwrap(),
                     self.highlighted_square,
-                    &self.engine.game.position,
+                    &self.engine.game,
                 );
 
                 self.play_move(&m);
@@ -389,11 +388,11 @@ impl App {
 
             let newbb = BitBoard::from_square(new);
             if let Some((piece, color)) = self.engine.game.determine_piece(&newbb)
-                && self.engine.game.position.turn == color
+                && self.engine.game.turn == color
             {
                 self.potential_targets = get_targets(
                     piece.legal_moves(&self.engine.game, &new),
-                    &self.engine.game.position,
+                    &self.engine.game,
                 );
             }
         }
@@ -452,7 +451,7 @@ impl App {
 
                 KeyCode::Esc => self.unselect(),
                 KeyCode::Enter => {
-                    let player = match self.engine.game.position.turn {
+                    let player = match self.engine.game.turn {
                         piece::PieceColor::White => &self.player_white,
                         piece::PieceColor::Black => &self.player_black,
                     };
@@ -483,8 +482,8 @@ impl App {
                 KeyCode::Char(c) => self.fen.enter_char(c),
                 KeyCode::Backspace => self.fen.delete_char(),
                 KeyCode::Enter => {
-                    if let Some(valid) = Board::from_fen(&self.fen.input) {
-                        self.engine.with_new_game(Game::from_position(valid));
+                    if let Some(valid) = Game::from_fen(&self.fen.input) {
+                        self.engine.with_new_game(valid);
                     }
                 }
                 _ => {}
@@ -655,11 +654,11 @@ impl App {
     nodes_searched: {}
     position_hash: {}
 ",
-            self.engine.game.position.state,
+            self.engine.game.state,
             self.score,
-            self.engine.game.position.turn,
+            self.engine.game.turn,
             self.engine.game.nodes_seached,
-            self.engine.game.position.hash,
+            self.engine.game.hash,
         ));
 
         debug_text.push_str(&format!(
@@ -706,7 +705,7 @@ Selected Square info:
                 "Verbose:
     seen_positions: {:#?}
 ",
-                self.engine.game.position.seen_positions
+                self.engine.game.seen_positions
             ));
         }
 

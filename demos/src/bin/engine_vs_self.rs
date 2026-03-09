@@ -11,5 +11,5 @@ fn main() {
 
     println!("=========================");
     println!("Final score: {}", engine.grade_position());
-    println!("Final fen: {}", engine.game.position.to_fen());
+    println!("Final fen: {}", engine.game.to_fen());
 }

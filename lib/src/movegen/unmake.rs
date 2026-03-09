@@ -33,7 +33,7 @@ impl Game {
                 }
             }
             Move::CreateEnPassant { at } => {
-                let color = self.position.turn.opponent();
+                let color = self.turn.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Second, *at),
@@ -52,19 +52,17 @@ impl Game {
                 *pawns |= frombb;
             }
             Move::CaptureEnPassant { from: from_file } => {
-                let color = self.position.turn.opponent();
+                let color = self.turn.opponent();
                 let enemy_color = color.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Fifth, *from_file),
-                        self.position
-                            .en_passant_target
+                        self.en_passant_target
                             .expect("CaptureEnPassant unplayed with no en passant target"),
                     ),
                     PieceColor::Black => (
                         Square::make_square(Rank::Fourth, *from_file),
-                        self.position
-                            .en_passant_target
+                        self.en_passant_target
                             .expect("CaptureEnPassant unplayed with no en passant target"),
                     ),
                 };
@@ -90,7 +88,7 @@ impl Game {
                 piece,
                 capture,
             } => {
-                let color = self.position.turn.opponent();
+                let color = self.turn.opponent();
                 let (from, to) = match color {
                     PieceColor::White => (
                         Square::make_square(Rank::Seventh, *from_file),
@@ -119,30 +117,26 @@ impl Game {
                 }
             }
             Move::Castle { side } => {
-                let color = self.position.turn.opponent();
+                let color = self.turn.opponent();
                 match color {
                     PieceColor::White => match side {
                         CastleSide::Queenside => {
-                            self.position.white_kings ^=
-                                castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
-                            self.position.white_rooks ^=
-                                castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            self.white_kings ^= castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
+                            self.white_rooks ^= castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
                         }
                         CastleSide::Kingside => {
-                            self.position.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
-                            self.position.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
+                            self.white_kings ^= castling::WHITE_CASTLE_KINGSIDE_KING_MOVES;
+                            self.white_rooks ^= castling::WHITE_CASTLE_KINGSIDE_ROOK_MOVES;
                         }
                     },
                     PieceColor::Black => match side {
                         CastleSide::Queenside => {
-                            self.position.black_kings ^=
-                                castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
-                            self.position.black_rooks ^=
-                                castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
+                            self.black_kings ^= castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
+                            self.black_rooks ^= castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;
                         }
                         CastleSide::Kingside => {
-                            self.position.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
-                            self.position.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
+                            self.black_kings ^= castling::BLACK_CASTLE_KINGSIDE_KING_MOVES;
+                            self.black_rooks ^= castling::BLACK_CASTLE_KINGSIDE_ROOK_MOVES;
                         }
                     },
                 }
@@ -156,7 +150,7 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::board::{Board, State};
+    use crate::board::State;
     use crate::file::File;
     use crate::square::Square;
     use crate::test_utils::compare_games;
@@ -167,7 +161,7 @@ mod tests {
             let before = game.clone();
             let mut has_played = Vec::new();
             for (from, to) in $sequence {
-                let m = Move::new(from, to, &game.position);
+                let m = Move::new(from, to, &game);
                 game.play(&m);
                 has_played.push(m);
             }
@@ -187,7 +181,7 @@ mod tests {
             play_unplay_with_game!(game, $sequence)
         }};
         ($fen:expr, $sequence:expr) => {{
-            let game = Game::from_position(Board::from_fen($fen).unwrap());
+            let game = Game::from_fen($fen).unwrap();
             play_unplay_with_game!(game, $sequence)
         }};
     }
@@ -255,11 +249,11 @@ mod tests {
     #[test]
     fn no_repetition() {
         let mut game = Game::default();
-        let m = Move::new(Square::E2, Square::E4, &game.position);
+        let m = Move::new(Square::E2, Square::E4, &game);
         for _ in 0..5 {
             game.play(&m);
             game.unplay(&m);
-            assert_eq!(game.position.state, State::InProgress);
+            assert_eq!(game.state, State::InProgress);
         }
     }
 
@@ -267,22 +261,22 @@ mod tests {
     fn en_passant_target_is_created_and_destroyed() {
         let mut game = Game::default();
         let m = Move::CreateEnPassant { at: File::E };
-        assert_eq!(game.position.en_passant_target, None);
+        assert_eq!(game.en_passant_target, None);
         game.play(&m);
-        assert_eq!(game.position.en_passant_target, Some(Square::E3));
+        assert_eq!(game.en_passant_target, Some(Square::E3));
         game.unplay(&m);
-        assert_eq!(game.position.en_passant_target, None);
+        assert_eq!(game.en_passant_target, None);
     }
 
     #[test]
     fn unplay_capture_en_passant_again() {
         let fen = "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2";
-        let mut game = Game::from_position(Board::from_fen(fen).unwrap());
+        let mut game = Game::from_fen(fen).unwrap();
         let m = Move::CaptureEnPassant { from: File::E };
-        assert_eq!(game.position.en_passant_target, Some(Square::F6));
+        assert_eq!(game.en_passant_target, Some(Square::F6));
         game.play(&m);
-        assert_eq!(game.position.en_passant_target, None);
+        assert_eq!(game.en_passant_target, None);
         game.unplay(&m);
-        assert_eq!(game.position.en_passant_target, Some(Square::F6));
+        assert_eq!(game.en_passant_target, Some(Square::F6));
     }
 }

@@ -6,7 +6,7 @@ use crate::{
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
-    board::{Board, State},
+    board::State,
     game::Game,
     movegen::{moves::Move, pieces::piece::PieceColor},
     square::Square,
@@ -17,12 +17,12 @@ use whalecrab_lib::{
 macro_rules! search_move {
     ($self:expr, $move:expr, $method:ident($($args:expr),*)) => {{
         #[cfg(debug_assertions)]
-        let before = $self.game.position.clone();
+        let before = $self.game.clone();
 
         $self.game.play(&$move);
 
         #[cfg(debug_assertions)]
-        let during = $self.game.position.clone();
+        let during = $self.game.clone();
 
         $self.game.nodes_seached += 1;
         let score = $self.$method($($args),*);
@@ -30,9 +30,9 @@ macro_rules! search_move {
 
         #[cfg(debug_assertions)]
         assert_eq!(
-            $self.game.position, before,
+            $self.game, before,
             "State changed after playing and unplaying {}\n  Before: {:?}\n  During: {:?}\n   After: {:?}\n",
-            $move, before, during, $self.game.position
+            $move, before, during, $self.game
         );
 
         score
@@ -70,14 +70,9 @@ impl Engine {
         }
     }
 
-    /// Creates a game with the position and wraps the engine around it
-    pub fn from_position(position: Board) -> Engine {
-        Engine::from_game(Game::from_position(position))
-    }
-
     /// Creates a position from fen and wraps the engine around it
     pub fn from_fen(fen: &str) -> Option<Engine> {
-        Some(Engine::from_position(Board::from_fen(fen)?))
+        Some(Engine::from_game(Game::from_fen(fen)?))
     }
 
     /// Resets any temporary engine values or caches and switches over to analyzing the new game.
@@ -132,18 +127,18 @@ impl Engine {
             pawn_area
         };
 
-        let white_king = self.game.position.white_kings.to_square();
+        let white_king = self.game.white_kings.to_square();
         let white_pawn_area = calculate_pawn_area(&white_king);
         score += Score::new(
-            ((white_pawn_area & self.game.position.white_pawns).popcnt() * 15)
+            ((white_pawn_area & self.game.white_pawns).popcnt() * 15)
                 .try_into()
                 .unwrap(),
         );
 
-        let black_king = self.game.position.black_kings.to_square();
+        let black_king = self.game.black_kings.to_square();
         let black_pawn_area = calculate_pawn_area(&black_king);
         score -= Score::new(
-            ((black_pawn_area & self.game.position.black_pawns).popcnt() * 15)
+            ((black_pawn_area & self.game.black_pawns).popcnt() * 15)
                 .try_into()
                 .unwrap(),
         );
@@ -156,19 +151,19 @@ impl Engine {
         let mut score = Score::default();
         let value = 2;
 
-        if self.game.position.castling_rights.white_queenside {
+        if self.game.castling_rights.white_queenside {
             score += Score::new(value);
         }
 
-        if self.game.position.castling_rights.white_kingside {
+        if self.game.castling_rights.white_kingside {
             score += Score::new(value);
         }
 
-        if self.game.position.castling_rights.black_queenside {
+        if self.game.castling_rights.black_queenside {
             score -= Score::new(value);
         }
 
-        if self.game.position.castling_rights.black_kingside {
+        if self.game.castling_rights.black_kingside {
             score -= Score::new(value);
         }
 
@@ -195,23 +190,22 @@ impl Engine {
 
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
     pub fn grade_position(&mut self) -> Score {
-        if let Some(pre) = self.transposition_table.get(&self.game.position.hash) {
+        if let Some(pre) = self.transposition_table.get(&self.game.hash) {
             return *pre;
         }
 
         macro_rules! end {
             ($score: expr) => {{
-                self.transposition_table
-                    .insert(self.game.position.hash, $score);
+                self.transposition_table.insert(self.game.hash, $score);
                 return $score;
             }};
         }
 
         // State
-        match self.game.position.state {
+        match self.game.state {
             State::InProgress => {}
             State::Checkmate => {
-                end!(match self.game.position.turn {
+                end!(match self.game.turn {
                     PieceColor::White => Score::MIN,
                     PieceColor::Black => Score::MAX,
                 })
@@ -286,7 +280,7 @@ impl Engine {
         let alpha = Score::MIN;
         let beta = Score::MAX;
 
-        match self.game.position.turn {
+        match self.game.turn {
             PieceColor::White => {
                 let mut best_score = Score::MIN;
                 for m in moves {
@@ -321,7 +315,7 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use super::*;
-    use whalecrab_lib::{board::Board, movegen::pieces::piece::PieceType, square::Square};
+    use whalecrab_lib::{movegen::pieces::piece::PieceType, square::Square};
 
     /// Used for determining cache hit/miss
     fn time_grading(engine: &mut Engine) -> (Score, Duration) {
@@ -340,30 +334,27 @@ mod tests {
     #[test]
     fn minimax_engine_takes_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(starting).unwrap()));
-        let looking_for = Move::new(Square::C1, Square::G5, &engine.game.position);
+        let mut engine = Engine::from_fen(starting).unwrap();
+        let looking_for = Move::new(Square::C1, Square::G5, &engine.game);
         let result = engine.get_engine_move_minimax(2).expect("No moves found");
-        println!("State: {:?}", engine.game.position.state);
+        println!("State: {:?}", engine.game.state);
         assert_eq!(result, looking_for);
     }
 
     #[test]
     fn minimax_engine_saves_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(starting).unwrap()));
-        let black_queens_before = engine.game.position.black_queens.popcnt();
+        let mut engine = Engine::from_fen(starting).unwrap();
+        let black_queens_before = engine.game.black_queens.popcnt();
         let result = engine.get_engine_move_minimax(2).expect("No moves found");
         engine.game.play(&result);
-        assert_eq!(
-            black_queens_before,
-            engine.game.position.black_queens.popcnt()
-        );
+        assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
 
     #[test]
     fn black_always_takes_king() {
         let fen = "k6r/pp4r1/8/pp6/Qp6/pp6/7K/8 w - - 0 1";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
+        let mut engine = Engine::from_fen(fen).unwrap();
         let white_moves = engine.game.generate_all_legal_moves();
         for m in white_moves {
             engine.game.play(&m);
@@ -386,11 +377,11 @@ mod tests {
     #[test]
     fn white_always_checkmates() {
         let fen = "7k/8/8/8/8/8/5R2/K5R1 b - - 0 1";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
+        let mut engine = Engine::from_fen(fen).unwrap();
         let black_moves = engine.game.generate_all_legal_moves();
         for m in black_moves {
             engine.game.play(&m);
-            let looking_for = Move::new(Square::F2, Square::H2, &engine.game.position);
+            let looking_for = Move::new(Square::F2, Square::H2, &engine.game);
             let result = engine.get_engine_move_minimax(1).unwrap();
             assert_eq!(result, looking_for);
             engine.game.unplay(&m);
@@ -426,7 +417,7 @@ mod tests {
     #[test]
     fn engine_moves_immutably() {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
+        let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
         let _ = engine.game.generate_all_legal_moves();
         let _ = engine.get_engine_move_minimax(2);
@@ -447,17 +438,17 @@ mod tests {
     #[test]
     fn engine_should_not_mutate_position() {
         let fen = "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
-        let before = engine.game.position.clone();
+        let mut engine = Engine::from_fen(fen).unwrap();
+        let before = engine.game.clone();
         let _ = engine.get_engine_move_minimax(3);
-        let after = engine.game.position;
+        let after = engine.game;
         assert_eq!(after, before);
     }
 
     #[test]
     fn should_have_moves_fen() {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
-        let mut engine = Engine::from_game(Game::from_position(Board::from_fen(fen).unwrap()));
+        let mut engine = Engine::from_fen(fen).unwrap();
         let moves = engine.game.generate_all_legal_moves();
         let engine_move = engine.get_engine_move_minimax(2);
         assert!(!moves.is_empty());
@@ -472,11 +463,11 @@ mod tests {
             (Square::C7, Square::C6),
             (Square::F2, Square::F4),
         ] {
-            let m = Move::new(from, to, &engine.game.position);
+            let m = Move::new(from, to, &engine.game);
             engine.game.play(&m);
             let moves = engine.game.generate_all_legal_moves();
             let engine_move = engine.get_engine_move_minimax(2);
-            assert_eq!(engine.game.position.state, State::InProgress);
+            assert_eq!(engine.game.state, State::InProgress);
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())
         }

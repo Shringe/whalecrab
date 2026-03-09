@@ -279,7 +279,7 @@ impl Square {
     pub fn ray_old(&self, direction: &Direction, game: &Game) -> (BitBoard, BitBoard, bool) {
         let mut ray = EMPTY;
         let mut check_ray = EMPTY;
-        let enemy = game.position.turn.opponent();
+        let enemy = game.turn.opponent();
 
         let mut current = *self;
         let mut is_check = false;
@@ -355,7 +355,7 @@ impl Square {
         // Maybe I should take in color as a parameter?
         let enemy = game
             .determine_color(&selfbb)
-            .unwrap_or(game.position.turn)
+            .unwrap_or(game.turn)
             .opponent();
 
         let mut current = *self;
@@ -420,14 +420,12 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Board;
-
     use super::*;
 
     #[test]
     fn in_bitboards() {
-        let board = Board::default();
-        let occupied = board.occupied_bitboard();
+        let board = Game::default();
+        let occupied = &board.occupied;
 
         let first = Square::C7;
         let second = Square::H1;
@@ -473,7 +471,7 @@ mod tests {
     #[test]
     fn ray() {
         let fen = "r1bq1r1k/1p4pp/1pnp4/2p1pNb1/2B1P3/P1PP4/1P3PPP/R1BQ1RK1 b - - 0 14";
-        let game = Game::from_position(Board::from_fen(fen).unwrap());
+        let game = Game::from_fen(fen).unwrap();
 
         let rook = Square::F8;
         let direction = Direction::South;

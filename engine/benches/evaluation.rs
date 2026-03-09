@@ -14,7 +14,7 @@ fn bench(c: &mut Criterion) {
                 if outcome.is_none() {
                     outcome = Some(format!(
                         "Game ended in {:?}. {} nodes searched.",
-                        engine.game.position.state, engine.game.nodes_seached
+                        engine.game.state, engine.game.nodes_seached
                     ));
                 }
 

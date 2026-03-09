@@ -1,7 +1,6 @@
 use std::any::type_name;
 use std::fmt::Display;
 
-use crate::board::Board;
 use crate::game::Game;
 use crate::movegen::moves::Move;
 
@@ -53,8 +52,6 @@ macro_rules! assert_push {
 pub fn compare_games(before: &Game, after: &Game) {
     let mut differences = Vec::new();
 
-    assert_push!(differences, before, after, position, "{:?}");
-
     assert_push!(differences, before, after, white_occupied);
     assert_push!(differences, before, after, black_occupied);
     assert_push!(differences, before, after, occupied);
@@ -64,13 +61,7 @@ pub fn compare_games(before: &Game, after: &Game) {
     assert_push!(differences, before, after, white_check_rays);
     assert_push!(differences, before, after, black_check_rays);
 
-    assert_push!(
-        differences,
-        before.position,
-        after.position,
-        seen_positions,
-        "{:?}"
-    );
+    assert_push!(differences, before, after, seen_positions, "{:?}");
     assert_push!(differences, before, after, position_history, "{:?}");
 
     if !differences.is_empty() {
@@ -84,8 +75,8 @@ pub fn compare_games(before: &Game, after: &Game) {
 
 /// Compares and actual board to one generated from a fen
 #[track_caller]
-pub fn compare_to_fen(board: &Board, fen: &str) {
-    let fen_board = &Board::from_fen(fen).unwrap();
+pub fn compare_to_fen(board: &Game, fen: &str) {
+    let fen_board = &Game::from_fen(fen).unwrap();
     assert_eq!(board, fen_board);
 }
 
@@ -150,6 +141,6 @@ mod tests {
 
     #[test]
     fn compare_to_fen() {
-        super::compare_to_fen(&Board::default(), STARTING_FEN);
+        super::compare_to_fen(&Game::default(), STARTING_FEN);
     }
 }

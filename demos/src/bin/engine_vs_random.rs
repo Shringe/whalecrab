@@ -7,7 +7,7 @@ fn main() {
     let mut rng = rand::rng();
 
     for _ in 0..100 {
-        let m = match engine.game.position.turn {
+        let m = match engine.game.turn {
             PieceColor::White => engine.get_engine_move_minimax(2),
             PieceColor::Black => {
                 let moves = engine.game.generate_all_legal_moves();
@@ -27,7 +27,7 @@ fn main() {
                 engine.game.play(&m);
             }
             None => {
-                println!("Game ended in {:?}.", engine.game.position.state);
+                println!("Game ended in {:?}.", engine.game.state);
                 break;
             }
         }
@@ -35,5 +35,5 @@ fn main() {
 
     println!("=========================");
     println!("Final score: {}", engine.grade_position());
-    println!("Final fen: {}", engine.game.position.to_fen());
+    println!("Final fen: {}", engine.game.to_fen());
 }

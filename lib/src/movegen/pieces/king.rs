@@ -13,7 +13,7 @@ impl Square {
     pub fn king_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
-        let friendly = game.position.turn;
+        let friendly = game.turn;
         let enemy = friendly.opponent();
 
         for d in ALL_DIRECTIONS {
@@ -39,9 +39,9 @@ impl Square {
         }
 
         let occupied = &game.occupied;
-        match game.position.turn {
+        match game.turn {
             PieceColor::White => {
-                if game.position.castling_rights.white_queenside
+                if game.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(Move::Castle {
@@ -49,7 +49,7 @@ impl Square {
                     });
                 }
 
-                if game.position.castling_rights.white_kingside
+                if game.castling_rights.white_kingside
                     && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(Move::Castle {
@@ -59,7 +59,7 @@ impl Square {
             }
 
             PieceColor::Black => {
-                if game.position.castling_rights.black_queenside
+                if game.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(Move::Castle {
@@ -67,7 +67,7 @@ impl Square {
                     });
                 }
 
-                if game.position.castling_rights.black_kingside
+                if game.castling_rights.black_kingside
                     && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moves.push(Move::Castle {
@@ -83,7 +83,7 @@ impl Square {
     pub fn king_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
-        let enemy = game.position.turn.opponent();
+        let enemy = game.turn.opponent();
 
         for d in ALL_DIRECTIONS {
             if let Some(sq) = self.walk(&d) {
@@ -101,26 +101,26 @@ impl Square {
         }
 
         let occupied = &game.occupied;
-        match game.position.turn {
+        match game.turn {
             PieceColor::White => {
-                if game.position.castling_rights.white_queenside
+                if game.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB;
                 }
-                if game.position.castling_rights.white_kingside
+                if game.castling_rights.white_kingside
                     && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB;
                 }
             }
             PieceColor::Black => {
-                if game.position.castling_rights.black_queenside
+                if game.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB;
                 }
-                if game.position.castling_rights.black_kingside
+                if game.castling_rights.black_kingside
                     && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB;
@@ -136,17 +136,14 @@ impl Square {
 mod tests {
     use super::*;
     use crate::{
-        board::Board,
         movegen::pieces::piece::PieceType,
         test_utils::{should_generate, shouldnt_generate},
     };
 
     #[test]
     fn white_sees_castling_kingside() {
-        let mut game = Game::from_position(
-            Board::from_fen("r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6")
-                .unwrap(),
-        );
+        let fen = "r2qkbnr/pp1b1ppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R w KQkq - 4 6";
+        let mut game = Game::from_fen(fen).unwrap();
         let moves = Square::E1.king_psuedo_legal_moves(&mut game);
         should_generate(
             &moves,
@@ -164,10 +161,8 @@ mod tests {
 
     #[test]
     fn black_sees_castling_queenside() {
-        let mut game = Game::from_position(
-            Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
-                .unwrap(),
-        );
+        let fen = "r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6";
+        let mut game = Game::from_fen(fen).unwrap();
         let moves = Square::E8.king_psuedo_legal_moves(&mut game);
         should_generate(
             &moves,
@@ -185,10 +180,8 @@ mod tests {
 
     #[test]
     fn black_sees_castling_queenside_fast() {
-        let game = Game::from_position(
-            Board::from_fen("r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6")
-                .unwrap(),
-        );
+        let fen = "r3kbnr/pp1bqppp/2n1p3/1BppP3/3P4/5N2/PPP2PPP/RNBQK2R b KQkq - 5 6";
+        let game = Game::from_fen(fen).unwrap();
 
         let mut expected = PieceMoveInfo::default();
         expected.targets.set(Square::D8);
@@ -215,7 +208,7 @@ mod tests {
             (Square::E2, Square::D3),
             (Square::E7, Square::F6),
         ] {
-            let m = Move::new(from, to, &game.position);
+            let m = Move::new(from, to, &game);
             let frombb = BitBoard::from_square(from);
             if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
                 let moves = from.king_psuedo_legal_moves(&mut game);

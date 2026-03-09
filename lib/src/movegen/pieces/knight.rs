@@ -11,7 +11,7 @@ impl Square {
         let rank = self.get_rank();
         let file = self.get_file();
 
-        let friendly = game.position.turn;
+        let friendly = game.turn;
 
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
@@ -72,7 +72,7 @@ impl Square {
         let rank = self.get_rank();
         let file = self.get_file();
 
-        let enemy = game.position.turn.opponent();
+        let enemy = game.turn.opponent();
 
         let mut process_target = |t: Square| {
             let tbb = BitBoard::from_square(t);
@@ -156,7 +156,7 @@ mod tests {
         }
 
         let moves = avoid
-            .from(&game.position)
+            .from(&game)
             .knight_psuedo_legal_moves(&mut game);
         assert!(!moves.contains(&avoid));
     }
@@ -202,8 +202,8 @@ mod tests {
                 capture: None,
             },
         ] {
-            if game.position.turn == PieceColor::White {
-                let moves = m.from(&game.position).knight_psuedo_legal_moves(&mut game);
+            if game.turn == PieceColor::White {
+                let moves = m.from(&game).knight_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
                     "Tried to make '{}' in order to set up the board, but it couldn't happen normally! The knight only sees: {}.",
@@ -215,7 +215,7 @@ mod tests {
         }
 
         let moves = capture
-            .from(&game.position)
+            .from(&game)
             .knight_psuedo_legal_moves(&mut game);
 
         assert!(
@@ -224,11 +224,11 @@ mod tests {
             format_pretty_list(&moves)
         );
 
-        let knight_before = game.position.white_knights.popcnt();
-        let pawns_before = game.position.black_pawns.popcnt();
+        let knight_before = game.white_knights.popcnt();
+        let pawns_before = game.black_pawns.popcnt();
         game.play(&capture);
-        let knight_after = game.position.white_knights.popcnt();
-        let pawns_after = game.position.black_pawns.popcnt();
+        let knight_after = game.white_knights.popcnt();
+        let pawns_after = game.black_pawns.popcnt();
 
         assert_eq!(knight_before, knight_after, "We lost the knight!");
         assert_eq!(

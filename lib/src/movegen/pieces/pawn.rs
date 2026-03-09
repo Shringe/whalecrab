@@ -16,7 +16,7 @@ impl Square {
     pub fn pawn_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
-        let friendly = game.position.turn;
+        let friendly = game.turn;
         let enemy_color = friendly.opponent();
 
         let initial = match friendly {
@@ -88,7 +88,7 @@ impl Square {
                         });
                     }
                 }
-            } else if let Some(target) = game.position.en_passant_target
+            } else if let Some(target) = game.en_passant_target
                 && diagnol == target
             {
                 moves.push(Move::CaptureEnPassant {
@@ -142,7 +142,7 @@ impl Square {
                 if enemy == enemy_color {
                     moveinfo.targets |= diagnolbb;
                 }
-            } else if let Some(target) = game.position.en_passant_target
+            } else if let Some(target) = game.en_passant_target
                 && diagnol == target
             {
                 moveinfo.targets |= diagnolbb;
@@ -183,9 +183,9 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, PieceColor::White);
+        assert_eq!(game.turn, PieceColor::White);
         let moves = looking_for
-            .from(&game.position)
+            .from(&game)
             .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
@@ -221,9 +221,9 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, PieceColor::Black);
+        assert_eq!(game.turn, PieceColor::Black);
         let moves = looking_for
-            .from(&game.position)
+            .from(&game)
             .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
@@ -252,13 +252,13 @@ mod tests {
             (Square::H6, Square::G7),
             (Square::E7, Square::E5),
         ] {
-            let m = Move::new(from, to, &game.position);
+            let m = Move::new(from, to, &game);
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, PieceColor::White);
+        assert_eq!(game.turn, PieceColor::White);
         let moves = looking_for
-            .from(&game.position)
+            .from(&game)
             .pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),

@@ -389,14 +389,14 @@ impl Iterator for BitBoard {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Board;
+    use crate::game::Game;
 
     use super::*;
 
     #[test]
     fn has_squares() {
-        let board = Board::default();
-        let occupied = board.occupied_bitboard();
+        let game = Game::default();
+        let occupied = &game.occupied;
 
         let first = BitBoard::from_square(Square::C7);
         let second = BitBoard::from_square(Square::H1);
@@ -409,8 +409,8 @@ mod tests {
 
     #[test]
     fn display_formatting() {
-        let board = Board::default();
-        let mut occupied = board.occupied_black_bitboard();
+        let mut game = Game::default();
+        let occupied = &mut game.black_occupied;
         occupied.set(Square::F2);
         let looking_for = "1 1 1 1 1 1 1 1 | 8
 1 1 1 1 1 1 1 1 | 7
