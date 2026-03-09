@@ -22,6 +22,18 @@ pub fn moves_to_targets(moves: &[Move], game: &Game) -> BitBoard {
     out
 }
 
+/// Converts a BitBoard of targets into a vector of moves
+pub fn targets_to_moves(targets: BitBoard, from: Square, game: &Game) -> Vec<Move> {
+    let mut moves = Vec::with_capacity(targets.popcnt() as usize);
+
+    for sq in targets {
+        let m = Move::infer(from, sq, game);
+        moves.push(m);
+    }
+
+    moves
+}
+
 #[derive(PartialEq, Clone, Copy)]
 pub enum Move {
     Normal {
