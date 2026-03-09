@@ -7,7 +7,7 @@ use crate::{
     game::Game,
     movegen::pieces::piece::{PieceColor, PieceType},
     rank::Rank,
-    square::Square,
+    square::{Square, SquareParseError},
 };
 
 /// Converts a vector of moves to a vector of targets
@@ -225,7 +225,7 @@ impl Move {
     }
 
     /// Returns a move from a uci string
-    pub fn from_uci(uci: &str, game: &Game) -> Result<Self, ()> {
+    pub fn from_uci(uci: &str, game: &Game) -> Result<Self, SquareParseError> {
         Ok(Move::infer(
             Square::from_str(&uci[..2])?,
             Square::from_str(&uci[2..])?,

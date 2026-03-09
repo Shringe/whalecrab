@@ -31,7 +31,7 @@ impl Game {
     pub fn play(&mut self, m: &Move) {
         #[cfg(debug_assertions)]
         {
-            let frombb = BitBoard::from_square(m.from(&self));
+            let frombb = BitBoard::from_square(m.from(self));
             let (piece, color) = self
                 .determine_piece(&frombb)
                 .expect("Tried to move nonexistant piece");

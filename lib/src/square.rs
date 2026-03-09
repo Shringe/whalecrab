@@ -31,6 +31,25 @@ pub const ALL_DIRECTIONS: [Direction; 8] = [
     Direction::SouthWest,
 ];
 
+#[derive(Debug, PartialEq)]
+pub enum SquareParseError {
+    EmptyInput,
+    MissingRank,
+    InvalidRank(char),
+    InvalidFile(char),
+}
+
+impl fmt::Display for SquareParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SquareParseError::EmptyInput => write!(f, "input was empty"),
+            SquareParseError::MissingRank => write!(f, "missing rank digit"),
+            SquareParseError::InvalidRank(c) => write!(f, "invalid rank '{c}', expected 1-8"),
+            SquareParseError::InvalidFile(c) => write!(f, "invalid file '{c}', expected a-h"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy, Hash)]
 pub struct Square(u8);
 
@@ -41,14 +60,15 @@ impl Display for Square {
 }
 
 impl FromStr for Square {
-    type Err = ();
+    type Err = SquareParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut chars = s.chars();
-        let f = chars.next().ok_or(())?;
-        let r = chars.next().ok_or(())?;
-        let rank = Rank::from_index(r.to_digit(10).ok_or(())? as usize - 1);
-        let file = File::from_char(f).ok_or(())?;
+        let f = chars.next().ok_or(SquareParseError::EmptyInput)?;
+        let r = chars.next().ok_or(SquareParseError::MissingRank)?;
+        let rank =
+            Rank::from_index(r.to_digit(10).ok_or(SquareParseError::InvalidRank(r))? as usize - 1);
+        let file = File::from_char(f).ok_or(SquareParseError::InvalidFile(f))?;
         Ok(Self::make_square(rank, file))
     }
 }

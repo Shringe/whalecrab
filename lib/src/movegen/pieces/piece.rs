@@ -118,8 +118,8 @@ impl Game {
         let king_attackers = self.attackers(king);
 
         for m in psuedo_legal {
-            let frombb = BitBoard::from_square(m.from(&self));
-            let tobb = BitBoard::from_square(m.to(&self));
+            let frombb = BitBoard::from_square(m.from(self));
+            let tobb = BitBoard::from_square(m.to(self));
 
             let is_moving_king = matches!(m, Move::Castle { .. })
                 || self
