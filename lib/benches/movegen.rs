@@ -3,7 +3,7 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use std::time::Duration;
 use whalecrab_lib::{
     game::Game,
-    movegen::pieces::{bishop::Bishop, piece::Piece, queen::Queen, rook::Rook},
+    movegen::pieces::{bishop::Bishop, piece::Piece, queen::Queen},
 };
 
 fn generate_all_psuedo_legal_pawn_moves(game: &mut Game) {
@@ -14,7 +14,7 @@ fn generate_all_psuedo_legal_pawn_moves(game: &mut Game) {
 
 fn generate_all_psuedo_legal_rook_moves(game: &mut Game) {
     for sq in game.position.white_rooks | game.position.black_rooks {
-        Rook(sq).psuedo_legal_moves(game);
+        sq.rook_psuedo_legal_moves(game);
     }
 }
 
