@@ -7,7 +7,6 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     board::{Board, State, color_field_getters},
     castling::CastlingRights,
-    engine::score::Score,
     movegen::{
         moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
@@ -33,7 +32,6 @@ pub struct Game {
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
 
-    pub transposition_table: HashMap<u64, Score>,
     pub position_history: Vec<UnRestoreable>,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
@@ -72,7 +70,6 @@ impl Game {
     pub fn from_position(position: Board) -> Self {
         let mut game = Self {
             position,
-            transposition_table: HashMap::new(),
             white_attacks: EMPTY,
             black_attacks: EMPTY,
             white_check_rays: EMPTY,
@@ -550,7 +547,13 @@ mod tests {
     #[ignore]
     fn game_comes_to_an_end() {
         let mut game = Game::default();
-        while let Some(m) = game.get_engine_move_minimax(2) {
+        loop {
+            let moves = game.generate_all_legal_moves();
+            let m = match moves.get(0) {
+                Some(m) => m,
+                None => break,
+            };
+
             println!("Playing: {}", m);
             game.play(&m);
         }

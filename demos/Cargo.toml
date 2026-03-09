@@ -6,3 +6,4 @@ edition.workspace = true
 [dependencies]
 rand = "0.9.2"
 whalecrab_lib = { path = "../lib" }
+whalecrab_engine = { path = "../engine" }

@@ -3,8 +3,7 @@ use std::{
     ops::{Add, AddAssign, Sub, SubAssign},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
 pub struct Score(i32);
 
 impl Add for Score {
@@ -41,7 +40,6 @@ impl fmt::Display for Score {
     }
 }
 
-
 impl Score {
     pub const MAX: Score = Score(i32::MAX);
     pub const MIN: Score = Score(i32::MIN);
@@ -53,7 +51,7 @@ impl Score {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::score::Score;
+    use super::*;
 
     #[test]
     fn display() {

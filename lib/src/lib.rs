@@ -1,7 +1,6 @@
 pub mod bitboard;
 pub mod board;
 pub mod castling;
-pub mod engine;
 pub mod file;
 pub mod game;
 pub mod movegen;

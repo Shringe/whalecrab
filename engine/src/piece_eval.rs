@@ -1,8 +1,9 @@
-use crate::{
-    engine::score::Score,
+use whalecrab_lib::{
     movegen::pieces::piece::{PieceColor, PieceType},
     square::Square,
 };
+
+use crate::score::Score;
 
 // Tables found from https://talkchess.com/viewtopic.php?t=76256
 // Temporary i32 tables (only exist at compile time, not in binary)
@@ -78,48 +79,43 @@ const PAWN_MID: [i32; 64] = [
      0,   0,   0,   0,   0,   0,   0,   0
 ];
 
-impl PieceType {
-    /// Gets the pieces value, for example, a pawn is 1.0. Does not consider turn.
-    pub fn material_value(&self) -> Score {
-        let value = match self {
-            PieceType::Pawn => 100,
-            PieceType::Knight => 300,
-            PieceType::Bishop => 300,
-            PieceType::Rook => 500,
-            PieceType::Queen => 900,
-            PieceType::King => 1000,
-        };
+/// Gets the pieces value, for example, a pawn is 1.0. Does not consider turn.
+pub fn material_value(piece_type: &PieceType) -> Score {
+    let value = match piece_type {
+        PieceType::Pawn => 100,
+        PieceType::Knight => 300,
+        PieceType::Bishop => 300,
+        PieceType::Rook => 500,
+        PieceType::Queen => 900,
+        PieceType::King => 1000,
+    };
 
-        Score::new(value)
-    }
+    Score::new(value)
+}
 
-    /// Gets the positional value of a piece using a very basic piece-square table
-    pub fn square_value(&self, sq: &Square, color: &PieceColor) -> Score {
-        let table = match self {
-            PieceType::Pawn => PAWN_MID,
-            PieceType::Knight => KNIGHT_MID,
-            PieceType::Bishop => BISHOP_MID,
-            PieceType::Rook => ROOK_MID,
-            PieceType::Queen => QUEEN_MID,
-            PieceType::King => KING_MID,
-        };
+/// Gets the positional value of a piece using a very basic piece-square table
+pub fn square_value(piece_type: &PieceType, sq: &Square, color: &PieceColor) -> Score {
+    let table = match piece_type {
+        PieceType::Pawn => PAWN_MID,
+        PieceType::Knight => KNIGHT_MID,
+        PieceType::Bishop => BISHOP_MID,
+        PieceType::Rook => ROOK_MID,
+        PieceType::Queen => QUEEN_MID,
+        PieceType::King => KING_MID,
+    };
 
-        let idx = match color {
-            PieceColor::White => sq.to_int(),
-            PieceColor::Black => sq.flip_side().to_int(),
-        };
+    let idx = match color {
+        PieceColor::White => sq.to_int(),
+        PieceColor::Black => sq.flip_side().to_int(),
+    };
 
-        let value = *table.get(idx as usize).unwrap();
-        Score::new(value)
-    }
+    let value = *table.get(idx as usize).unwrap();
+    Score::new(value)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        movegen::pieces::piece::{PieceColor, PieceType},
-        square::Square,
-    };
+    use super::*;
 
     #[test]
     fn balanced_square_value() {
@@ -144,8 +140,8 @@ mod tests {
             (PieceType::King, Square::D4),
         ] {
             assert_eq!(
-                piece.square_value(&sq, &PieceColor::White),
-                piece.square_value(&sq.flip_side(), &PieceColor::Black),
+                square_value(&piece, &sq, &PieceColor::White),
+                square_value(&piece, &sq.flip_side(), &PieceColor::Black),
                 "Failed for {:?} at {:?}",
                 piece,
                 sq
