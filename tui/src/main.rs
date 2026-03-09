@@ -16,7 +16,7 @@ use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
     game::Game,
-    movegen::moves::{Move, get_targets},
+    movegen::moves::{Move, moves_to_targets_vec},
     rank::Rank,
     square::Square,
 };
@@ -390,8 +390,8 @@ impl App {
             if let Some((piece, color)) = self.engine.game.determine_piece(&newbb)
                 && self.engine.game.turn == color
             {
-                self.potential_targets = get_targets(
-                    piece.legal_moves(&self.engine.game, &new),
+                self.potential_targets = moves_to_targets_vec(
+                    &piece.legal_moves(&self.engine.game, &new),
                     &self.engine.game,
                 );
             }

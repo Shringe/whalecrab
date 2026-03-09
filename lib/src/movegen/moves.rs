@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use crate::{
-    bitboard::BitBoard,
+    bitboard::{BitBoard, EMPTY},
     castling::{self, CastleSide},
     file::File,
     game::Game,
@@ -11,8 +11,15 @@ use crate::{
 };
 
 /// Converts a vector of moves to a vector of targets
-pub fn get_targets(moves: Vec<Move>, game: &Game) -> Vec<Square> {
-    moves.into_iter().map(|m| m.to(game)).collect()
+pub fn moves_to_targets_vec(moves: &[Move], game: &Game) -> Vec<Square> {
+    moves.iter().map(|m| m.to(game)).collect()
+}
+
+/// Converts a vector of moves into a BitBoard of targets
+pub fn moves_to_targets(moves: &[Move], game: &Game) -> BitBoard {
+    let mut out = EMPTY;
+    moves.iter().for_each(|m| out.set(m.to(game)));
+    out
 }
 
 #[derive(PartialEq, Clone, Copy)]

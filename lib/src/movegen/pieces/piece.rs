@@ -174,7 +174,7 @@ mod tests {
 
     use crate::{
         game::State,
-        movegen::moves::get_targets,
+        movegen::moves::moves_to_targets_vec,
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
     };
@@ -327,13 +327,13 @@ mod tests {
                 break;
             };
 
-            let piece_attacks = BitBoard::from_square_vec(get_targets(
-                piece.psuedo_legal_moves(&game, &to_play_from),
+            let piece_attacks = BitBoard::from_square_vec(moves_to_targets_vec(
+                &piece.psuedo_legal_moves(&game, &to_play_from),
                 &game,
             ));
 
-            let piece_attacks_legal = BitBoard::from_square_vec(get_targets(
-                piece.legal_moves(&game, &to_play_from),
+            let piece_attacks_legal = BitBoard::from_square_vec(moves_to_targets_vec(
+                &piece.legal_moves(&game, &to_play_from),
                 &game,
             ));
 
