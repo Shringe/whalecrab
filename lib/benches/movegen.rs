@@ -1,6 +1,5 @@
 mod common;
-use criterion::{Criterion, criterion_group, criterion_main};
-use std::time::Duration;
+use criterion::Criterion;
 use whalecrab_lib::game::Game;
 
 fn generate_all_psuedo_legal_pawn_moves(game: &mut Game) {
@@ -75,9 +74,4 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default().warm_up_time(Duration::from_millis(100)).measurement_time(Duration::from_millis(2000));
-    targets = bench
-}
-criterion_main!(benches);
+setup_criterion!();

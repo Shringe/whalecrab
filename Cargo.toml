@@ -12,3 +12,8 @@ codegen-units = 1
 lto = "fat"
 strip = true
 panic = "abort"
+
+[profile.bench]
+inherits = "release"
+codegen-units = 16
+lto = "thin"

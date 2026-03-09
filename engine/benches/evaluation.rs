@@ -1,6 +1,7 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::Criterion;
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::game::Game;
+mod common;
 
 fn bench(c: &mut Criterion) {
     let mut engine = Engine::default();
@@ -26,9 +27,4 @@ fn bench(c: &mut Criterion) {
     println!("{:?}", outcome);
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default().sample_size(10);
-    targets = bench
-}
-criterion_main!(benches);
+setup_criterion!();

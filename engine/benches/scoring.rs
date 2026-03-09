@@ -1,5 +1,5 @@
 mod common;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::Criterion;
 
 fn bench(c: &mut Criterion) {
     let mut engine = common::midgame();
@@ -33,9 +33,4 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = bench
-}
-criterion_main!(benches);
+setup_criterion!();
