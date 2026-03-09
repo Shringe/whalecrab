@@ -33,7 +33,8 @@ impl Square {
                 if once.get_rank() == final_rank {
                     // TODO: Add promotion for pieces other than queen
                     moves.push(Move::Promotion {
-                        at: self.get_file(),
+                        from: self.get_file(),
+                        to: self.get_file(),
                         piece: PieceType::Queen,
                         capture: None,
                     });
@@ -69,7 +70,8 @@ impl Square {
                 if enemy == enemy_color {
                     if diagnol.get_rank() == final_rank {
                         moves.push(Move::Promotion {
-                            at: self.get_file(),
+                            from: self.get_file(),
+                            to: diagnol.get_file(),
                             piece: PieceType::Queen,
                             capture: Some(piece),
                         });
@@ -153,7 +155,7 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::format_pretty_list;
+    use crate::{file::File, test_utils::format_pretty_list};
 
     use super::*;
 
@@ -234,7 +236,8 @@ mod tests {
     fn white_pawn_sees_queen_promotion() {
         let mut game = Game::default();
         let looking_for = Move::Promotion {
-            at: Square::G7.get_file(),
+            from: File::G,
+            to: File::H,
             piece: PieceType::Queen,
             capture: Some(PieceType::Rook),
         };

@@ -502,6 +502,13 @@ mod tests {
     }
 
     #[test]
+    fn from_fen_considers_en_passant_target() {
+        let fen = "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2";
+        let board = Board::from_fen(fen).unwrap();
+        assert_eq!(board.en_passant_target, Some(Square::F6));
+    }
+
+    #[test]
     fn starting_fen() {
         let board = Board::default();
         compare_to_fen(&board, STARTING_FEN);

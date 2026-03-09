@@ -134,16 +134,21 @@ impl Move {
                 let enemy_pawns = game.get_pieces_mut(&PieceType::Pawn, &color.opponent());
                 *enemy_pawns ^= en_passant_bb;
             }
-            Move::Promotion { at, piece, capture } => {
+            Move::Promotion {
+                from: from_file,
+                to: to_file,
+                piece,
+                capture,
+            } => {
                 let color = game.position.turn;
                 let (from, to) = match color {
                     PieceColor::White => (
-                        Square::make_square(Rank::Seventh, *at),
-                        Square::make_square(Rank::Eighth, *at),
+                        Square::make_square(Rank::Seventh, *from_file),
+                        Square::make_square(Rank::Eighth, *to_file),
                     ),
                     PieceColor::Black => (
-                        Square::make_square(Rank::Second, *at),
-                        Square::make_square(Rank::First, *at),
+                        Square::make_square(Rank::Second, *from_file),
+                        Square::make_square(Rank::First, *to_file),
                     ),
                 };
 
@@ -210,6 +215,7 @@ mod tests {
     use super::*;
     use crate::board::Board;
     use crate::castling::CastleSide;
+    use crate::file::File;
     use crate::game::Game;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
@@ -297,10 +303,12 @@ mod tests {
     fn white_pawn_promotes_to_queen() {
         let mut game = Game::default();
         let looking_for = Move::Promotion {
-            at: Square::G7.get_file(),
+            from: File::G,
+            to: File::H,
             piece: PieceType::Queen,
             capture: Some(PieceType::Rook),
         };
+        let looking_for_from = looking_for.from(&game.position);
 
         for (from, to) in [
             (Square::H2, Square::H4),
@@ -326,7 +334,9 @@ mod tests {
             moves
         );
 
+        println!("{}", game.position.to_fen());
         game.play(&looking_for);
+        println!("{}", game.position.to_fen());
 
         assert_eq!(game.position.turn, PieceColor::Black);
         assert!(
@@ -338,11 +348,9 @@ mod tests {
             "H8 incorrectly contains a white pawn after promotion"
         );
         assert!(
-            !looking_for
-                .from(&game.position)
-                .in_bitboard(&game.position.white_pawns),
+            !looking_for_from.in_bitboard(&game.position.white_pawns),
             "Original white pawn still present at {} after promotion",
-            looking_for.from(&game.position)
+            looking_for_from
         );
     }
 
@@ -517,5 +525,14 @@ mod tests {
             white_pawns_after,
             "The white target is still standing"
         );
+    }
+
+    #[test]
+    fn en_passant_target_is_created() {
+        let mut game = Game::default();
+        let m = Move::CreateEnPassant { at: File::E };
+        assert_eq!(game.position.en_passant_target, None);
+        m.play(&mut game);
+        assert_eq!(game.position.en_passant_target, Some(Square::E3));
     }
 }

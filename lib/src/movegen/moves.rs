@@ -29,7 +29,8 @@ pub enum Move {
         from: File,
     },
     Promotion {
-        at: File,
+        from: File,
+        to: File,
         piece: PieceType,
         capture: Option<PieceType>,
     },
@@ -50,9 +51,9 @@ impl Move {
             Move::CaptureEnPassant { .. } => position.en_passant_target.expect(
                 "A CaptureEnpassant move was created despite there being no en_passant target on the board",
             ),
-            Move::Promotion { at, .. } => match position.turn {
-                PieceColor::White => Square::make_square(Rank::Eighth, at),
-                PieceColor::Black => Square::make_square(Rank::First, at),
+            Move::Promotion { to, .. } => match position.turn {
+                PieceColor::White => Square::make_square(Rank::Eighth, to),
+                PieceColor::Black => Square::make_square(Rank::First, to),
             }
             Move::Castle { side } => match (position.turn, side) {
                 (PieceColor::White, CastleSide::Queenside) => castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
@@ -75,9 +76,9 @@ impl Move {
                 PieceColor::White => Square::make_square(Rank::Fifth, from),
                 PieceColor::Black => Square::make_square(Rank::Fourth, from),
             },
-            Move::Promotion { at, .. } => match position.turn {
-                PieceColor::White => Square::make_square(Rank::Seventh, at),
-                PieceColor::Black => Square::make_square(Rank::Second, at),
+            Move::Promotion { from, .. } => match position.turn {
+                PieceColor::White => Square::make_square(Rank::Seventh, from),
+                PieceColor::Black => Square::make_square(Rank::Second, from),
             },
             Move::Castle { .. } => match position.turn {
                 PieceColor::White => Square::E1,
@@ -104,11 +105,16 @@ impl fmt::Display for Move {
             }
             Move::CreateEnPassant { at } => write!(f, "CreateEnPassant at {:?}", at),
             Move::CaptureEnPassant { from } => write!(f, "CaptureEnPassant from {:?}", from),
-            Move::Promotion { at, piece, capture } => {
+            Move::Promotion {
+                from,
+                to,
+                piece,
+                capture,
+            } => {
                 write!(
                     f,
-                    "Promotion at {:?} to {:?}, Capturing: {:?}",
-                    at, piece, capture
+                    "{:?} -> {:?}, Promoting to {:?}, Capturing: {:?}",
+                    from, to, piece, capture
                 )
             }
             Move::Castle { side } => write!(f, "Castle {:?}", side),
@@ -177,7 +183,8 @@ impl Move {
                             }
                         } else if once.get_rank() == color.final_rank() {
                             Move::Promotion {
-                                at: from.get_file(),
+                                from: from.get_file(),
+                                to: to.get_file(),
                                 piece: PieceType::Queen,
                                 capture: position.determine_piece(to),
                             }
@@ -246,7 +253,8 @@ mod tests {
         assert_eq!(
             m,
             Move::Promotion {
-                at: File::G,
+                from: File::G,
+                to: File::F,
                 piece: PieceType::Queen,
                 capture: Some(PieceType::Queen),
             }
