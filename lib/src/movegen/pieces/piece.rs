@@ -48,7 +48,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn psuedo_legal_moves(&self, game: &Game, square: Square) -> Vec<Move> {
+    pub fn psuedo_legal_moves(&self, game: &Game, square: &Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_moves(game),
             PieceType::Knight => square.knight_psuedo_legal_moves(game),
@@ -59,7 +59,7 @@ impl PieceType {
         }
     }
 
-    pub fn psuedo_legal_targets_fast(&self, game: &Game, square: Square) -> PieceMoveInfo {
+    pub fn psuedo_legal_targets_fast(&self, game: &Game, square: &Square) -> PieceMoveInfo {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_targets_fast(game),
             PieceType::Knight => square.knight_psuedo_legal_targets_fast(game),
@@ -70,7 +70,7 @@ impl PieceType {
         }
     }
 
-    pub fn legal_moves(&self, game: &Game, square: Square) -> Vec<Move> {
+    pub fn legal_moves(&self, game: &Game, square: &Square) -> Vec<Move> {
         game.legal_moves_filter(self.psuedo_legal_moves(game, square))
     }
 
@@ -328,11 +328,11 @@ mod tests {
             };
 
             let piece_attacks = BitBoard::from_square_vec(get_targets(
-                piece.psuedo_legal_moves(&mut game, to_play.from),
+                piece.psuedo_legal_moves(&mut game, &to_play.from),
             ));
 
             let piece_attacks_legal =
-                BitBoard::from_square_vec(get_targets(piece.legal_moves(&mut game, to_play.from)));
+                BitBoard::from_square_vec(get_targets(piece.legal_moves(&mut game, &to_play.from)));
 
             if !legal_moves.contains(&to_play) {
                 let short = format!(

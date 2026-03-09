@@ -390,7 +390,7 @@ impl App {
             if let Some((piece, color)) = self.game.determine_piece(&newbb)
                 && self.game.position.turn == color
             {
-                self.potential_targets = get_targets(piece.legal_moves(&mut self.game, new));
+                self.potential_targets = get_targets(piece.legal_moves(&mut self.game, &new));
             }
         }
     }
