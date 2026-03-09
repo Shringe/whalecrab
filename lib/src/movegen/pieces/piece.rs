@@ -75,10 +75,7 @@ impl PieceType {
     }
 
     pub fn is_ray_piece(&self) -> bool {
-        match self {
-            PieceType::Bishop | PieceType::Rook | PieceType::Queen => true,
-            _ => false,
-        }
+        matches!(self, PieceType::Bishop | PieceType::Rook | PieceType::Queen)
     }
 }
 

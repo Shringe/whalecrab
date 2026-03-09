@@ -331,10 +331,7 @@ impl Square {
 
             for sq in ray {
                 let sqbb = BitBoard::from_square(sq);
-                let capture = match game.determine_piece(&sqbb) {
-                    Some((piece, _)) => Some(piece),
-                    None => None,
-                };
+                let capture = game.determine_piece(&sqbb).map(|(piece, _)| piece);
 
                 let m = Move {
                     from: *self,

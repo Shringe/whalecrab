@@ -56,6 +56,7 @@
               cargo
               rust-analyzer
               gnuplot
+              clippy
             ];
           };
         }
