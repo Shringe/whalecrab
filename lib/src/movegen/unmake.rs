@@ -4,7 +4,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceType},
+        pieces::piece::{PieceColor, PieceType},
     },
 };
 
@@ -85,7 +85,7 @@ impl Move {
             .expect("Couldn't find king to unmove!");
 
         match &color {
-            Color::White => match castle_side {
+            PieceColor::White => match castle_side {
                 CastleSide::Queenside => {
                     game.position.white_kings ^= castling::WHITE_CASTLE_QUEENSIDE_KING_MOVES;
                     game.position.white_rooks ^= castling::WHITE_CASTLE_QUEENSIDE_ROOK_MOVES;
@@ -96,7 +96,7 @@ impl Move {
                 }
             },
 
-            Color::Black => match castle_side {
+            PieceColor::Black => match castle_side {
                 CastleSide::Queenside => {
                     game.position.black_kings ^= castling::BLACK_CASTLE_QUEENSIDE_KING_MOVES;
                     game.position.black_rooks ^= castling::BLACK_CASTLE_QUEENSIDE_ROOK_MOVES;

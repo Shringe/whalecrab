@@ -5,7 +5,7 @@ use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
 use crate::game::Game;
 use crate::movegen::moves::{Move, MoveType};
-use crate::movegen::pieces::piece::{Color, PieceMoveInfo, PieceType};
+use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::rank::Rank;
 
 pub enum Direction {
@@ -223,33 +223,33 @@ impl Square {
         }
     }
 
-    pub fn backward(&self, color: &Color) -> Option<Square> {
+    pub fn backward(&self, color: &PieceColor) -> Option<Square> {
         match color {
-            Color::White => self.down(),
-            Color::Black => self.up(),
+            PieceColor::White => self.down(),
+            PieceColor::Black => self.up(),
         }
     }
 
-    pub fn forward(&self, color: &Color) -> Option<Square> {
+    pub fn forward(&self, color: &PieceColor) -> Option<Square> {
         match color {
-            Color::White => self.up(),
-            Color::Black => self.down(),
+            PieceColor::White => self.up(),
+            PieceColor::Black => self.down(),
         }
     }
 
     /// forward left
-    pub fn fleft(&self, color: &Color) -> Option<Square> {
+    pub fn fleft(&self, color: &PieceColor) -> Option<Square> {
         match color {
-            Color::White => self.uleft(),
-            Color::Black => self.dleft(),
+            PieceColor::White => self.uleft(),
+            PieceColor::Black => self.dleft(),
         }
     }
 
     /// forward right
-    pub fn fright(&self, color: &Color) -> Option<Square> {
+    pub fn fright(&self, color: &PieceColor) -> Option<Square> {
         match color {
-            Color::White => self.uright(),
-            Color::Black => self.dright(),
+            PieceColor::White => self.uright(),
+            PieceColor::Black => self.dright(),
         }
     }
 

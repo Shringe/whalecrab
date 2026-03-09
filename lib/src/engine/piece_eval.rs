@@ -1,6 +1,6 @@
 use crate::{
     engine::score::Score,
-    movegen::pieces::piece::{Color, PieceType},
+    movegen::pieces::piece::{PieceColor, PieceType},
     square::Square,
 };
 
@@ -94,7 +94,7 @@ impl PieceType {
     }
 
     /// Gets the positional value of a piece using a very basic piece-square table
-    pub fn square_value(&self, sq: &Square, color: &Color) -> Score {
+    pub fn square_value(&self, sq: &Square, color: &PieceColor) -> Score {
         let table = match self {
             PieceType::Pawn => PAWN_MID,
             PieceType::Knight => KNIGHT_MID,
@@ -105,8 +105,8 @@ impl PieceType {
         };
 
         let idx = match color {
-            Color::White => sq.to_int(),
-            Color::Black => sq.flip_side().to_int(),
+            PieceColor::White => sq.to_int(),
+            PieceColor::Black => sq.flip_side().to_int(),
         };
 
         let value = *table.get(idx as usize).unwrap();
@@ -117,7 +117,7 @@ impl PieceType {
 #[cfg(test)]
 mod tests {
     use crate::{
-        movegen::pieces::piece::{Color, PieceType},
+        movegen::pieces::piece::{PieceColor, PieceType},
         square::Square,
     };
 
@@ -144,8 +144,8 @@ mod tests {
             (PieceType::King, Square::D4),
         ] {
             assert_eq!(
-                piece.square_value(&sq, &Color::White),
-                piece.square_value(&sq.flip_side(), &Color::Black),
+                piece.square_value(&sq, &PieceColor::White),
+                piece.square_value(&sq.flip_side(), &PieceColor::Black),
                 "Failed for {:?} at {:?}",
                 piece,
                 sq

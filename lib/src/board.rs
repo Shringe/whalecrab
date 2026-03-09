@@ -2,7 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::CastlingRights,
     file::File,
-    movegen::pieces::piece::{Color, PieceType},
+    movegen::pieces::piece::{PieceColor, PieceType},
     rank::Rank,
     square::Square,
 };
@@ -13,17 +13,17 @@ pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ
 macro_rules! color_field_getters {
     ($field_name:ident, $return_type:ty) => {
         paste::paste! {
-            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::movegen::pieces::piece::Color) -> &mut $return_type {
+            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::movegen::pieces::piece::PieceColor) -> &mut $return_type {
                 match color {
-                    crate::movegen::pieces::piece::Color::White => &mut self.[<white_ $field_name>],
-                    crate::movegen::pieces::piece::Color::Black => &mut self.[<black_ $field_name>],
+                    crate::movegen::pieces::piece::PieceColor::White => &mut self.[<white_ $field_name>],
+                    crate::movegen::pieces::piece::PieceColor::Black => &mut self.[<black_ $field_name>],
                 }
             }
 
-            pub fn [<get_ $field_name>](&self, color: &crate::movegen::pieces::piece::Color) -> &$return_type {
+            pub fn [<get_ $field_name>](&self, color: &crate::movegen::pieces::piece::PieceColor) -> &$return_type {
                 match color {
-                    crate::movegen::pieces::piece::Color::White => &self.[<white_ $field_name>],
-                    crate::movegen::pieces::piece::Color::Black => &self.[<black_ $field_name>],
+                    crate::movegen::pieces::piece::PieceColor::White => &self.[<white_ $field_name>],
+                    crate::movegen::pieces::piece::PieceColor::Black => &self.[<black_ $field_name>],
                 }
             }
         }
@@ -58,7 +58,7 @@ pub struct Board {
 
     pub castling_rights: CastlingRights,
     pub en_passant_target: Option<Square>,
-    pub turn: Color,
+    pub turn: PieceColor,
 
     pub half_move_timeout: usize,
     pub full_move_clock: usize,
@@ -86,7 +86,7 @@ impl Board {
 
             castling_rights: CastlingRights::empty(),
             en_passant_target: None,
-            turn: Color::White,
+            turn: PieceColor::White,
 
             half_move_timeout: 0,
             full_move_clock: 0,
@@ -123,18 +123,18 @@ impl Board {
             for c in row.chars() {
                 let sq = BitBoard::from_rank_file(Rank::from_index(rank), File::from_index(file));
                 let colored_piece = match c {
-                    'p' => Some((PieceType::Pawn, Color::Black)),
-                    'n' => Some((PieceType::Knight, Color::Black)),
-                    'b' => Some((PieceType::Bishop, Color::Black)),
-                    'r' => Some((PieceType::Rook, Color::Black)),
-                    'q' => Some((PieceType::Queen, Color::Black)),
-                    'k' => Some((PieceType::King, Color::Black)),
-                    'P' => Some((PieceType::Pawn, Color::White)),
-                    'N' => Some((PieceType::Knight, Color::White)),
-                    'B' => Some((PieceType::Bishop, Color::White)),
-                    'R' => Some((PieceType::Rook, Color::White)),
-                    'Q' => Some((PieceType::Queen, Color::White)),
-                    'K' => Some((PieceType::King, Color::White)),
+                    'p' => Some((PieceType::Pawn, PieceColor::Black)),
+                    'n' => Some((PieceType::Knight, PieceColor::Black)),
+                    'b' => Some((PieceType::Bishop, PieceColor::Black)),
+                    'r' => Some((PieceType::Rook, PieceColor::Black)),
+                    'q' => Some((PieceType::Queen, PieceColor::Black)),
+                    'k' => Some((PieceType::King, PieceColor::Black)),
+                    'P' => Some((PieceType::Pawn, PieceColor::White)),
+                    'N' => Some((PieceType::Knight, PieceColor::White)),
+                    'B' => Some((PieceType::Bishop, PieceColor::White)),
+                    'R' => Some((PieceType::Rook, PieceColor::White)),
+                    'Q' => Some((PieceType::Queen, PieceColor::White)),
+                    'K' => Some((PieceType::King, PieceColor::White)),
                     _ => None,
                 };
 
@@ -153,9 +153,9 @@ impl Board {
         }
 
         new.turn = if turn_fen == "b" {
-            Color::Black
+            PieceColor::Black
         } else {
-            Color::White
+            PieceColor::White
         };
 
         if castling_fen != "-" {
@@ -200,7 +200,7 @@ impl Board {
                     }
 
                     let piece_char = match self.determine_color(square).unwrap() {
-                        Color::White => match piece {
+                        PieceColor::White => match piece {
                             PieceType::Pawn => 'P',
                             PieceType::Knight => 'N',
                             PieceType::Bishop => 'B',
@@ -209,7 +209,7 @@ impl Board {
                             PieceType::King => 'K',
                         },
 
-                        Color::Black => match piece {
+                        PieceColor::Black => match piece {
                             PieceType::Pawn => 'p',
                             PieceType::Knight => 'n',
                             PieceType::Bishop => 'b',
@@ -238,8 +238,8 @@ impl Board {
 
         fen.push(' ');
         fen.push(match self.turn {
-            Color::White => 'w',
-            Color::Black => 'b',
+            PieceColor::White => 'w',
+            PieceColor::Black => 'b',
         });
 
         fen.push(' ');
@@ -276,9 +276,9 @@ impl Board {
         fen
     }
 
-    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &Color, new: BitBoard) {
+    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &PieceColor, new: BitBoard) {
         match color {
-            Color::White => match piece {
+            PieceColor::White => match piece {
                 PieceType::Pawn => self.white_pawns = new,
                 PieceType::Knight => self.white_knights = new,
                 PieceType::Bishop => self.white_bishops = new,
@@ -286,7 +286,7 @@ impl Board {
                 PieceType::Queen => self.white_queens = new,
                 PieceType::King => self.white_kings = new,
             },
-            Color::Black => match piece {
+            PieceColor::Black => match piece {
                 PieceType::Pawn => self.black_pawns = new,
                 PieceType::Knight => self.black_knights = new,
                 PieceType::Bishop => self.black_bishops = new,
@@ -297,9 +297,9 @@ impl Board {
         }
     }
 
-    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &Color) -> BitBoard {
+    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &PieceColor) -> BitBoard {
         match color {
-            Color::White => match piece {
+            PieceColor::White => match piece {
                 PieceType::Pawn => self.white_pawns,
                 PieceType::Knight => self.white_knights,
                 PieceType::Bishop => self.white_bishops,
@@ -307,7 +307,7 @@ impl Board {
                 PieceType::Queen => self.white_queens,
                 PieceType::King => self.white_kings,
             },
-            Color::Black => match piece {
+            PieceColor::Black => match piece {
                 PieceType::Pawn => self.black_pawns,
                 PieceType::Knight => self.black_knights,
                 PieceType::Bishop => self.black_bishops,
@@ -341,12 +341,12 @@ impl Board {
     }
 
     /// Determines color of standing piece
-    pub fn determine_color(&self, sq: Square) -> Option<Color> {
+    pub fn determine_color(&self, sq: Square) -> Option<PieceColor> {
         let pos = BitBoard::from_square(sq);
         if pos & self.occupied_white_bitboard() != EMPTY {
-            Some(Color::White)
+            Some(PieceColor::White)
         } else if pos & self.occupied_black_bitboard() != EMPTY {
-            Some(Color::Black)
+            Some(PieceColor::Black)
         } else {
             None
         }
@@ -402,7 +402,7 @@ impl Default for Board {
 
             castling_rights: CastlingRights::default(),
             en_passant_target: None,
-            turn: Color::White,
+            turn: PieceColor::White,
 
             half_move_timeout: 0,
             full_move_clock: 1,
@@ -535,10 +535,10 @@ mod tests {
         let black = Square::B8;
         let queen = Square::D1;
 
-        assert_eq!(board.determine_color(white), Some(Color::White));
+        assert_eq!(board.determine_color(white), Some(PieceColor::White));
         assert_eq!(board.determine_color(empty), None);
-        assert_eq!(board.determine_color(black), Some(Color::Black));
-        assert_eq!(board.determine_color(queen), Some(Color::White));
+        assert_eq!(board.determine_color(black), Some(PieceColor::Black));
+        assert_eq!(board.determine_color(queen), Some(PieceColor::White));
     }
 
     #[test]
@@ -560,14 +560,14 @@ mod tests {
     fn get_occupied_bitboards() {
         let board = Board::default();
 
-        let white_pawns = board.get_occupied_bitboard(&PieceType::Pawn, &Color::White);
+        let white_pawns = board.get_occupied_bitboard(&PieceType::Pawn, &PieceColor::White);
         assert_eq!(white_pawns, board.white_pawns);
         assert!(BitBoard::from_square(Square::A2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::H2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::A3) & white_pawns == EMPTY);
         assert!(BitBoard::from_square(Square::E4) & white_pawns == EMPTY);
 
-        let black_rooks = board.get_occupied_bitboard(&PieceType::Rook, &Color::Black);
+        let black_rooks = board.get_occupied_bitboard(&PieceType::Rook, &PieceColor::Black);
         assert_eq!(black_rooks, board.black_rooks);
         assert!(BitBoard::from_square(Square::A8) & black_rooks != EMPTY);
         assert!(BitBoard::from_square(Square::H8) & black_rooks != EMPTY);

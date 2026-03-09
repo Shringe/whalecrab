@@ -3,7 +3,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceMoveInfo, PieceType},
+        pieces::piece::{PieceColor, PieceMoveInfo, PieceType},
     },
     square::Square,
 };
@@ -20,8 +20,8 @@ impl Square {
         let enemy_color = friendly.opponent();
 
         let initial = match friendly {
-            Color::White => BitBoard::INITIAL_WHITE_PAWN,
-            Color::Black => BitBoard::INITIAL_BLACK_PAWN,
+            PieceColor::White => BitBoard::INITIAL_WHITE_PAWN,
+            PieceColor::Black => BitBoard::INITIAL_BLACK_PAWN,
         };
 
         let final_rank = friendly.final_rank();
@@ -119,8 +119,8 @@ impl Square {
         let enemy_color = friendly.opponent();
 
         let initial = match friendly {
-            Color::White => BitBoard::INITIAL_WHITE_PAWN,
-            Color::Black => BitBoard::INITIAL_BLACK_PAWN,
+            PieceColor::White => BitBoard::INITIAL_WHITE_PAWN,
+            PieceColor::Black => BitBoard::INITIAL_BLACK_PAWN,
         };
 
         // Advances
@@ -196,7 +196,7 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, Color::White);
+        assert_eq!(game.position.turn, PieceColor::White);
         assert!(
             looking_for.to.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"
@@ -246,7 +246,7 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, Color::Black);
+        assert_eq!(game.position.turn, PieceColor::Black);
         assert!(
             looking_for.to.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
@@ -287,7 +287,7 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, Color::White);
+        assert_eq!(game.position.turn, PieceColor::White);
         assert!(
             looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"

@@ -10,7 +10,7 @@ use crate::{
     engine::score::Score,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{ALL_PIECE_TYPES, Color, PieceType},
+        pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
     },
     square::Square,
 };
@@ -146,7 +146,7 @@ impl Game {
     }
 
     /// Calculates the attack bitboard for the given player
-    fn calculate_attacks(&self, color: &Color) -> (BitBoard, BitBoard) {
+    fn calculate_attacks(&self, color: &PieceColor) -> (BitBoard, BitBoard) {
         let mut attacks = EMPTY;
         let mut check_rays = EMPTY;
 
@@ -226,7 +226,7 @@ impl Game {
 
         // Update position state
         self.position.turn = self.position.turn.opponent();
-        if self.position.turn == Color::White {
+        if self.position.turn == PieceColor::White {
             self.position.full_move_clock += 1;
         }
         self.refresh();
@@ -278,15 +278,15 @@ impl Game {
             }
         }
         self.refresh();
-        if self.position.turn == Color::Black {
+        if self.position.turn == PieceColor::Black {
             self.position.full_move_clock -= 1;
         }
     }
 
     /// Gets the bitboard of a colored piece
-    pub fn get_pieces(&self, piece: &PieceType, color: &Color) -> &BitBoard {
+    pub fn get_pieces(&self, piece: &PieceType, color: &PieceColor) -> &BitBoard {
         match color {
-            Color::White => match piece {
+            PieceColor::White => match piece {
                 PieceType::Pawn => &self.position.white_pawns,
                 PieceType::Knight => &self.position.white_knights,
                 PieceType::Bishop => &self.position.white_bishops,
@@ -294,7 +294,7 @@ impl Game {
                 PieceType::Queen => &self.position.white_queens,
                 PieceType::King => &self.position.white_kings,
             },
-            Color::Black => match piece {
+            PieceColor::Black => match piece {
                 PieceType::Pawn => &self.position.black_pawns,
                 PieceType::Knight => &self.position.black_knights,
                 PieceType::Bishop => &self.position.black_bishops,
@@ -306,9 +306,9 @@ impl Game {
     }
 
     /// Gets the bitboard of a colored piece
-    pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &Color) -> &mut BitBoard {
+    pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &PieceColor) -> &mut BitBoard {
         match color {
-            Color::White => match piece {
+            PieceColor::White => match piece {
                 PieceType::Pawn => &mut self.position.white_pawns,
                 PieceType::Knight => &mut self.position.white_knights,
                 PieceType::Bishop => &mut self.position.white_bishops,
@@ -316,7 +316,7 @@ impl Game {
                 PieceType::Queen => &mut self.position.white_queens,
                 PieceType::King => &mut self.position.white_kings,
             },
-            Color::Black => match piece {
+            PieceColor::Black => match piece {
                 PieceType::Pawn => &mut self.position.black_pawns,
                 PieceType::Knight => &mut self.position.black_knights,
                 PieceType::Bishop => &mut self.position.black_bishops,
@@ -328,47 +328,47 @@ impl Game {
     }
 
     /// Determines color of standing piece
-    pub fn determine_color(&self, sqbb: &BitBoard) -> Option<Color> {
+    pub fn determine_color(&self, sqbb: &BitBoard) -> Option<PieceColor> {
         if self.white_occupied.has_square(sqbb) {
-            Some(Color::White)
+            Some(PieceColor::White)
         } else if self.black_occupied.has_square(sqbb) {
-            Some(Color::Black)
+            Some(PieceColor::Black)
         } else {
             None
         }
     }
 
     /// Determines type and color of standing piece
-    pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, Color)> {
+    pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, PieceColor)> {
         if self.white_occupied.has_square(sqbb) {
             if self.position.white_pawns.has_square(sqbb) {
-                Some((PieceType::Pawn, Color::White))
+                Some((PieceType::Pawn, PieceColor::White))
             } else if self.position.white_knights.has_square(sqbb) {
-                Some((PieceType::Knight, Color::White))
+                Some((PieceType::Knight, PieceColor::White))
             } else if self.position.white_bishops.has_square(sqbb) {
-                Some((PieceType::Bishop, Color::White))
+                Some((PieceType::Bishop, PieceColor::White))
             } else if self.position.white_rooks.has_square(sqbb) {
-                Some((PieceType::Rook, Color::White))
+                Some((PieceType::Rook, PieceColor::White))
             } else if self.position.white_queens.has_square(sqbb) {
-                Some((PieceType::Queen, Color::White))
+                Some((PieceType::Queen, PieceColor::White))
             } else if self.position.white_kings.has_square(sqbb) {
-                Some((PieceType::King, Color::White))
+                Some((PieceType::King, PieceColor::White))
             } else {
                 unreachable!("The white occupied bitboard has a square that no white pieces have!")
             }
         } else if self.black_occupied.has_square(sqbb) {
             if self.position.black_pawns.has_square(sqbb) {
-                Some((PieceType::Pawn, Color::Black))
+                Some((PieceType::Pawn, PieceColor::Black))
             } else if self.position.black_knights.has_square(sqbb) {
-                Some((PieceType::Knight, Color::Black))
+                Some((PieceType::Knight, PieceColor::Black))
             } else if self.position.black_bishops.has_square(sqbb) {
-                Some((PieceType::Bishop, Color::Black))
+                Some((PieceType::Bishop, PieceColor::Black))
             } else if self.position.black_rooks.has_square(sqbb) {
-                Some((PieceType::Rook, Color::Black))
+                Some((PieceType::Rook, PieceColor::Black))
             } else if self.position.black_queens.has_square(sqbb) {
-                Some((PieceType::Queen, Color::Black))
+                Some((PieceType::Queen, PieceColor::Black))
             } else if self.position.black_kings.has_square(sqbb) {
-                Some((PieceType::King, Color::Black))
+                Some((PieceType::King, PieceColor::Black))
             } else {
                 unreachable!("The black occupied bitboard has a square that no black pieces have!")
             }
@@ -449,7 +449,7 @@ mod tests {
     use crate::board::{Board, State};
     use crate::game::Game;
     use crate::movegen::moves::{Move, MoveType};
-    use crate::movegen::pieces::piece::{Color, PieceType};
+    use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::square::Square;
     use crate::test_utils::{format_pretty_list, should_generate};
 
@@ -466,7 +466,7 @@ mod tests {
 
         game.reinitialize();
         game.generate_all_legal_moves();
-        assert_eq!(game.position.turn, Color::White);
+        assert_eq!(game.position.turn, PieceColor::White);
         assert_eq!(game.position.state, State::Checkmate);
     }
 
@@ -485,7 +485,7 @@ mod tests {
             game.white_attacks, game.black_attacks
         );
         assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
-        assert_eq!(game.position.turn, Color::Black);
+        assert_eq!(game.position.turn, PieceColor::Black);
         assert_eq!(game.position.state, State::Stalemate);
     }
 

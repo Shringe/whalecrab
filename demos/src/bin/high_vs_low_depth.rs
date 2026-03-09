@@ -1,12 +1,12 @@
-use whalecrab_lib::{board::State, game::Game, movegen::pieces::piece::Color};
+use whalecrab_lib::{board::State, game::Game, movegen::pieces::piece::PieceColor};
 
 fn main() {
     let mut game = Game::default();
 
     while game.position.state == State::InProgress {
         let m = match game.position.turn {
-            Color::White => game.get_engine_move_minimax(3),
-            Color::Black => game.get_engine_move_minimax(2),
+            PieceColor::White => game.get_engine_move_minimax(3),
+            PieceColor::Black => game.get_engine_move_minimax(2),
         };
 
         match m {

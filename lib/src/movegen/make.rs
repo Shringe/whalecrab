@@ -4,7 +4,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::{Color, PieceType},
+        pieces::piece::{PieceColor, PieceType},
     },
     square::Square,
 };
@@ -76,7 +76,7 @@ impl Move {
             .expect("Couldn't find piece to move!");
 
         match &color {
-            Color::White => {
+            PieceColor::White => {
                 game.position.castling_rights.white_queenside = false;
                 game.position.castling_rights.white_kingside = false;
 
@@ -92,7 +92,7 @@ impl Move {
                 }
             }
 
-            Color::Black => {
+            PieceColor::Black => {
                 game.position.castling_rights.black_queenside = false;
                 game.position.castling_rights.black_kingside = false;
 
@@ -115,7 +115,7 @@ impl Move {
         &self,
         game: &mut Game,
         piece: &PieceType,
-        color: &Color,
+        color: &PieceColor,
         frombb: BitBoard,
         tobb: BitBoard,
     ) {
@@ -147,7 +147,7 @@ impl Move {
     }
 
     /// Captures self.capture if self.capture.is_some()
-    pub fn handle_capture(&self, game: &mut Game, color: &Color, sqbb: BitBoard) {
+    pub fn handle_capture(&self, game: &mut Game, color: &PieceColor, sqbb: BitBoard) {
         if let Some(capture) = &self.capture {
             let pieces = game.get_pieces_mut(capture, color);
             *pieces ^= sqbb;
@@ -294,7 +294,7 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, Color::White);
+        assert_eq!(game.position.turn, PieceColor::White);
         assert!(
             looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
@@ -312,7 +312,7 @@ mod tests {
 
         game.play(&looking_for);
 
-        assert_eq!(game.position.turn, Color::Black);
+        assert_eq!(game.position.turn, PieceColor::Black);
         assert!(
             Square::H8.in_bitboard(&game.position.white_queens),
             "Expected white queen at H8 after promotion"
@@ -473,7 +473,7 @@ mod tests {
             game.play(&m);
         }
 
-        assert_eq!(game.position.turn, Color::Black);
+        assert_eq!(game.position.turn, PieceColor::Black);
         assert!(
             capture.from.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"

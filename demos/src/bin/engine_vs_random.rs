@@ -1,5 +1,5 @@
 use rand::Rng;
-use whalecrab_lib::{game::Game, movegen::pieces::piece::Color};
+use whalecrab_lib::{game::Game, movegen::pieces::piece::PieceColor};
 
 fn main() {
     let mut game = Game::default();
@@ -7,8 +7,8 @@ fn main() {
 
     for _ in 0..100 {
         let m = match game.position.turn {
-            Color::White => game.get_engine_move_minimax(2),
-            Color::Black => {
+            PieceColor::White => game.get_engine_move_minimax(2),
+            PieceColor::Black => {
                 let moves = game.generate_all_legal_moves();
                 if moves.is_empty() {
                     None

@@ -82,9 +82,9 @@ impl Ascii {
         }
     }
 
-    pub fn get(&self, piece: &piece::PieceType, color: &piece::Color) -> &String {
+    pub fn get(&self, piece: &piece::PieceType, color: &piece::PieceColor) -> &String {
         match color {
-            piece::Color::White => match piece {
+            piece::PieceColor::White => match piece {
                 piece::PieceType::Pawn => &self.white_pawn,
                 piece::PieceType::Knight => &self.white_knight,
                 piece::PieceType::Bishop => &self.white_bishop,
@@ -92,7 +92,7 @@ impl Ascii {
                 piece::PieceType::Queen => &self.white_queen,
                 piece::PieceType::King => &self.white_king,
             },
-            piece::Color::Black => match piece {
+            piece::PieceColor::Black => match piece {
                 piece::PieceType::Pawn => &self.black_pawn,
                 piece::PieceType::Knight => &self.black_knight,
                 piece::PieceType::Bishop => &self.black_bishop,
@@ -357,8 +357,8 @@ impl App {
         }
 
         let player = match self.game.position.turn {
-            piece::Color::White => &self.player_white,
-            piece::Color::Black => &self.player_black,
+            piece::PieceColor::White => &self.player_white,
+            piece::PieceColor::Black => &self.player_black,
         };
 
         match player {
@@ -449,8 +449,8 @@ impl App {
                 KeyCode::Esc => self.unselect(),
                 KeyCode::Enter => {
                     let player = match self.game.position.turn {
-                        piece::Color::White => &self.player_white,
-                        piece::Color::Black => &self.player_black,
+                        piece::PieceColor::White => &self.player_white,
+                        piece::PieceColor::Black => &self.player_black,
                     };
 
                     match player {

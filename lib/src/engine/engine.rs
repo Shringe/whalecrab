@@ -5,7 +5,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::Color,
+        pieces::piece::PieceColor,
     },
     square::Square,
 };
@@ -63,12 +63,12 @@ impl Game {
             let (piece, color) = self.determine_piece(&sqbb).unwrap();
 
             match color {
-                Color::White => {
+                PieceColor::White => {
                     score += piece.material_value();
                     score += piece.square_value(&sq, &color);
                 }
 
-                Color::Black => {
+                PieceColor::Black => {
                     score -= piece.material_value();
                     score -= piece.square_value(&sq, &color);
                 }
@@ -173,8 +173,8 @@ impl Game {
             State::InProgress => {}
             State::Checkmate => {
                 end!(match self.position.turn {
-                    Color::White => Score::MIN,
-                    Color::Black => Score::MAX,
+                    PieceColor::White => Score::MIN,
+                    PieceColor::Black => Score::MAX,
                 })
             }
             State::Stalemate => end!(Score::default()),
@@ -248,7 +248,7 @@ impl Game {
         let beta = Score::MAX;
 
         match self.position.turn {
-            Color::White => {
+            PieceColor::White => {
                 let mut best_score = Score::MIN;
                 for m in moves {
                     let score = search_move!(self, m, mini(alpha, beta, depth));
@@ -261,7 +261,7 @@ impl Game {
                 best_move
             }
 
-            Color::Black => {
+            PieceColor::Black => {
                 let mut best_score = Score::MAX;
                 for m in moves {
                     let score = search_move!(self, m, maxi(alpha, beta, depth));

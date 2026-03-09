@@ -4,7 +4,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::{Move, MoveType},
-        pieces::piece::Color,
+        pieces::piece::PieceColor,
     },
     square::{ALL_DIRECTIONS, Square},
 };
@@ -47,7 +47,7 @@ impl Square {
 
         let occupied = &game.occupied;
         match game.position.turn {
-            Color::White => {
+            PieceColor::White => {
                 if game.position.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
@@ -61,7 +61,7 @@ impl Square {
                 }
             }
 
-            Color::Black => {
+            PieceColor::Black => {
                 if game.position.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
@@ -101,7 +101,7 @@ impl Square {
 
         let occupied = &game.occupied;
         match game.position.turn {
-            Color::White => {
+            PieceColor::White => {
                 if game.position.castling_rights.white_queenside
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
@@ -113,7 +113,7 @@ impl Square {
                     moveinfo.targets |= castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB;
                 }
             }
-            Color::Black => {
+            PieceColor::Black => {
                 if game.position.castling_rights.black_queenside
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {

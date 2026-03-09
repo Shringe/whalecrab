@@ -4,7 +4,7 @@ use crate::{
     board::Board,
     castling::CastleSide,
     game::Game,
-    movegen::pieces::piece::{Color, PieceType},
+    movegen::pieces::piece::{PieceColor, PieceType},
     square::Square,
 };
 
@@ -51,16 +51,20 @@ impl Move {
     /// case it is recommended to skip using this contructor.
     pub fn new(from: Square, to: Square, board: &Board) -> Self {
         let variant = match (&board.turn, from, to) {
-            (Color::White, Square::E1, Square::C1) if board.castling_rights.white_queenside => {
+            (PieceColor::White, Square::E1, Square::C1)
+                if board.castling_rights.white_queenside =>
+            {
                 MoveType::Castle(CastleSide::Queenside)
             }
-            (Color::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => {
+            (PieceColor::White, Square::E1, Square::G1) if board.castling_rights.white_kingside => {
                 MoveType::Castle(CastleSide::Kingside)
             }
-            (Color::Black, Square::E8, Square::C8) if board.castling_rights.black_queenside => {
+            (PieceColor::Black, Square::E8, Square::C8)
+                if board.castling_rights.black_queenside =>
+            {
                 MoveType::Castle(CastleSide::Queenside)
             }
-            (Color::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => {
+            (PieceColor::Black, Square::E8, Square::G8) if board.castling_rights.black_kingside => {
                 MoveType::Castle(CastleSide::Kingside)
             }
             _ => {

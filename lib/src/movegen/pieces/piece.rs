@@ -7,23 +7,23 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone, Hash, Copy)]
-pub enum Color {
+pub enum PieceColor {
     White,
     Black,
 }
 
-impl Color {
-    pub fn opponent(&self) -> Color {
+impl PieceColor {
+    pub fn opponent(&self) -> PieceColor {
         match self {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
+            PieceColor::White => PieceColor::Black,
+            PieceColor::Black => PieceColor::White,
         }
     }
 
     pub fn final_rank(&self) -> Rank {
         match self {
-            Color::White => Rank::Eighth,
-            Color::Black => Rank::First,
+            PieceColor::White => Rank::Eighth,
+            PieceColor::Black => Rank::First,
         }
     }
 }

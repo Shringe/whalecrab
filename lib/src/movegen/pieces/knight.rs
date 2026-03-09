@@ -126,7 +126,7 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
-    use crate::movegen::pieces::piece::{Color, PieceType};
+    use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::test_utils::format_pretty_list;
 
     use super::*;
@@ -221,7 +221,7 @@ mod tests {
                 capture: None,
             },
         ] {
-            if game.position.turn == Color::White {
+            if game.position.turn == PieceColor::White {
                 let moves = m.from.knight_psuedo_legal_moves(&mut game);
                 assert!(
                     moves.contains(&m),
