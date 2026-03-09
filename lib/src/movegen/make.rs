@@ -193,7 +193,6 @@ mod tests {
     use crate::castling::{BLACK_CASTLES_KINGSIDE, WHITE_CASTLES_QUEENSIDE};
     use crate::game::Game;
     use crate::movegen::pieces::king::King;
-    use crate::movegen::pieces::pawn::Pawn;
     use crate::movegen::pieces::piece::Piece;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
@@ -306,7 +305,7 @@ mod tests {
             looking_for.to.in_bitboard(&game.position.black_rooks),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
+        let moves = looking_for.from.pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
@@ -482,7 +481,7 @@ mod tests {
             "Black pawn not in position"
         );
 
-        let moves = Pawn(capture.from).psuedo_legal_moves(&mut game);
+        let moves = capture.from.pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",

@@ -4,14 +4,13 @@ use std::time::Duration;
 use whalecrab_lib::{
     game::Game,
     movegen::pieces::{
-        bishop::Bishop, king::King, knight::Knight, pawn::Pawn, piece::Piece, queen::Queen,
-        rook::Rook,
+        bishop::Bishop, king::King, knight::Knight, piece::Piece, queen::Queen, rook::Rook,
     },
 };
 
 fn generate_all_psuedo_legal_pawn_moves(game: &mut Game) {
     for sq in game.position.white_pawns | game.position.black_pawns {
-        Pawn(sq).psuedo_legal_moves(game);
+        sq.pawn_psuedo_legal_moves(game);
     }
 }
 

@@ -8,16 +8,12 @@ use crate::{
     square::Square,
 };
 
-use super::piece::Piece;
-
-pub struct Pawn(pub Square);
-
-impl Piece for Pawn {
+impl Square {
     /// Generates all psuedo legal moves for a single pawn
     /// En_Passant is considered
     /// Promotion is considered (only for queen)
     /// King safety not considered
-    fn psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+    pub fn pawn_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let friendly = game.position.turn;
@@ -31,20 +27,20 @@ impl Piece for Pawn {
         let final_rank = friendly.final_rank();
 
         // Advances
-        if let Some(once) = self.0.forward(&friendly) {
+        if let Some(once) = self.forward(&friendly) {
             let oncebb = BitBoard::from_square(once);
             if game.determine_piece(&oncebb).is_none() {
                 if once.get_rank() == final_rank {
                     // TODO: Add promotion for pieces other than queen
                     moves.push(Move {
-                        from: self.0,
+                        from: *self,
                         to: once,
                         variant: MoveType::Promotion(PieceType::Queen),
                         capture: None,
                     });
                 } else {
                     moves.push(Move {
-                        from: self.0,
+                        from: *self,
                         to: once,
                         variant: MoveType::Normal,
                         capture: None,
@@ -53,12 +49,12 @@ impl Piece for Pawn {
             }
 
             // If on initial rank
-            if self.0.in_bitboard(&initial) {
+            if self.in_bitboard(&initial) {
                 let twice = once.forward(&friendly).unwrap();
                 let twicebb = BitBoard::from_square(twice);
                 if game.determine_piece(&twicebb).is_none() {
                     moves.push(Move {
-                        from: self.0,
+                        from: *self,
                         to: twice,
                         variant: MoveType::CreateEnPassant,
                         capture: None,
@@ -69,7 +65,7 @@ impl Piece for Pawn {
 
         // Captures
         // TODO: Add promotion for pieces other than queen
-        for diagnol in [self.0.fleft(&friendly), self.0.fright(&friendly)]
+        for diagnol in [self.fleft(&friendly), self.fright(&friendly)]
             .into_iter()
             .flatten()
         {
@@ -80,7 +76,7 @@ impl Piece for Pawn {
                 if enemy == enemy_color {
                     if diagnol.get_rank() == final_rank {
                         moves.push(Move {
-                            from: self.0,
+                            from: *self,
                             to: diagnol,
                             variant: MoveType::Promotion(PieceType::Queen),
                             capture: Some(piece),
@@ -92,7 +88,7 @@ impl Piece for Pawn {
                         }
 
                         moves.push(Move {
-                            from: self.0,
+                            from: *self,
                             to: diagnol,
                             variant: MoveType::Normal,
                             capture: Some(piece),
@@ -103,7 +99,7 @@ impl Piece for Pawn {
                 && diagnol == target
             {
                 moves.push(Move {
-                    from: self.0,
+                    from: *self,
                     to: target,
                     variant: MoveType::CaptureEnPassant,
                     capture: None,
@@ -114,11 +110,11 @@ impl Piece for Pawn {
         moves
     }
 
-    fn psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn pawn_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let friendly = game
-            .determine_color(&BitBoard::from_square(self.0))
+            .determine_color(&BitBoard::from_square(*self))
             .expect("Tried to move non existent pawn");
         let enemy_color = friendly.opponent();
 
@@ -128,13 +124,13 @@ impl Piece for Pawn {
         };
 
         // Advances
-        if let Some(once) = self.0.forward(&friendly) {
+        if let Some(once) = self.forward(&friendly) {
             let oncebb = BitBoard::from_square(once);
             if game.determine_piece(&oncebb).is_none() {
                 moveinfo.targets |= oncebb;
 
                 // If on initial rank
-                if self.0.in_bitboard(&initial) {
+                if self.in_bitboard(&initial) {
                     let twice = once.forward(&friendly).unwrap();
                     let twicebb = BitBoard::from_square(twice);
                     if game.determine_piece(&twicebb).is_none() {
@@ -146,7 +142,7 @@ impl Piece for Pawn {
 
         // Captures
         // TODO: Add promotion for pieces other than queen
-        for diagnol in [self.0.fleft(&friendly), self.0.fright(&friendly)]
+        for diagnol in [self.fleft(&friendly), self.fright(&friendly)]
             .into_iter()
             .flatten()
         {
@@ -209,7 +205,7 @@ mod tests {
             looking_for.from.in_bitboard(&game.position.white_pawns),
             "White pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
+        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -259,7 +255,7 @@ mod tests {
             looking_for.from.in_bitboard(&game.position.black_pawns),
             "Black pawn not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
+        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -300,7 +296,7 @@ mod tests {
             looking_for.to.in_bitboard(&game.position.black_rooks),
             "Black rook not in position"
         );
-        let moves = Pawn(looking_for.from).psuedo_legal_moves(&mut game);
+        let moves = looking_for.from.pawn_psuedo_legal_moves(&mut game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",

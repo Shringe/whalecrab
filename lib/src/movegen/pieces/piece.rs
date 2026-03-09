@@ -3,9 +3,7 @@ use crate::{
     game::Game,
     movegen::{
         moves::Move,
-        pieces::{
-            bishop::Bishop, king::King, knight::Knight, pawn::Pawn, queen::Queen, rook::Rook,
-        },
+        pieces::{bishop::Bishop, king::King, knight::Knight, queen::Queen, rook::Rook},
     },
     rank::Rank,
     square::Square,
@@ -81,7 +79,7 @@ pub enum PieceType {
 impl PieceType {
     pub fn psuedo_legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
-            PieceType::Pawn => Pawn(square).psuedo_legal_moves(game),
+            PieceType::Pawn => square.pawn_psuedo_legal_moves(game),
             PieceType::Knight => Knight(square).psuedo_legal_moves(game),
             PieceType::Bishop => Bishop(square).psuedo_legal_moves(game),
             PieceType::Rook => Rook(square).psuedo_legal_moves(game),
@@ -92,7 +90,7 @@ impl PieceType {
 
     pub fn legal_moves(&self, game: &mut Game, square: Square) -> Vec<Move> {
         match self {
-            PieceType::Pawn => Pawn(square).legal_moves(game),
+            PieceType::Pawn => game.legal_moves(square.pawn_psuedo_legal_moves(game)),
             PieceType::Knight => Knight(square).legal_moves(game),
             PieceType::Bishop => Bishop(square).legal_moves(game),
             PieceType::Rook => Rook(square).legal_moves(game),
@@ -103,7 +101,7 @@ impl PieceType {
 
     pub fn psuedo_legal_targets_fast(&self, game: &Game, square: Square) -> PieceMoveInfo {
         match self {
-            PieceType::Pawn => Pawn(square).psuedo_legal_targets_fast(game),
+            PieceType::Pawn => square.pawn_psuedo_legal_targets_fast(game),
             PieceType::Knight => Knight(square).psuedo_legal_targets_fast(game),
             PieceType::Bishop => Bishop(square).psuedo_legal_targets_fast(game),
             PieceType::Rook => Rook(square).psuedo_legal_targets_fast(game),
@@ -142,6 +140,70 @@ fn between_two_squares(from: Square, to: Square) -> BitBoard {
     }
 
     out
+}
+
+impl Game {
+    /// Filters out psuedo_legal moves that are found to be illegal
+    pub fn legal_moves(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
+        // TODO: benchmark Vec::with_capacity(psuedo_legal.len()) + Vec::shrink_to_fit
+        let mut legal = Vec::new();
+
+        let enemy = self.position.turn.opponent();
+        let attack_board = self.get_attacks(&enemy);
+        let checks = self.get_check_rays(&enemy);
+
+        let kingbb = self.get_pieces(&PieceType::King, &self.position.turn);
+        let king = kingbb.to_square();
+        let king_attackers = self.attackers(king);
+
+        for m in psuedo_legal {
+            let frombb = BitBoard::from_square(m.from);
+            let tobb = BitBoard::from_square(m.to);
+            let (piece, _) = self
+                .determine_piece(&frombb)
+                .expect("Can't move nonexisting piece!");
+
+            let is_moving_king = piece == PieceType::King;
+
+            // Handle being in check
+            match king_attackers.popcnt() {
+                1 => {
+                    let is_blocking = (between_two_squares(king, king_attackers.to_square())
+                        & checks)
+                        .has_square(&tobb);
+                    let is_capturing = m.capture.is_some();
+                    let is_capturing_attacking_piece =
+                        is_capturing && king_attackers.has_square(&tobb);
+
+                    if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
+                        continue;
+                    }
+                }
+                2 => {
+                    if !is_moving_king {
+                        continue;
+                    }
+                }
+                _ => {}
+            }
+
+            if is_moving_king {
+                // Prevent moving into check
+                if attack_board.has_square(&tobb) {
+                    continue;
+                }
+            } else {
+                // Prevent moving piece blocking check (pin)
+                if checks.has_square(&frombb) {
+                    continue;
+                }
+            }
+
+            legal.push(m);
+        }
+
+        legal
+    }
 }
 
 pub trait Piece {
