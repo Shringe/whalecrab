@@ -1,6 +1,7 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     castling,
+    file::File,
     game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
@@ -17,26 +18,24 @@ impl Square {
         targets_to_moves(self.king_psuedo_legal_targets(game).targets, *self, game)
     }
 
-    // TODO: reimplement with bitshifts
     pub fn king_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
-        let enemy = game.turn.opponent();
+        let enemy_or_empty = !*game.get_occupied(&game.turn);
 
-        for d in ALL_DIRECTIONS {
-            if let Some(sq) = self.walk(&d) {
-                let sqbb = BitBoard::from_square(sq);
-                moveinfo.attacks |= sqbb;
+        let sqbb = BitBoard::from_square(*self);
+        let not_a_file = !File::A.mask();
+        let not_h_file = !File::H.mask();
 
-                if let Some(color) = game.determine_color(&sqbb) {
-                    if color == enemy {
-                        moveinfo.targets |= sqbb;
-                    }
-                } else {
-                    moveinfo.targets |= sqbb;
-                }
-            }
-        }
+        let left = (sqbb >> BitBoard(1)) & not_h_file;
+        let right = (sqbb << BitBoard(1)) & not_a_file;
+        let middle_three = left | sqbb | right;
+
+        let attacks =
+            (middle_three >> BitBoard(8)) | (middle_three << BitBoard(8)) | (middle_three ^ sqbb);
+
+        moveinfo.attacks |= attacks;
+        moveinfo.targets |= attacks & enemy_or_empty;
 
         let occupied = &game.occupied;
         match game.turn {
