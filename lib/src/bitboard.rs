@@ -2,7 +2,9 @@ use crate::file::{ALL_FILES, File};
 use crate::rank::{ALL_RANKS, Rank};
 use crate::square::*;
 use std::fmt;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
+use std::ops::{
+    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not, Shl, Shr,
+};
 
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
@@ -62,7 +64,42 @@ impl fmt::Display for BitBoard {
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.
 pub const EMPTY: BitBoard = BitBoard(0);
 
-// Impl BitAnd
+impl Shr for &BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn shr(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 >> other.0)
+    }
+}
+
+impl Shr for BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn shr(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 >> other.0)
+    }
+}
+
+impl Shl for &BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn shl(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 << other.0)
+    }
+}
+
+impl Shl for BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn shl(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 << other.0)
+    }
+}
+
 impl BitAnd for BitBoard {
     type Output = BitBoard;
 

@@ -1,10 +1,12 @@
 use crate::{
     bitboard::BitBoard,
+    file::File,
     game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::{PieceColor, PieceMoveInfo},
     },
+    rank::Rank,
     square::Square,
 };
 
@@ -24,49 +26,87 @@ impl Square {
     pub fn pawn_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
+        let sqbb = BitBoard::from_square(*self);
+        // let friendly = &game.turn;
         let friendly = game
             .determine_color(&BitBoard::from_square(*self))
             .expect("Tried to move non existent pawn");
-        let enemy_color = friendly.opponent();
 
-        let initial = match friendly {
-            PieceColor::White => BitBoard::INITIAL_WHITE_PAWN,
-            PieceColor::Black => BitBoard::INITIAL_BLACK_PAWN,
-        };
+        let file = self.get_file();
 
-        // Advances
-        if let Some(once) = self.forward(&friendly) {
-            let oncebb = BitBoard::from_square(once);
-            if game.determine_piece(&oncebb).is_none() {
-                moveinfo.targets |= oncebb;
+        match friendly {
+            PieceColor::White => {
+                let oncebb = sqbb << BitBoard(8);
+                if game.occupied.has_square(&oncebb) {
+                    moveinfo.targets |= oncebb;
+                    if self.get_rank() == Rank::Second {
+                        let twicebb = oncebb << BitBoard(8);
+                        if game.occupied.has_square(&twicebb) {
+                            moveinfo.targets |= twicebb;
+                        }
+                    }
+                }
 
-                // If on initial rank
-                if self.in_bitboard(&initial) {
-                    let twice = once.forward(&friendly).unwrap();
-                    let twicebb = BitBoard::from_square(twice);
-                    if game.determine_piece(&twicebb).is_none() {
-                        moveinfo.targets |= twicebb;
+                if file > File::A {
+                    let uleft = sqbb << BitBoard(7);
+                    moveinfo.attacks |= uleft;
+                    if game.black_occupied.has_square(&uleft) {
+                        moveinfo.targets |= uleft;
+                    } else if let Some(target) = game.en_passant_target
+                        && uleft == BitBoard::from_square(target)
+                    {
+                        moveinfo.targets |= uleft;
+                    }
+                }
+
+                if file < File::H {
+                    let uright = sqbb << BitBoard(9);
+                    moveinfo.attacks |= uright;
+                    if game.black_occupied.has_square(&uright) {
+                        moveinfo.targets |= uright;
+                    } else if let Some(target) = game.en_passant_target
+                        && uright == BitBoard::from_square(target)
+                    {
+                        moveinfo.targets |= uright;
                     }
                 }
             }
-        }
 
-        // Captures
-        // TODO: Add promotion for pieces other than queen
-        for diagnol in [self.fleft(&friendly), self.fright(&friendly)]
-            .into_iter()
-            .flatten()
-        {
-            let diagnolbb = BitBoard::from_square(diagnol);
-            moveinfo.attacks |= diagnolbb;
-            if let Some(enemy) = game.determine_color(&diagnolbb) {
-                if enemy == enemy_color {
-                    moveinfo.targets |= diagnolbb;
+            PieceColor::Black => {
+                let oncebb = sqbb >> BitBoard(8);
+                if game.occupied.has_square(&oncebb) {
+                    moveinfo.targets |= oncebb;
+                    if self.get_rank() == Rank::Seventh {
+                        let twicebb = oncebb >> BitBoard(8);
+                        if game.occupied.has_square(&twicebb) {
+                            moveinfo.targets |= twicebb;
+                        }
+                    }
                 }
-            } else if let Some(target) = game.en_passant_target
-                && diagnol == target
-            {
-                moveinfo.targets |= diagnolbb;
+
+                if file > File::A {
+                    let dleft = sqbb >> BitBoard(9);
+                    moveinfo.attacks |= dleft;
+                    if game.white_occupied.has_square(&dleft) {
+                        moveinfo.targets |= dleft;
+                    } else if let Some(target) = game.en_passant_target
+                        && dleft == BitBoard::from_square(target)
+                    {
+                        moveinfo.targets |= dleft;
+                    }
+                }
+
+                if file < File::H {
+                    let dright = sqbb >> BitBoard(7);
+                    moveinfo.attacks |= dright;
+                    if game.white_occupied.has_square(&dright) {
+                        moveinfo.targets |= dright;
+                    } else if let Some(target) = game.en_passant_target
+                        && dright == BitBoard::from_square(target)
+                    {
+                        moveinfo.targets |= dright;
+                    }
+                }
             }
         }
 
