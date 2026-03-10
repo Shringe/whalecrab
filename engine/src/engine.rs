@@ -6,8 +6,8 @@ use crate::{
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
-    game::Game,
-    game::State,
+    file::File,
+    game::{Game, State},
     movegen::{moves::Move, pieces::piece::PieceColor},
     square::Square,
 };
@@ -117,12 +117,12 @@ impl Engine {
 
         let calculate_pawn_area = |king: &Square| {
             let file = king.get_file();
-            let mut pawn_area = file.to_bitboard();
-            if file.to_index() > 0 {
-                pawn_area |= file.left().to_bitboard();
+            let mut pawn_area = file.mask();
+            if file > File::A {
+                pawn_area |= file.left().mask();
             }
-            if file.to_index() < 7 {
-                pawn_area |= file.right().to_bitboard();
+            if file < File::H {
+                pawn_area |= file.right().mask();
             }
             pawn_area
         };

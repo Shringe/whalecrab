@@ -1,7 +1,4 @@
-use crate::{
-    bitboard::{BitBoard, EMPTY},
-    rank::ALL_RANKS,
-};
+use crate::bitboard::BitBoard;
 
 /// Describe a file (column) on a chess board
 #[repr(u8)]
@@ -67,14 +64,9 @@ impl File {
     }
 
     /// Creates a bitboard with the entire file set
-    pub fn to_bitboard(&self) -> BitBoard {
-        let mut out = EMPTY;
-
-        for rank in ALL_RANKS {
-            out |= BitBoard::from_rank_file(rank, *self);
-        }
-
-        out
+    #[inline]
+    pub fn mask(self) -> BitBoard {
+        BitBoard(0x0101010101010101 << self as u8)
     }
 
     /// Go one file to the left.  If impossible, wrap around.
@@ -105,6 +97,6 @@ mod test {
         let file = File::C;
         let expected =
             BitBoard(0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100);
-        assert_eq!(file.to_bitboard(), expected);
+        assert_eq!(file.mask(), expected);
     }
 }

@@ -1,5 +1,6 @@
 use crate::{
     bitboard::BitBoard,
+    file::File,
     game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
@@ -20,51 +21,25 @@ impl Square {
     pub fn knight_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
-        let rank = self.get_rank();
-        let file = self.get_file();
+        let sqbb = BitBoard::from_square(*self);
+        let enemy_or_empty = !*game.get_occupied(&game.turn);
 
-        let enemy = game.turn.opponent();
+        let not_file_a = !File::A.mask();
+        let not_file_b = !File::B.mask();
+        let not_file_g = !File::G.mask();
+        let not_file_h = !File::H.mask();
 
-        let mut process_target = |t: Square| {
-            let tbb = BitBoard::from_square(t);
-            moveinfo.attacks |= tbb;
+        let attacks = (sqbb << BitBoard(17)) & not_file_a
+            | (sqbb << BitBoard(15)) & not_file_h
+            | (sqbb << BitBoard(10)) & not_file_a & not_file_b
+            | (sqbb << BitBoard(6)) & not_file_g & not_file_h
+            | (sqbb >> BitBoard(6)) & not_file_a & not_file_b
+            | (sqbb >> BitBoard(10)) & not_file_g & not_file_h
+            | (sqbb >> BitBoard(15)) & not_file_a
+            | (sqbb >> BitBoard(17)) & not_file_h;
 
-            if let Some(color) = game.determine_color(&tbb) {
-                if color == enemy {
-                    moveinfo.targets |= tbb;
-                }
-            } else {
-                moveinfo.targets |= tbb;
-            }
-        };
-
-        if rank.to_index() < 6 {
-            let north = Square::make_square(rank.up().up(), file);
-            for t in [north.left(), north.right()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if rank.to_index() > 1 {
-            let south = Square::make_square(rank.down().down(), file);
-            for t in [south.left(), south.right()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if file.to_index() < 6 {
-            let east = Square::make_square(rank, file.right().right());
-            for t in [east.up(), east.down()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if file.to_index() > 1 {
-            let west = Square::make_square(rank, file.left().left());
-            for t in [west.up(), west.down()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
+        moveinfo.attacks = attacks;
+        moveinfo.targets = attacks & enemy_or_empty;
 
         moveinfo
     }

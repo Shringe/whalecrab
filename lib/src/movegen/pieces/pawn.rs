@@ -27,10 +27,10 @@ impl Square {
         let mut moveinfo = PieceMoveInfo::default();
 
         let sqbb = BitBoard::from_square(*self);
-        // let friendly = &game.turn;
-        let friendly = game
-            .determine_color(&BitBoard::from_square(*self))
-            .expect("Tried to move non existent pawn");
+        let friendly = &game.turn;
+        // let friendly = game
+        //     .determine_color(&BitBoard::from_square(*self))
+        //     .expect("Tried to move non existent pawn");
 
         let file = self.get_file();
 
