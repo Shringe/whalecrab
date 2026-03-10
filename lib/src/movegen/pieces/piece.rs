@@ -61,12 +61,12 @@ impl PieceType {
 
     pub fn psuedo_legal_targets_fast(&self, game: &Game, square: &Square) -> PieceMoveInfo {
         match self {
-            PieceType::Pawn => square.pawn_psuedo_legal_targets_fast(game),
-            PieceType::Knight => square.knight_psuedo_legal_targets_fast(game),
-            PieceType::Bishop => square.bishop_psuedo_legal_targets_fast(game),
-            PieceType::Rook => square.rook_psuedo_legal_targets_fast(game),
-            PieceType::Queen => square.queen_psuedo_legal_targets_fast(game),
-            PieceType::King => square.king_psuedo_legal_targets_fast(game),
+            PieceType::Pawn => square.pawn_psuedo_legal_targets(game),
+            PieceType::Knight => square.knight_psuedo_legal_targets(game),
+            PieceType::Bishop => square.bishop_psuedo_legal_targets(game),
+            PieceType::Rook => square.rook_psuedo_legal_targets(game),
+            PieceType::Queen => square.queen_psuedo_legal_targets(game),
+            PieceType::King => square.king_psuedo_legal_targets(game),
         }
     }
 

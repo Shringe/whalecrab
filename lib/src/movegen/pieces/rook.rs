@@ -15,14 +15,10 @@ const DIRECTIONS: [Direction; 4] = [
 
 impl Square {
     pub fn rook_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(
-            self.rook_psuedo_legal_targets_fast(game).targets,
-            *self,
-            game,
-        )
+        targets_to_moves(self.rook_psuedo_legal_targets(game).targets, *self, game)
     }
 
-    pub fn rook_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn rook_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         self.rays(&DIRECTIONS, game)
     }
 }

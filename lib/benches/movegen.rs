@@ -1,7 +1,7 @@
 mod common;
 use criterion::Criterion;
 use whalecrab_lib::movegen::{
-    moves::{Move, moves_to_targets},
+    moves::Move,
     pieces::piece::{ALL_PIECE_TYPES, PieceColor},
 };
 

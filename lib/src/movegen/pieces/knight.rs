@@ -11,14 +11,10 @@ use crate::{
 
 impl Square {
     pub fn knight_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(
-            self.knight_psuedo_legal_targets_fast(game).targets,
-            *self,
-            game,
-        )
+        targets_to_moves(self.knight_psuedo_legal_targets(game).targets, *self, game)
     }
 
-    pub fn knight_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn knight_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let sqbb = BitBoard::from_square(*self);

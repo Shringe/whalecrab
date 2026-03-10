@@ -9,14 +9,10 @@ use crate::{
 
 impl Square {
     pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(
-            self.queen_psuedo_legal_targets_fast(game).targets,
-            *self,
-            game,
-        )
+        targets_to_moves(self.queen_psuedo_legal_targets(game).targets, *self, game)
     }
 
-    pub fn queen_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    pub fn queen_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         self.rays(&ALL_DIRECTIONS, game)
     }
 }

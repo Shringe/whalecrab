@@ -2,7 +2,10 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling,
     game::Game,
-    movegen::{moves::Move, pieces::piece::PieceColor},
+    movegen::{
+        moves::{Move, targets_to_moves},
+        pieces::piece::PieceColor,
+    },
     square::{ALL_DIRECTIONS, Square},
 };
 
@@ -11,76 +14,11 @@ use super::piece::PieceMoveInfo;
 impl Square {
     /// King safety not considered.
     pub fn king_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        let mut moves = Vec::new();
-
-        let friendly = game.turn;
-        let enemy = friendly.opponent();
-
-        for d in ALL_DIRECTIONS {
-            if let Some(sq) = self.walk(&d) {
-                let sqbb = BitBoard::from_square(sq);
-
-                if let Some((piece, color)) = game.determine_piece(&sqbb) {
-                    if color == enemy {
-                        moves.push(Move::Normal {
-                            from: *self,
-                            to: sq,
-                            capture: Some(piece),
-                        })
-                    }
-                } else {
-                    moves.push(Move::Normal {
-                        from: *self,
-                        to: sq,
-                        capture: None,
-                    })
-                }
-            }
-        }
-
-        let occupied = &game.occupied;
-        match game.turn {
-            PieceColor::White => {
-                if game.castling_rights.white_queenside
-                    && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
-                {
-                    moves.push(Move::Castle {
-                        side: castling::CastleSide::Queenside,
-                    });
-                }
-
-                if game.castling_rights.white_kingside
-                    && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
-                {
-                    moves.push(Move::Castle {
-                        side: castling::CastleSide::Kingside,
-                    });
-                }
-            }
-
-            PieceColor::Black => {
-                if game.castling_rights.black_queenside
-                    && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
-                {
-                    moves.push(Move::Castle {
-                        side: castling::CastleSide::Queenside,
-                    });
-                }
-
-                if game.castling_rights.black_kingside
-                    && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
-                {
-                    moves.push(Move::Castle {
-                        side: castling::CastleSide::Kingside,
-                    });
-                }
-            }
-        }
-
-        moves
+        targets_to_moves(self.king_psuedo_legal_targets(game).targets, *self, game)
     }
 
-    pub fn king_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
+    // TODO: reimplement with bitshifts
+    pub fn king_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let enemy = game.turn.opponent();
@@ -192,7 +130,7 @@ mod tests {
         expected.attacks.set(Square::D7);
         expected.attacks.set(Square::E7);
 
-        let actual = Square::E8.king_psuedo_legal_targets_fast(&game);
+        let actual = Square::E8.king_psuedo_legal_targets(&game);
         assert_eq!(actual, expected);
     }
 
