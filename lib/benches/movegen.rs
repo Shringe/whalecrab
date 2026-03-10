@@ -1,6 +1,9 @@
 mod common;
 use criterion::Criterion;
-use whalecrab_lib::movegen::pieces::piece::{ALL_PIECE_TYPES, PieceColor};
+use whalecrab_lib::movegen::{
+    moves::{Move, moves_to_targets},
+    pieces::piece::{ALL_PIECE_TYPES, PieceColor},
+};
 
 macro_rules! bench_piece_method {
     ($c:expr, $game:expr, $type:expr, $method:ident) => {
@@ -41,6 +44,19 @@ fn bench(c: &mut Criterion) {
 
     c.bench_function("Generate all psuedo legal moves", |b| {
         b.iter(|| game.generate_all_psuedo_legal_moves());
+    });
+
+    let moves = game.generate_all_psuedo_legal_moves();
+    c.bench_function("Filter for legal moves", |b| {
+        b.iter(|| game.legal_moves_filter(moves.clone()));
+    });
+
+    c.bench_function("Move inference / Constructing all moves", |b| {
+        b.iter(|| {
+            for m in &moves {
+                Move::infer(m.from(&game), m.to(&game), &game);
+            }
+        })
     });
 
     for p in ALL_PIECE_TYPES {
