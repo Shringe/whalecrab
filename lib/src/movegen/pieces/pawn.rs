@@ -37,11 +37,11 @@ impl Square {
         match friendly {
             PieceColor::White => {
                 let oncebb = sqbb << BitBoard(8);
-                if game.occupied.has_square(&oncebb) {
+                if !game.occupied.has_square(&oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Second {
                         let twicebb = oncebb << BitBoard(8);
-                        if game.occupied.has_square(&twicebb) {
+                        if !game.occupied.has_square(&twicebb) {
                             moveinfo.targets |= twicebb;
                         }
                     }
@@ -74,11 +74,11 @@ impl Square {
 
             PieceColor::Black => {
                 let oncebb = sqbb >> BitBoard(8);
-                if game.occupied.has_square(&oncebb) {
+                if !game.occupied.has_square(&oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Seventh {
                         let twicebb = oncebb >> BitBoard(8);
-                        if game.occupied.has_square(&twicebb) {
+                        if !game.occupied.has_square(&twicebb) {
                             moveinfo.targets |= twicebb;
                         }
                     }
