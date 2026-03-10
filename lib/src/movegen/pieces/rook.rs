@@ -1,6 +1,6 @@
 use crate::{
     game::Game,
-    movegen::moves::Move,
+    movegen::moves::{Move, targets_to_moves},
     square::{Direction, Square},
 };
 
@@ -15,7 +15,11 @@ const DIRECTIONS: [Direction; 4] = [
 
 impl Square {
     pub fn rook_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        self.ray_moves(&DIRECTIONS, game)
+        targets_to_moves(
+            self.rook_psuedo_legal_targets_fast(game).targets,
+            *self,
+            game,
+        )
     }
 
     pub fn rook_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {

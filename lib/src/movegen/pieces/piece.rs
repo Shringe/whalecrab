@@ -105,9 +105,8 @@ fn between_two_squares(from: Square, to: Square) -> BitBoard {
 
 impl Game {
     /// Filters out psuedo_legal moves that are found to be illegal
-    fn legal_moves_filter(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
-        // TODO: benchmark Vec::with_capacity(psuedo_legal.len()) + Vec::shrink_to_fit
-        let mut legal = Vec::new();
+    pub fn legal_moves_filter(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
+        let mut legal = Vec::with_capacity(psuedo_legal.len());
 
         let enemy = self.turn.opponent();
         let attack_board = self.get_attacks(&enemy);
@@ -164,6 +163,7 @@ impl Game {
             legal.push(m);
         }
 
+        legal.shrink_to_fit();
         legal
     }
 }

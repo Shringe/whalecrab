@@ -1,69 +1,20 @@
 use crate::{
     bitboard::BitBoard,
     game::Game,
-    movegen::{moves::Move, pieces::piece::PieceMoveInfo},
+    movegen::{
+        moves::{Move, targets_to_moves},
+        pieces::piece::PieceMoveInfo,
+    },
     square::Square,
 };
 
 impl Square {
     pub fn knight_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let rank = self.get_rank();
-        let file = self.get_file();
-
-        let friendly = game.turn;
-
-        let mut process_target = |t: Square| {
-            let tbb = BitBoard::from_square(t);
-
-            if let Some((piece, color)) = game.determine_piece(&tbb) {
-                if color == friendly {
-                    return;
-                }
-
-                moves.push(Move::Normal {
-                    from: *self,
-                    to: t,
-                    capture: Some(piece),
-                });
-            } else {
-                moves.push(Move::Normal {
-                    from: *self,
-                    to: t,
-                    capture: None,
-                });
-            }
-        };
-
-        if rank.to_index() < 6 {
-            let north = Square::make_square(rank.up().up(), file);
-            for t in [north.left(), north.right()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if rank.to_index() > 1 {
-            let south = Square::make_square(rank.down().down(), file);
-            for t in [south.left(), south.right()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if file.to_index() < 6 {
-            let east = Square::make_square(rank, file.right().right());
-            for t in [east.up(), east.down()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        if file.to_index() > 1 {
-            let west = Square::make_square(rank, file.left().left());
-            for t in [west.up(), west.down()].into_iter().flatten() {
-                process_target(t);
-            }
-        }
-
-        moves
+        targets_to_moves(
+            self.knight_psuedo_legal_targets_fast(game).targets,
+            *self,
+            game,
+        )
     }
 
     pub fn knight_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {

@@ -2,8 +2,8 @@ use crate::{
     bitboard::BitBoard,
     game::Game,
     movegen::{
-        moves::Move,
-        pieces::piece::{PieceColor, PieceMoveInfo, PieceType},
+        moves::{Move, targets_to_moves},
+        pieces::piece::{PieceColor, PieceMoveInfo},
     },
     square::Square,
 };
@@ -14,90 +14,11 @@ impl Square {
     /// Promotion is considered (only for queen)
     /// King safety not considered
     pub fn pawn_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        let mut moves = Vec::new();
-
-        let friendly = game.turn;
-        let enemy_color = friendly.opponent();
-
-        let initial = match friendly {
-            PieceColor::White => BitBoard::INITIAL_WHITE_PAWN,
-            PieceColor::Black => BitBoard::INITIAL_BLACK_PAWN,
-        };
-
-        let final_rank = friendly.final_rank();
-
-        // Advances
-        if let Some(once) = self.forward(&friendly) {
-            let oncebb = BitBoard::from_square(once);
-            if game.determine_piece(&oncebb).is_none() {
-                if once.get_rank() == final_rank {
-                    // TODO: Add promotion for pieces other than queen
-                    moves.push(Move::Promotion {
-                        from: self.get_file(),
-                        to: self.get_file(),
-                        piece: PieceType::Queen,
-                        capture: None,
-                    });
-                } else {
-                    moves.push(Move::Normal {
-                        from: *self,
-                        to: once,
-                        capture: None,
-                    });
-                }
-            }
-
-            // If on initial rank
-            if self.in_bitboard(&initial) {
-                let twice = once.forward(&friendly).unwrap();
-                let twicebb = BitBoard::from_square(twice);
-                if game.determine_piece(&twicebb).is_none() {
-                    moves.push(Move::CreateEnPassant {
-                        at: self.get_file(),
-                    });
-                }
-            }
-        }
-
-        // Captures
-        // TODO: Add promotion for pieces other than queen
-        for diagnol in [self.fleft(&friendly), self.fright(&friendly)]
-            .into_iter()
-            .flatten()
-        {
-            let diagnolbb = BitBoard::from_square(diagnol);
-            if let Some((piece, enemy)) = game.determine_piece(&diagnolbb) {
-                if enemy == enemy_color {
-                    if diagnol.get_rank() == final_rank {
-                        moves.push(Move::Promotion {
-                            from: self.get_file(),
-                            to: diagnol.get_file(),
-                            piece: PieceType::Queen,
-                            capture: Some(piece),
-                        });
-                    } else {
-                        // if piece == PieceType::King {
-                        //     let num_checks = game.get_num_checks_mut(&enemy);
-                        //     *num_checks += 1;
-                        // }
-
-                        moves.push(Move::Normal {
-                            from: *self,
-                            to: diagnol,
-                            capture: Some(piece),
-                        });
-                    }
-                }
-            } else if let Some(target) = game.en_passant_target
-                && diagnol == target
-            {
-                moves.push(Move::CaptureEnPassant {
-                    from: self.get_file(),
-                });
-            }
-        }
-
-        moves
+        targets_to_moves(
+            self.pawn_psuedo_legal_targets_fast(game).targets,
+            *self,
+            game,
+        )
     }
 
     pub fn pawn_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {
@@ -155,7 +76,7 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
-    use crate::{file::File, test_utils::format_pretty_list};
+    use crate::{file::File, movegen::pieces::piece::PieceType, test_utils::format_pretty_list};
 
     use super::*;
 

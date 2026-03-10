@@ -1,12 +1,19 @@
 use crate::{
     game::Game,
-    movegen::{moves::Move, pieces::piece::PieceMoveInfo},
+    movegen::{
+        moves::{Move, targets_to_moves},
+        pieces::piece::PieceMoveInfo,
+    },
     square::{ALL_DIRECTIONS, Square},
 };
 
 impl Square {
     pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        self.ray_moves(&ALL_DIRECTIONS, game)
+        targets_to_moves(
+            self.queen_psuedo_legal_targets_fast(game).targets,
+            *self,
+            game,
+        )
     }
 
     pub fn queen_psuedo_legal_targets_fast(&self, game: &Game) -> PieceMoveInfo {

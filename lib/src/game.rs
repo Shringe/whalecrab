@@ -750,18 +750,10 @@ impl Game {
     /// Generates all legal moves for the current player. This also updates position state
     /// for statemate or checkmate
     pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let mut moves = Vec::new();
+        let moves = self.legal_moves_filter(self.generate_all_psuedo_legal_moves());
+
         if self.state != State::InProgress {
             return moves;
-        }
-
-        let occupied = self.get_occupied(&self.turn);
-
-        for sq in *occupied {
-            let sqbb = BitBoard::from_square(sq);
-            if let Some((piece, _)) = self.determine_piece(&sqbb) {
-                moves.extend(piece.legal_moves(self, &sq))
-            }
         }
 
         if moves.is_empty() {
