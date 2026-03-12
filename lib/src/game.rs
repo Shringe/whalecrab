@@ -808,10 +808,14 @@ mod tests {
         game.play(&to_play);
         let moves = game.generate_all_legal_moves();
         println!(
-            "white:\n{}\nblack:\n{}",
+            "white attacks:\n{}\nblack attacks:\n{}",
             game.white_attacks, game.black_attacks
         );
-        assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
+        assert!(
+            moves.is_empty(),
+            "Black should not have any moves, but has: {}",
+            format_pretty_list(&moves)
+        );
         assert_eq!(game.turn, PieceColor::Black);
         assert_eq!(game.state, State::Stalemate);
     }
@@ -849,7 +853,9 @@ mod tests {
         }
 
         // game.generate_all_legal_moves();
-        assert!(game.generate_all_legal_moves().is_empty());
+        let moves = game.generate_all_legal_moves();
+        println!("{:?}", game);
+        assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
         assert_eq!(game.state, State::Repetition);
     }
 
@@ -1057,5 +1063,20 @@ mod tests {
             game.hash, fen_game.hash,
             "The naturally reached position has a different hash than the one generated from fen"
         );
+    }
+
+    #[test]
+    fn generating_legal_moves_should_not_mutate_position() {
+        let mut game = Game::default();
+        let mut last_moves = game.generate_all_legal_moves();
+        let mut last = game.clone();
+        for _ in 1..20 {
+            let moves = game.generate_all_legal_moves();
+            let game = game.clone();
+            assert_eq!(moves, last_moves);
+            assert_eq!(game, last);
+            last = game;
+            last_moves = moves;
+        }
     }
 }

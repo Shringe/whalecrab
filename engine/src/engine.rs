@@ -55,7 +55,7 @@ fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
     moves
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
@@ -326,9 +326,37 @@ mod tests {
     }
 
     #[test]
+    fn grading_should_not_mutate_position() {
+        let mut engine = Engine::default();
+        let before = engine.game.clone();
+        let grade = engine.grade_position();
+        let after = engine.game;
+        println!("Score: {:?}", grade);
+        assert_eq!(before, after);
+    }
+
+    #[test]
     fn starting_evaluation_is_balanced() {
         let mut engine = Engine::default();
-        assert_eq!(engine.grade_position(), Score::default());
+        println!("{:?}", engine.game);
+        let grade = engine.grade_position();
+        println!("{:?}", engine.game);
+        assert_eq!(grade, Score::default());
+    }
+
+    #[test]
+    fn grade_position_is_deterministic() {
+        let mut engine = Engine::default();
+        let mut last_score = engine.grade_position();
+        let mut last = engine.game.clone();
+        for _ in 1..20 {
+            let score = engine.grade_position();
+            let game = engine.game.clone();
+            assert_eq!(score, last_score);
+            assert_eq!(game, last);
+            last = game;
+            last_score = score;
+        }
     }
 
     #[test]

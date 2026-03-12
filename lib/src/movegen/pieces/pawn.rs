@@ -1,5 +1,6 @@
 use crate::{
     bitboard::BitBoard,
+    bitboard::EMPTY,
     file::File,
     game::Game,
     movegen::{
@@ -9,6 +10,20 @@ use crate::{
     rank::Rank,
     square::Square,
 };
+
+macro_rules! assert_shift {
+    ($shifted:expr, $regular:expr) => {
+        #[cfg(debug_assertions)]
+        {
+            let sqbb = match $regular {
+                Some(sq) => BitBoard::from_square(sq),
+                None => EMPTY,
+            };
+
+            assert_eq!($shifted, sqbb);
+        }
+    };
+}
 
 impl Square {
     /// Generates all psuedo legal moves for a single pawn
@@ -23,20 +38,23 @@ impl Square {
         let mut moveinfo = PieceMoveInfo::default();
 
         let sqbb = BitBoard::from_square(*self);
-        let friendly = &game.turn;
-        // let friendly = game
-        //     .determine_color(&BitBoard::from_square(*self))
-        //     .expect("Tried to move non existent pawn");
+        let friendly = game
+            .determine_color(&BitBoard::from_square(*self))
+            .expect("Tried to move non existent pawn");
 
         let file = self.get_file();
 
         match friendly {
             PieceColor::White => {
                 let oncebb = sqbb << BitBoard(8);
+                assert_shift!(oncebb, self.up());
+
                 if !game.occupied.has_square(&oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Second {
                         let twicebb = oncebb << BitBoard(8);
+                        assert_shift!(twicebb, self.up().and_then(|s| s.up()));
+
                         if !game.occupied.has_square(&twicebb) {
                             moveinfo.targets |= twicebb;
                         }
@@ -45,6 +63,8 @@ impl Square {
 
                 if file > File::A {
                     let uleft = sqbb << BitBoard(7);
+                    assert_shift!(uleft, self.uleft());
+
                     moveinfo.attacks |= uleft;
                     if game.black_occupied.has_square(&uleft) {
                         moveinfo.targets |= uleft;
@@ -57,6 +77,8 @@ impl Square {
 
                 if file < File::H {
                     let uright = sqbb << BitBoard(9);
+                    assert_shift!(uright, self.uright());
+
                     moveinfo.attacks |= uright;
                     if game.black_occupied.has_square(&uright) {
                         moveinfo.targets |= uright;
@@ -70,10 +92,14 @@ impl Square {
 
             PieceColor::Black => {
                 let oncebb = sqbb >> BitBoard(8);
+                assert_shift!(oncebb, self.down());
+
                 if !game.occupied.has_square(&oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Seventh {
                         let twicebb = oncebb >> BitBoard(8);
+                        assert_shift!(twicebb, self.down().and_then(|s| s.down()));
+
                         if !game.occupied.has_square(&twicebb) {
                             moveinfo.targets |= twicebb;
                         }
@@ -82,6 +108,8 @@ impl Square {
 
                 if file > File::A {
                     let dleft = sqbb >> BitBoard(9);
+                    assert_shift!(dleft, self.dleft());
+
                     moveinfo.attacks |= dleft;
                     if game.white_occupied.has_square(&dleft) {
                         moveinfo.targets |= dleft;
@@ -94,6 +122,8 @@ impl Square {
 
                 if file < File::H {
                     let dright = sqbb >> BitBoard(7);
+                    assert_shift!(dright, self.dright());
+
                     moveinfo.attacks |= dright;
                     if game.white_occupied.has_square(&dright) {
                         moveinfo.targets |= dright;
