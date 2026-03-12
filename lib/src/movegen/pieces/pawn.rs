@@ -1,6 +1,5 @@
 use crate::{
     bitboard::BitBoard,
-    bitboard::EMPTY,
     file::File,
     game::Game,
     movegen::{
@@ -17,7 +16,7 @@ macro_rules! assert_shift {
         {
             let sqbb = match $regular {
                 Some(sq) => BitBoard::from_square(sq),
-                None => EMPTY,
+                None => crate::bitboard::EMPTY,
             };
 
             assert_eq!($shifted, sqbb);
