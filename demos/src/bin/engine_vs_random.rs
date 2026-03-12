@@ -10,7 +10,7 @@ fn main() {
         let m = match engine.game.turn {
             PieceColor::White => engine.get_engine_move_minimax(2),
             PieceColor::Black => {
-                let moves = engine.game.generate_all_legal_moves();
+                let moves = engine.game.legal_moves();
                 if moves.is_empty() {
                     None
                 } else {

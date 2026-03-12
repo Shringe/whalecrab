@@ -233,7 +233,7 @@ impl Engine {
         }
 
         let mut max = Score::MIN;
-        for m in order_moves(self.game.generate_all_legal_moves()) {
+        for m in order_moves(self.game.legal_moves()) {
             let score = search_move!(self, m, mini(alpha, beta, depth - 1));
             if score > max {
                 max = score;
@@ -256,7 +256,7 @@ impl Engine {
         }
 
         let mut min = Score::MAX;
-        for m in order_moves(self.game.generate_all_legal_moves()) {
+        for m in order_moves(self.game.legal_moves()) {
             let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
             if score < min {
                 min = score;
@@ -274,7 +274,7 @@ impl Engine {
     }
 
     pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
-        let moves = order_moves(self.game.generate_all_legal_moves());
+        let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
 
         let alpha = Score::MIN;
@@ -383,7 +383,7 @@ mod tests {
     fn black_always_takes_king() {
         let fen = "k6r/pp4r1/8/pp6/Qp6/pp6/7K/8 w - - 0 1";
         let mut engine = Engine::from_fen(fen).unwrap();
-        let white_moves = engine.game.generate_all_legal_moves();
+        let white_moves = engine.game.legal_moves();
         for m in white_moves {
             engine.game.play(&m);
             let result = engine.get_engine_move_minimax(0).unwrap();
@@ -406,7 +406,7 @@ mod tests {
     fn white_always_checkmates() {
         let fen = "7k/8/8/8/8/8/5R2/K5R1 b - - 0 1";
         let mut engine = Engine::from_fen(fen).unwrap();
-        let black_moves = engine.game.generate_all_legal_moves();
+        let black_moves = engine.game.legal_moves();
         for m in black_moves {
             engine.game.play(&m);
             let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
@@ -447,7 +447,7 @@ mod tests {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2";
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
-        let _ = engine.game.generate_all_legal_moves();
+        let _ = engine.game.legal_moves();
         let _ = engine.get_engine_move_minimax(2);
         assert_eq!(before, engine.game);
     }
@@ -455,7 +455,7 @@ mod tests {
     #[test]
     fn sort_moves_keeps_all_moves() {
         let mut engine = Engine::default();
-        let moves = engine.game.generate_all_legal_moves();
+        let moves = engine.game.legal_moves();
         let sorted = order_moves(moves.clone());
         for sortedm in &sorted {
             assert!(moves.contains(sortedm));
@@ -477,7 +477,7 @@ mod tests {
     fn should_have_moves_fen() {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
         let mut engine = Engine::from_fen(fen).unwrap();
-        let moves = engine.game.generate_all_legal_moves();
+        let moves = engine.game.legal_moves();
         let engine_move = engine.get_engine_move_minimax(2);
         assert!(!moves.is_empty());
         assert!(engine_move.is_some())
@@ -493,7 +493,7 @@ mod tests {
         ] {
             let m = Move::infer(from, to, &engine.game);
             engine.game.play(&m);
-            let moves = engine.game.generate_all_legal_moves();
+            let moves = engine.game.legal_moves();
             let engine_move = engine.get_engine_move_minimax(2);
             assert_eq!(engine.game.state, State::InProgress);
             assert!(!moves.is_empty());

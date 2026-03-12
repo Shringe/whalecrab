@@ -7,7 +7,7 @@ use crate::{
         moves::{Move, targets_to_moves},
         pieces::piece::PieceColor,
     },
-    square::{ALL_DIRECTIONS, Square},
+    square::Square,
 };
 
 use super::piece::PieceMoveInfo;

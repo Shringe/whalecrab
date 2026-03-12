@@ -306,7 +306,7 @@ mod tests {
             capture: Some(PieceType::Pawn),
         };
 
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         should_generate(&moves, &looking_for);
         assert_eq!(Move::from_uci(uci, &game).unwrap(), looking_for);
     }

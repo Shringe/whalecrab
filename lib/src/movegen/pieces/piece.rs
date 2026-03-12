@@ -186,7 +186,7 @@ mod tests {
         let fen = "1k6/1r6/8/8/8/8/8/K7 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
         let psuedo_legal = game.generate_all_psuedo_legal_moves();
-        let legal = game.generate_all_legal_moves();
+        let legal = game.legal_moves();
 
         let legal_looking_for = vec![Move::infer(Square::A1, Square::A2, &game)];
         let psuedo_legal_looking_for = vec![
@@ -211,7 +211,7 @@ mod tests {
         let fen = "4k3/4r3/8/8/2N5/8/4K3/8 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let looking_for = Move::infer(Square::C4, Square::E3, &game);
 
         should_generate(&legal_moves, &looking_for);
@@ -222,7 +222,7 @@ mod tests {
         let fen = "4k3/4r3/8/8/8/3P1P2/4KP2/3RRR2 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let looking_for = [Move::infer(Square::E2, Square::D2, &game)];
 
         assert_eq!(legal_moves, looking_for);
@@ -233,7 +233,7 @@ mod tests {
         let fen = "4k3/4r3/8/8/1B6/3P1P2/3PKP2/3RRR2 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let looking_for = [Move::infer(Square::B4, Square::E7, &game)];
 
         assert_eq!(legal_moves, looking_for);
@@ -244,7 +244,7 @@ mod tests {
         let fen = "4k3/4r3/8/8/3P1P2/4B3/3PK3/6P1 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let looking_for = Move::infer(Square::E3, Square::F2, &game);
 
         shouldnt_generate(&legal_moves, &looking_for);
@@ -255,7 +255,7 @@ mod tests {
         let fen = "4K3/4R3/8/8/8/8/4k3/8 b - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
 
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let looking_for = [
             Move::infer(Square::E2, Square::E1, &game),
             Move::infer(Square::E2, Square::E3, &game),
@@ -270,7 +270,7 @@ mod tests {
     fn must_move_out_of_double_check() {
         let fen = "4k3/4r3/8/6Qb/8/2R5/4KP2/8 w - - 0 1";
         let mut game = Game::from_fen(fen).unwrap();
-        let legal_moves = game.generate_all_legal_moves();
+        let legal_moves = game.legal_moves();
         let king = Square::E2;
 
         for m in legal_moves {
@@ -293,7 +293,7 @@ mod tests {
             let frombb = BitBoard::from_square(to_play_from);
             let fen = game.to_fen();
             let psuedo_legal_moves = game.generate_all_psuedo_legal_moves();
-            let legal_moves = game.generate_all_legal_moves();
+            let legal_moves = game.legal_moves();
 
             let turn = i + 1;
             if i % 2 == 0 {
@@ -528,7 +528,7 @@ Available moves: {}
     fn not_checkmate() {
         let fen = "r2q1rk1/p2n1pp1/1p3n1p/2b5/8/1R3P1N/P2pP1PP/2BQKB1R w K - 0 14";
         let mut game = Game::from_fen(fen).unwrap();
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         let possible_moves = [
             Move::Normal {
                 from: Square::D1,
@@ -551,7 +551,7 @@ Available moves: {}
     fn shouldnt_have_moves() {
         let fen = "1kb2b1r/1p1p1ppp/1Np5/8/4P1PP/1P3PK1/r6q/8 w - - 1 27";
         let mut game = Game::from_fen(fen).unwrap();
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         assert!(
             moves.is_empty(),
             "White can play: {}",

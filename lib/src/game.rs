@@ -96,6 +96,7 @@ pub struct Game {
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
     pub nodes_seached: u128,
+    pub legal_moves: Option<Vec<Move>>,
 }
 
 impl PartialEq for Game {
@@ -160,6 +161,7 @@ impl Default for Game {
             occupied: EMPTY,
             position_history: Vec::new(),
             nodes_seached: 0,
+            legal_moves: None,
         };
 
         game.refresh();
@@ -214,6 +216,7 @@ impl Game {
             occupied: EMPTY,
             position_history: Vec::new(),
             nodes_seached: 0,
+            legal_moves: None,
         }
     }
 
@@ -530,6 +533,8 @@ impl Game {
             *self.get_attacks_mut(&enemy),
             *self.get_check_rays_mut(&enemy),
         ) = self.calculate_attacks(&enemy);
+
+        self.legal_moves = Some(self.generate_all_legal_moves());
     }
 
     /// Returns a bitboard of every piece attacking the given square
@@ -747,27 +752,20 @@ impl Game {
         moves
     }
 
+    /// Hands over pregenerated legal moves on the first call, and generates legal moves
+    /// again for each subsequent call. If you want to call this method multiple times,
+    /// think about calling this method once and storing the output instead.
+    pub fn legal_moves(&mut self) -> Vec<Move> {
+        match self.legal_moves.take() {
+            Some(legal_moves) => legal_moves,
+            None => self.generate_all_legal_moves(),
+        }
+    }
+
     /// Generates all legal moves for the current player. This also updates position state
     /// for statemate or checkmate
-    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let moves = self.legal_moves_filter(self.generate_all_psuedo_legal_moves());
-
-        if self.state != State::InProgress {
-            return moves;
-        }
-
-        if moves.is_empty() {
-            self.state = if self
-                .get_attacks(&self.turn.opponent())
-                .has_square(self.get_pieces(&PieceType::King, &self.turn))
-            {
-                State::Checkmate
-            } else {
-                State::Stalemate
-            }
-        }
-
-        moves
+    fn generate_all_legal_moves(&self) -> Vec<Move> {
+        self.legal_moves_filter(self.generate_all_psuedo_legal_moves())
     }
 }
 
@@ -792,7 +790,7 @@ mod tests {
             game.play(&m);
         }
 
-        game.generate_all_legal_moves();
+        game.legal_moves();
         assert_eq!(game.turn, PieceColor::White);
         assert_eq!(game.state, State::Checkmate);
     }
@@ -804,9 +802,9 @@ mod tests {
         let to_play = Move::infer(Square::F6, Square::E6, &game);
 
         assert_eq!(game.state, State::InProgress);
-        should_generate(&game.generate_all_legal_moves(), &to_play);
+        should_generate(&game.legal_moves(), &to_play);
         game.play(&to_play);
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         println!(
             "white attacks:\n{}\nblack attacks:\n{}",
             game.white_attacks, game.black_attacks
@@ -826,7 +824,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         assert_eq!(game.state, State::InProgress);
         let to_play = Move::infer(Square::F2, Square::F3, &game);
-        should_generate(&game.generate_all_legal_moves(), &to_play);
+        should_generate(&game.legal_moves(), &to_play);
         game.play(&to_play);
         assert_eq!(game.state, State::Timeout);
     }
@@ -848,12 +846,12 @@ mod tests {
         for (from, to) in moves {
             // assert_eq!(game.state, State::InProgress);
             let m = Move::infer(from, to, &game);
-            should_generate(&game.generate_all_legal_moves(), &m);
+            should_generate(&game.legal_moves(), &m);
             game.play(&m);
         }
 
         // game.generate_all_legal_moves();
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         println!("{:?}", game);
         assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
         assert_eq!(game.state, State::Repetition);
@@ -872,7 +870,7 @@ mod tests {
     fn game_comes_to_an_end() {
         let mut game = Game::default();
         loop {
-            let moves = game.generate_all_legal_moves();
+            let moves = game.legal_moves();
             let m = match moves.first() {
                 Some(m) => m,
                 None => break,
@@ -882,7 +880,7 @@ mod tests {
             game.play(m);
         }
 
-        let moves_left = game.generate_all_legal_moves();
+        let moves_left = game.legal_moves();
 
         assert_ne!(
             game.state,
@@ -898,7 +896,7 @@ mod tests {
     fn can_capture_attacking_rook() {
         let fen = "rR1k3r/2p3p1/p1P2p1p/2Bpp3/8/6P1/P6P/1R4K1 b - - 3 33";
         let mut game = Game::from_fen(fen).unwrap();
-        let moves = game.generate_all_legal_moves();
+        let moves = game.legal_moves();
         should_generate(
             &moves,
             &Move::Normal {
@@ -1068,10 +1066,10 @@ mod tests {
     #[test]
     fn generating_legal_moves_should_not_mutate_position() {
         let mut game = Game::default();
-        let mut last_moves = game.generate_all_legal_moves();
+        let mut last_moves = game.legal_moves();
         let mut last = game.clone();
         for _ in 1..20 {
-            let moves = game.generate_all_legal_moves();
+            let moves = game.legal_moves();
             let game = game.clone();
             assert_eq!(moves, last_moves);
             assert_eq!(game, last);

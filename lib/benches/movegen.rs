@@ -39,7 +39,7 @@ fn bench(c: &mut Criterion) {
     }
 
     c.bench_function("Generate all legal moves", |b| {
-        b.iter(|| game.generate_all_legal_moves());
+        b.iter(|| game.legal_moves());
     });
 
     c.bench_function("Generate all psuedo legal moves", |b| {
