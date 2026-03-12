@@ -8,6 +8,7 @@ fn bench(c: &mut Criterion) {
     let mut sample_engine = Engine::default();
 
     for depth in 0..=3 {
+        sample_engine.nodes_searched = 0;
         let _ = sample_engine.get_engine_move_minimax(depth);
         let sample = sample_engine.nodes_searched;
         group.throughput(Throughput::Elements(sample));
