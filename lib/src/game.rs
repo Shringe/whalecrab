@@ -534,7 +534,27 @@ impl Game {
             *self.get_check_rays_mut(&enemy),
         ) = self.calculate_attacks(&enemy);
 
-        self.legal_moves = Some(self.generate_all_legal_moves());
+        if self.state == State::InProgress {
+            let moves = self.generate_all_legal_moves();
+
+            if moves.is_empty() {
+                self.state = if self.is_in_check() {
+                    State::Checkmate
+                } else {
+                    State::Stalemate
+                };
+            }
+
+            self.legal_moves = Some(moves);
+        }
+    }
+
+    /// Checks if the current player's king is in check
+    pub fn is_in_check(&self) -> bool {
+        match self.turn {
+            PieceColor::White => self.black_attacks.has_square(&self.white_kings),
+            PieceColor::Black => self.white_attacks.has_square(&self.black_kings),
+        }
     }
 
     /// Returns a bitboard of every piece attacking the given square
@@ -579,22 +599,6 @@ impl Game {
         }
         self.refresh();
 
-        // Repetition
-        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
-            *times_seen += 1;
-        } else {
-            self.seen_positions.insert(self.hash, 1);
-        }
-
-        if *self
-            .seen_positions
-            .get(&self.hash)
-            .expect("Position should be hashed!")
-            == 3
-        {
-            self.state = State::Repetition;
-        }
-
         // Half move timeout
         let should_reset_half_move_timeout = match last_move {
             Move::Normal { to, capture, .. } => {
@@ -619,12 +623,20 @@ impl Game {
         if self.half_move_timeout == 50 {
             self.state = State::Timeout;
         }
+
+        // Repetition
+        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
+            if *times_seen == 2 {
+                self.state = State::Repetition;
+            }
+            *times_seen += 1;
+        } else {
+            self.seen_positions.insert(self.hash, 1);
+        }
     }
 
     /// Reverses turn color and full_move_clock to the last turn
     pub fn previous_turn(&mut self) {
-        self.turn = self.turn.opponent();
-
         // Repetition
         if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
             if *times_seen == 1 {
@@ -633,6 +645,9 @@ impl Game {
                 *times_seen -= 1;
             }
         }
+
+        self.turn = self.turn.opponent();
+
         self.refresh();
         if self.turn == PieceColor::Black {
             self.full_move_clock -= 1;
@@ -765,6 +780,10 @@ impl Game {
     /// Generates all legal moves for the current player. This also updates position state
     /// for statemate or checkmate
     fn generate_all_legal_moves(&self) -> Vec<Move> {
+        if self.state != State::InProgress {
+            return Vec::new();
+        }
+
         self.legal_moves_filter(self.generate_all_psuedo_legal_moves())
     }
 }
@@ -841,16 +860,16 @@ mod tests {
             (Square::B8, Square::C6),
             (Square::F3, Square::G1),
             (Square::C6, Square::B8),
+            // (Square::G1, Square::F3),
         ];
 
         for (from, to) in moves {
-            // assert_eq!(game.state, State::InProgress);
+            assert_eq!(game.state, State::InProgress);
             let m = Move::infer(from, to, &game);
             should_generate(&game.legal_moves(), &m);
             game.play(&m);
         }
 
-        // game.generate_all_legal_moves();
         let moves = game.legal_moves();
         println!("{:?}", game);
         assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
