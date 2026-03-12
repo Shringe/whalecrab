@@ -849,7 +849,32 @@ mod tests {
     }
 
     #[test]
-    fn draw_by_repitition() {
+    fn draw_by_repetition() {
+        let mut game = Game::default();
+        let moves = [
+            (Square::G1, Square::F3),
+            (Square::B8, Square::C6),
+            (Square::F3, Square::G1),
+            (Square::C6, Square::B8),
+            (Square::G1, Square::F3),
+            (Square::B8, Square::C6),
+            (Square::F3, Square::G1),
+            (Square::C6, Square::B8),
+            // (Square::G1, Square::F3),
+        ];
+
+        for (from, to) in moves {
+            assert_eq!(game.state, State::InProgress);
+            let m = Move::infer(from, to, &game);
+            should_generate(&game.legal_moves(), &m);
+            game.play(&m);
+        }
+
+        assert_eq!(game.state, State::Repetition);
+    }
+
+    #[test]
+    fn should_not_have_moves_after_draw_by_repetition() {
         let mut game = Game::default();
         let moves = [
             (Square::G1, Square::F3),
@@ -872,8 +897,8 @@ mod tests {
 
         let moves = game.legal_moves();
         println!("{:?}", game);
-        assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
         assert_eq!(game.state, State::Repetition);
+        assert!(moves.is_empty(), "{}", format_pretty_list(&moves));
     }
 
     #[test]
