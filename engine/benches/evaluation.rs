@@ -5,20 +5,15 @@ mod common;
 
 fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Engine against self");
-    // let mut averages = Vec::new();
     let mut sample_engine = Engine::default();
 
-    for depth in 0..=0 {
-        let mut nodes_searched = 0;
-        let mut num_completions = 0;
-
+    for depth in 0..=3 {
         let _ = sample_engine.get_engine_move_minimax(depth);
-        let sample = sample_engine.game.nodes_seached;
+        let sample = sample_engine.nodes_searched;
+        group.throughput(Throughput::Elements(sample));
 
-        group.throughput(Throughput::Elements(sample.try_into().unwrap_or(u64::MAX)));
-        println!("{}", sample);
+        let mut engine = Engine::default();
         group.bench_with_input(BenchmarkId::from_parameter(depth), &depth, |b, &depth| {
-            let mut engine = Engine::default();
             b.iter(|| {
                 if let Some(m) = engine.get_engine_move_minimax(depth) {
                     engine.game.play(&m);
@@ -27,13 +22,10 @@ fn bench(c: &mut Criterion) {
                     engine.with_new_game(Game::default());
                 }
             });
-
-            nodes_searched += engine.game.nodes_seached;
-            num_completions += 1;
         });
 
-        let average = nodes_searched / num_completions;
-        println!("Nodes Searched: {}", average);
+        println!("Num nodes from starting position: {}", sample);
+        println!("Total Nodes Searched: {}", engine.nodes_searched);
     }
 
     group.finish();

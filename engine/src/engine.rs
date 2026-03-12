@@ -24,7 +24,7 @@ macro_rules! search_move {
         #[cfg(debug_assertions)]
         let during = $self.game.clone();
 
-        $self.game.nodes_seached += 1;
+        $self.nodes_searched += 1;
         let score = $self.$method($($args),*);
         $self.game.unplay(&$move);
 
@@ -60,6 +60,7 @@ pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
     transposition_table: HashMap<u64, Score>,
+    pub nodes_searched: u64,
 }
 
 impl Engine {
@@ -67,6 +68,7 @@ impl Engine {
         Engine {
             game,
             transposition_table: HashMap::new(),
+            nodes_searched: 0,
         }
     }
 

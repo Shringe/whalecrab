@@ -657,7 +657,7 @@ impl App {
             self.engine.game.state,
             self.score,
             self.engine.game.turn,
-            self.engine.game.nodes_seached,
+            self.engine.nodes_searched,
             self.engine.game.hash,
         ));
 
