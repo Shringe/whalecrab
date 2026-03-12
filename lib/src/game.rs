@@ -771,6 +771,10 @@ impl Game {
     /// again for each subsequent call. If you want to call this method multiple times,
     /// think about calling this method once and storing the output instead.
     pub fn legal_moves(&mut self) -> Vec<Move> {
+        if self.state != State::InProgress {
+            return Vec::new();
+        }
+
         match self.legal_moves.take() {
             Some(legal_moves) => legal_moves,
             None => self.generate_all_legal_moves(),
@@ -780,10 +784,6 @@ impl Game {
     /// Generates all legal moves for the current player. This also updates position state
     /// for statemate or checkmate
     fn generate_all_legal_moves(&self) -> Vec<Move> {
-        if self.state != State::InProgress {
-            return Vec::new();
-        }
-
         self.legal_moves_filter(self.generate_all_psuedo_legal_moves())
     }
 }
