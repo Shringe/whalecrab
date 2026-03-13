@@ -9,6 +9,7 @@ use ratatui::{
 };
 use std::io::Result;
 use std::str::FromStr;
+use std::time::Duration;
 use whalecrab_engine::engine::Engine;
 use whalecrab_engine::score::Score;
 use whalecrab_lib::movegen::pieces::piece;
@@ -246,10 +247,15 @@ struct App {
     potential_targets: Vec<Square>,
 
     score: Score,
-    engine_suggestions: bool,
-    verbose: bool,
-    suggested: Option<Move>,
+    /// Whether to calculate the top engine move for every position
+    use_engine: bool,
+    /// How long the engine should search for a move
+    engine_search_time: Duration,
+    /// Whether to show the top engine move in the debug panel
+    engine_suggestions_in_debug_panel: bool,
+    engine_move: Option<Move>,
     last: Option<Move>,
+    verbose: bool,
 
     player_white: PlayerType,
     player_black: PlayerType,
@@ -263,7 +269,7 @@ struct App {
 
 impl App {
     pub fn new() -> Self {
-        Self {
+        let mut app = Self {
             highlighted_square: Square::A1,
             selected_square: None,
             engine: Engine::default(),
@@ -271,9 +277,11 @@ impl App {
             potential_targets: Vec::new(),
 
             score: Score::default(),
-            engine_suggestions: false,
+            use_engine: false,
+            engine_search_time: Duration::from_secs(3),
+            engine_suggestions_in_debug_panel: false,
             verbose: false,
-            suggested: None,
+            engine_move: None,
             last: None,
 
             player_white: PlayerType::Human,
@@ -284,7 +292,10 @@ impl App {
             fen: Textbox::new(),
             command: Textbox::new(),
             exit: false,
-        }
+        };
+
+        app.refresh();
+        app
     }
 
     /// runs the application's main loop until the user quits
@@ -350,11 +361,7 @@ impl App {
     /// Refreshes the board after playing a move and starts the next move
     fn play_move(&mut self, m: &Move) {
         self.engine.game.play(m);
-        self.score = self.engine.grade_position();
-        self.fen.input = self.engine.game.to_fen();
-        if let Some(sm) = self.engine.minimax(4) {
-            self.suggested = Some(sm)
-        }
+        self.refresh();
 
         let player = match self.engine.game.turn {
             piece::PieceColor::White => &self.player_white,
@@ -367,6 +374,19 @@ impl App {
         };
 
         self.last = Some(*m);
+    }
+
+    /// Refreshes all position-dependant values
+    fn refresh(&mut self) {
+        self.score = self.engine.grade_position();
+        self.fen.input = self.engine.game.to_fen();
+        self.use_engine = self.engine_suggestions_in_debug_panel
+            || self.player_white == PlayerType::Engine
+            || self.player_black == PlayerType::Engine;
+
+        if self.use_engine {
+            self.engine_move = self.get_engine_move();
+        }
     }
 
     /// Tries to make a human player's move if possible
@@ -398,13 +418,16 @@ impl App {
         }
     }
 
+    /// Gets the current engine move
+    fn get_engine_move(&mut self) -> Option<Move> {
+        self.engine.iterative_deepening(&self.engine_search_time)
+    }
+
     /// Plays the top engine move and then passes the turn to the next player
     fn play_engine_move(&mut self) {
         let m = self
-            .engine
-            .minimax(4)
-            .expect("Tried to play engine move, but there was no move to play");
-
+            .engine_move
+            .expect("Tried to play engine move, but there is no engine move to play");
         self.play_move(&m);
     }
 
@@ -419,7 +442,10 @@ impl App {
                 KeyCode::Char('c') => self.focus = Focus::Command,
                 KeyCode::Char('m') => self.focus = Focus::Menu,
                 KeyCode::Char('f') => self.focus = Focus::Fen,
-                KeyCode::Char('e') => self.engine_suggestions = !self.engine_suggestions,
+                KeyCode::Char('e') => {
+                    self.engine_suggestions_in_debug_panel =
+                        !self.engine_suggestions_in_debug_panel;
+                }
                 KeyCode::Char('v') => self.verbose = !self.verbose,
                 KeyCode::Char('u') => {
                     if let Some(m) = &self.last {
@@ -675,8 +701,8 @@ impl App {
             self.highlighted_square
         ));
 
-        if self.engine_suggestions
-            && let Some(m) = &self.suggested
+        if self.engine_suggestions_in_debug_panel
+            && let Some(m) = &self.engine_move
         {
             debug_text.push_str(&format!("Suggested move: {}\n", m));
         }
