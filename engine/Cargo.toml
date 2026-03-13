@@ -4,7 +4,11 @@ version = "0.0.1"
 edition.workspace = true
 
 [[bench]]
-name = "evaluation"
+name = "minimax"
+harness = false
+
+[[bench]]
+name = "iterative_deepening"
 harness = false
 
 [[bench]]

@@ -4,7 +4,7 @@ use whalecrab_lib::game::Game;
 mod common;
 
 fn bench(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Engine against self");
+    let mut group = c.benchmark_group("Engine against self with minimax");
     let mut sample_engine = Engine::default();
 
     for depth in 0..=3 {
