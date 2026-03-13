@@ -129,7 +129,7 @@ fn main() {
 
             UciCommand::Go => match &mut uci.engine {
                 Some(game) => {
-                    let best_move = match game.get_engine_move_minimax(uci.depth) {
+                    let best_move = match game.minimax(uci.depth) {
                         Some(m) => m,
                         None => {
                             log!("No engine move found. Maybe the game is finished?");
@@ -140,10 +140,7 @@ fn main() {
 
                     let best_move_uci = best_move.to_uci(&game.game);
                     log!("Playing engine move: {}", best_move);
-                    log!(
-                        "Fen before playing the move: {}",
-                        game.game.to_fen()
-                    );
+                    log!("Fen before playing the move: {}", game.game.to_fen());
                     uci_send!("bestmove {}", best_move_uci);
                     game.game.play(&best_move);
                 }

@@ -8,7 +8,7 @@ fn main() {
 
     for _ in 0..100 {
         let m = match engine.game.turn {
-            PieceColor::White => engine.get_engine_move_minimax(2),
+            PieceColor::White => engine.minimax(2),
             PieceColor::Black => {
                 let moves = engine.game.legal_moves();
                 if moves.is_empty() {

@@ -6,8 +6,8 @@ fn main() {
 
     while engine.game.state == State::InProgress {
         let m = match engine.game.turn {
-            PieceColor::White => engine.get_engine_move_minimax(3),
-            PieceColor::Black => engine.get_engine_move_minimax(2),
+            PieceColor::White => engine.minimax(3),
+            PieceColor::Black => engine.minimax(2),
         };
 
         match m {

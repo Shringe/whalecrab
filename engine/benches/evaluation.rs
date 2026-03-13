@@ -9,14 +9,14 @@ fn bench(c: &mut Criterion) {
 
     for depth in 0..=3 {
         sample_engine.nodes_searched = 0;
-        let _ = sample_engine.get_engine_move_minimax(depth);
+        let _ = sample_engine.minimax(depth);
         let sample = sample_engine.nodes_searched;
         group.throughput(Throughput::Elements(sample));
 
         let mut engine = Engine::default();
         group.bench_with_input(BenchmarkId::from_parameter(depth), &depth, |b, &depth| {
             b.iter(|| {
-                if let Some(m) = engine.get_engine_move_minimax(depth) {
+                if let Some(m) = engine.minimax(depth) {
                     engine.game.play(&m);
                 } else {
                     // Reset the board if no moves to play

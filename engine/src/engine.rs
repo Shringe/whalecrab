@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 use crate::{
     piece_eval::{material_value, square_value},
@@ -275,7 +278,7 @@ impl Engine {
         min
     }
 
-    pub fn get_engine_move_minimax(&mut self, depth: u16) -> Option<Move> {
+    pub fn minimax(&mut self, depth: u16) -> Option<Move> {
         let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
 
@@ -308,6 +311,25 @@ impl Engine {
 
                 best_move
             }
+        }
+    }
+
+    /// The engine will continue searching deeper and deeper depths until the duration has passed,
+    /// at which point it will return the best move found so far.
+    pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
+        let start = Instant::now();
+        let mut depth = 0;
+
+        loop {
+            let best_move = self.minimax(depth);
+
+            let finished = Instant::now();
+            let elapsed = finished.duration_since(start);
+            if elapsed > *duration {
+                return best_move;
+            }
+
+            depth += 1;
         }
     }
 }
@@ -366,7 +388,7 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let looking_for = Move::infer(Square::C1, Square::G5, &engine.game);
-        let result = engine.get_engine_move_minimax(2).expect("No moves found");
+        let result = engine.minimax(2).expect("No moves found");
         println!("State: {:?}", engine.game.state);
         assert_eq!(result, looking_for);
     }
@@ -376,7 +398,7 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let black_queens_before = engine.game.black_queens.popcnt();
-        let result = engine.get_engine_move_minimax(2).expect("No moves found");
+        let result = engine.minimax(2).expect("No moves found");
         engine.game.play(&result);
         assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
@@ -388,7 +410,7 @@ mod tests {
         let white_moves = engine.game.legal_moves();
         for m in white_moves {
             engine.game.play(&m);
-            let result = engine.get_engine_move_minimax(0).unwrap();
+            let result = engine.minimax(0).unwrap();
             assert!(
                 matches!(
                     result,
@@ -412,7 +434,7 @@ mod tests {
         for m in black_moves {
             engine.game.play(&m);
             let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
-            let result = engine.get_engine_move_minimax(1).unwrap();
+            let result = engine.minimax(1).unwrap();
             assert_eq!(result, looking_for);
             engine.game.unplay(&m);
         }
@@ -450,7 +472,7 @@ mod tests {
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
         let _ = engine.game.legal_moves();
-        let _ = engine.get_engine_move_minimax(2);
+        let _ = engine.minimax(2);
         assert_eq!(before, engine.game);
     }
 
@@ -470,7 +492,7 @@ mod tests {
         let fen = "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29";
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
-        let _ = engine.get_engine_move_minimax(3);
+        let _ = engine.minimax(3);
         let after = engine.game;
         assert_eq!(after, before);
     }
@@ -480,7 +502,7 @@ mod tests {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
         let mut engine = Engine::from_fen(fen).unwrap();
         let moves = engine.game.legal_moves();
-        let engine_move = engine.get_engine_move_minimax(2);
+        let engine_move = engine.minimax(2);
         assert!(!moves.is_empty());
         assert!(engine_move.is_some())
     }
@@ -496,7 +518,7 @@ mod tests {
             let m = Move::infer(from, to, &engine.game);
             engine.game.play(&m);
             let moves = engine.game.legal_moves();
-            let engine_move = engine.get_engine_move_minimax(2);
+            let engine_move = engine.minimax(2);
             assert_eq!(engine.game.state, State::InProgress);
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())
