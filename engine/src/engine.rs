@@ -278,7 +278,19 @@ impl Engine {
         min
     }
 
+    /// Contiunes searching until the depth is reached
     pub fn minimax(&mut self, depth: u16) -> Option<Move> {
+        self.minimax_with_duration(depth, &Instant::now(), &Duration::MAX)
+            .0
+    }
+
+    /// Continues searching until either the depth or duration is reached
+    pub fn minimax_with_duration(
+        &mut self,
+        depth: u16,
+        since: &Instant,
+        duration: &Duration,
+    ) -> (Option<Move>, bool) {
         let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
 
@@ -294,9 +306,15 @@ impl Engine {
                         best_score = score;
                         best_move = Some(m);
                     }
+
+                    let finished = Instant::now();
+                    let elapsed = finished.duration_since(*since);
+                    if elapsed > *duration {
+                        return (best_move, true);
+                    }
                 }
 
-                best_move
+                (best_move, false)
             }
 
             PieceColor::Black => {
@@ -307,9 +325,15 @@ impl Engine {
                         best_score = score;
                         best_move = Some(m);
                     }
+
+                    let finished = Instant::now();
+                    let elapsed = finished.duration_since(*since);
+                    if elapsed > *duration {
+                        return (best_move, true);
+                    }
                 }
 
-                best_move
+                (best_move, false)
             }
         }
     }
@@ -319,16 +343,16 @@ impl Engine {
     pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
         let start = Instant::now();
         let mut depth = 0;
+        let mut best_move_so_far = None;
 
         loop {
-            let best_move = self.minimax(depth);
+            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, &start, duration);
 
-            let finished = Instant::now();
-            let elapsed = finished.duration_since(start);
-            if elapsed > *duration {
-                return best_move;
+            if ran_out_of_time {
+                return best_move_so_far;
             }
 
+            best_move_so_far = best_move;
             depth += 1;
         }
     }
