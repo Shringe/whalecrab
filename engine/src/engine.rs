@@ -360,6 +360,14 @@ mod tests {
     }
 
     #[test]
+    fn iterative_deepening_finds_a_move() {
+        let mut engine = Engine::default();
+        let duration = Duration::from_millis(200);
+        let best_move = engine.iterative_deepening(&duration);
+        assert!(best_move.is_some());
+    }
+
+    #[test]
     fn starting_evaluation_is_balanced() {
         let mut engine = Engine::default();
         println!("{:?}", engine.game);
