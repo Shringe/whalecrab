@@ -18,7 +18,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use whalecrab_engine::engine::Engine;
 use whalecrab_engine::score::Score;
-use whalecrab_lib::movegen::pieces::piece;
+use whalecrab_lib::movegen::pieces::piece::{self, PieceColor};
 use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
@@ -92,25 +92,43 @@ impl App {
 
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        terminal.draw(|frame| self.draw(frame))?;
         while !self.exit {
-            terminal.draw(|frame| self.draw(frame))?;
+            if self.focus == Focus::Board {
+                let player = match self.engine.game.turn {
+                    PieceColor::White => &self.player_white,
+                    PieceColor::Black => &self.player_black,
+                };
+
+                if let PlayerType::Engine { search_time } = player {
+                    let m = self
+                        .engine
+                        .iterative_deepening(search_time)
+                        .expect("Tried to play engine move, but there is no engine move to play");
+                    self.play_move(&m);
+                }
+            }
+
             self.handle_events()?;
+            terminal.draw(|frame| self.draw(frame))?;
+        }
+        Ok(())
+    }
+
+    fn handle_events(&mut self) -> Result<()> {
+        if event::poll(Duration::from_millis(100))? {
+            match event::read()? {
+                Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                    self.handle_key_event(key_event)
+                }
+                _ => {}
+            }
         }
         Ok(())
     }
 
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
-    }
-
-    fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
-            }
-            _ => {}
-        };
-        Ok(())
     }
 
     fn handle_key_event(&mut self, key_event: event::KeyEvent) {
@@ -194,18 +212,18 @@ impl App {
         self.refresh();
 
         let player = match self.engine.game.turn {
-            piece::PieceColor::White => &self.player_white,
-            piece::PieceColor::Black => &self.player_black,
+            PieceColor::White => &self.player_white,
+            PieceColor::Black => &self.player_black,
         };
 
         match player {
             PlayerType::Human => self.unselect(),
             PlayerType::Engine { search_time } => {
-                let m = self
-                    .engine
-                    .iterative_deepening(search_time)
-                    .expect("Tried to play engine move, but there is no engine move to play");
-                self.play_move(&m);
+                // let m = self
+                //     .engine
+                //     .iterative_deepening(search_time)
+                //     .expect("Tried to play engine move, but there is no engine move to play");
+                // self.play_move(&m);
             }
         };
 
@@ -296,8 +314,8 @@ impl App {
                 KeyCode::Esc => self.unselect(),
                 KeyCode::Enter => {
                     let player = match self.engine.game.turn {
-                        piece::PieceColor::White => &self.player_white,
-                        piece::PieceColor::Black => &self.player_black,
+                        PieceColor::White => &self.player_white,
+                        PieceColor::Black => &self.player_black,
                     };
 
                     if *player == PlayerType::Human {
