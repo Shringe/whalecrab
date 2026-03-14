@@ -18,7 +18,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use whalecrab_engine::engine::Engine;
 use whalecrab_engine::score::Score;
-use whalecrab_lib::movegen::pieces::piece::{self, PieceColor};
+use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
@@ -94,6 +94,8 @@ impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         terminal.draw(|frame| self.draw(frame))?;
         while !self.exit {
+            let mut needs_redraw = false;
+
             if self.focus == Focus::Board {
                 let player = match self.engine.game.turn {
                     PieceColor::White => &self.player_white,
@@ -106,25 +108,32 @@ impl App {
                         .iterative_deepening(search_time)
                         .expect("Tried to play engine move, but there is no engine move to play");
                     self.play_move(&m);
+                    needs_redraw = true;
                 }
             }
 
-            self.handle_events()?;
-            terminal.draw(|frame| self.draw(frame))?;
+            if self.handle_events()? {
+                needs_redraw = true;
+            }
+
+            if needs_redraw {
+                terminal.draw(|frame| self.draw(frame))?;
+            }
         }
         Ok(())
     }
 
-    fn handle_events(&mut self) -> Result<()> {
-        if event::poll(Duration::from_millis(100))? {
+    fn handle_events(&mut self) -> Result<bool> {
+        if event::poll(Duration::from_millis(50))? {
             match event::read()? {
                 Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                    self.handle_key_event(key_event)
+                    self.handle_key_event(key_event);
+                    return Ok(true);
                 }
                 _ => {}
             }
         }
-        Ok(())
+        Ok(false)
     }
 
     fn draw(&self, frame: &mut Frame) {
@@ -218,13 +227,7 @@ impl App {
 
         match player {
             PlayerType::Human => self.unselect(),
-            PlayerType::Engine { search_time } => {
-                // let m = self
-                //     .engine
-                //     .iterative_deepening(search_time)
-                //     .expect("Tried to play engine move, but there is no engine move to play");
-                // self.play_move(&m);
-            }
+            PlayerType::Engine { .. } => {}
         };
 
         self.last = Some(*m);
