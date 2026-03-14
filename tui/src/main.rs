@@ -2,7 +2,7 @@ mod ascii;
 mod focus;
 mod menufocus;
 mod playertype;
-mod textbox;
+pub(crate) mod textbox;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::widgets::Paragraph;
@@ -42,13 +42,11 @@ struct App {
     potential_targets: Vec<Square>,
 
     score: Score,
-    /// Whether to calculate the top engine move for every position
-    use_engine: bool,
-    /// How long the engine should search for a move
+    /// How long the engine should search for a suggested move
     engine_search_time: Duration,
     /// Whether to show the top engine move in the debug panel
-    engine_suggestions_in_debug_panel: bool,
-    engine_move: Option<Move>,
+    engine_suggestions: bool,
+    engine_suggestion: Option<Move>,
     last: Option<Move>,
     verbose: bool,
 
@@ -56,7 +54,6 @@ struct App {
     player_black: PlayerType,
 
     focus: Focus,
-    menu_focus: MenuFocus,
     fen: Textbox,
     command: Textbox,
     exit: bool,
@@ -72,18 +69,18 @@ impl App {
             potential_targets: Vec::new(),
 
             score: Score::default(),
-            use_engine: false,
-            engine_search_time: Duration::from_secs(3),
-            engine_suggestions_in_debug_panel: false,
+            engine_search_time: Duration::from_millis(500),
+            engine_suggestions: false,
+            engine_suggestion: None,
             verbose: false,
-            engine_move: None,
             last: None,
 
             player_white: PlayerType::Human,
-            player_black: PlayerType::Engine,
+            player_black: PlayerType::Engine {
+                search_time: Duration::from_secs(3),
+            },
 
-            focus: Focus::Menu,
-            menu_focus: MenuFocus::Start,
+            focus: Focus::get_default_menu(),
             fen: Textbox::new(),
             command: Textbox::new(),
             exit: false,
@@ -117,40 +114,78 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key_event: event::KeyEvent) {
-        match self.focus {
+        match &mut self.focus {
             Focus::Board => self.handle_board_key_event(key_event),
             Focus::Fen => self.handle_fen_key_event(key_event),
             Focus::Command => self.handle_command_key_event(key_event),
-            Focus::Menu => self.handle_menu_key_event(key_event),
-        }
-    }
+            Focus::Menu { focus } => {
+                match key_event.code {
+                    KeyCode::Char('q') => self.exit(),
+                    KeyCode::Char('c') => {
+                        if key_event.modifiers == KeyModifiers::CONTROL {
+                            self.exit();
+                        }
+                    }
 
-    fn handle_menu_key_event(&mut self, key_event: event::KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            KeyCode::Char('c') => {
-                if key_event.modifiers == KeyModifiers::CONTROL {
-                    self.exit();
-                }
+                    KeyCode::Esc | KeyCode::Char('m') => self.focus = Focus::Board,
+                    KeyCode::Enter => match focus {
+                        MenuFocus::Start => {
+                            self.engine.with_new_game(Game::default());
+                            self.focus = Focus::Board;
+                        }
+                        MenuFocus::Resume => self.focus = Focus::Board,
+                        MenuFocus::Quit => self.exit(),
+                        MenuFocus::White => self.player_white.cycle(),
+                        MenuFocus::Black => self.player_black.cycle(),
+                    },
+
+                    KeyCode::Up => focus.cycle_back(),
+                    KeyCode::Down => focus.cycle(),
+
+                    KeyCode::Left => match focus {
+                        MenuFocus::White => {
+                            if let PlayerType::Engine { search_time } = &mut self.player_white {
+                                {
+                                    *search_time =
+                                        search_time.saturating_sub(Duration::from_secs(1));
+                                }
+                            }
+                        }
+                        MenuFocus::Black => {
+                            if let PlayerType::Engine { search_time } = &mut self.player_black {
+                                {
+                                    *search_time =
+                                        search_time.saturating_sub(Duration::from_secs(1));
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+
+                    KeyCode::Right => match focus {
+                        MenuFocus::White => {
+                            if let PlayerType::Engine { search_time } = &mut self.player_white {
+                                {
+                                    *search_time =
+                                        search_time.saturating_add(Duration::from_secs(1));
+                                }
+                            }
+                        }
+                        MenuFocus::Black => {
+                            if let PlayerType::Engine { search_time } = &mut self.player_black {
+                                {
+                                    *search_time =
+                                        search_time.saturating_add(Duration::from_secs(1));
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+
+                    _ => {}
+                };
             }
-
-            KeyCode::Esc | KeyCode::Char('m') => self.focus = Focus::Board,
-            KeyCode::Enter => match self.menu_focus {
-                MenuFocus::Start => {
-                    self.engine.with_new_game(Game::default());
-                    self.focus = Focus::Board;
-                }
-                MenuFocus::Resume => self.focus = Focus::Board,
-                MenuFocus::Quit => self.exit(),
-                MenuFocus::White => self.player_white.cycle(),
-                MenuFocus::Black => self.player_black.cycle(),
-            },
-
-            KeyCode::Up | KeyCode::Left => self.menu_focus.cycle_back(),
-            KeyCode::Down | KeyCode::Right => self.menu_focus.cycle(),
-
-            _ => {}
-        };
+        }
     }
 
     /// Refreshes the board after playing a move and starts the next move
@@ -165,7 +200,13 @@ impl App {
 
         match player {
             PlayerType::Human => self.unselect(),
-            PlayerType::Engine => self.play_engine_move(),
+            PlayerType::Engine { search_time } => {
+                let m = self
+                    .engine
+                    .iterative_deepening(search_time)
+                    .expect("Tried to play engine move, but there is no engine move to play");
+                self.play_move(&m);
+            }
         };
 
         self.last = Some(*m);
@@ -175,12 +216,8 @@ impl App {
     fn refresh(&mut self) {
         self.score = self.engine.grade_position();
         self.fen.input = self.engine.game.to_fen();
-        self.use_engine = self.engine_suggestions_in_debug_panel
-            || self.player_white == PlayerType::Engine
-            || self.player_black == PlayerType::Engine;
-
-        if self.use_engine {
-            self.engine_move = self.get_engine_move();
+        if self.engine_suggestions {
+            self.engine_suggestion = self.engine.iterative_deepening(&self.engine_search_time);
         }
     }
 
@@ -213,19 +250,6 @@ impl App {
         }
     }
 
-    /// Gets the current engine move
-    fn get_engine_move(&mut self) -> Option<Move> {
-        self.engine.iterative_deepening(&self.engine_search_time)
-    }
-
-    /// Plays the top engine move and then passes the turn to the next player
-    fn play_engine_move(&mut self) {
-        let m = self
-            .engine_move
-            .expect("Tried to play engine move, but there is no engine move to play");
-        self.play_move(&m);
-    }
-
     fn handle_board_key_event(&mut self, key_event: event::KeyEvent) {
         if key_event.modifiers.contains(KeyModifiers::CONTROL) {
             if let KeyCode::Char('c') = key_event.code {
@@ -235,11 +259,10 @@ impl App {
             match key_event.code {
                 KeyCode::Char('q') => self.exit(),
                 KeyCode::Char('c') => self.focus = Focus::Command,
-                KeyCode::Char('m') => self.focus = Focus::Menu,
+                KeyCode::Char('m') => self.focus = Focus::get_default_menu(),
                 KeyCode::Char('f') => self.focus = Focus::Fen,
                 KeyCode::Char('e') => {
-                    self.engine_suggestions_in_debug_panel =
-                        !self.engine_suggestions_in_debug_panel;
+                    self.engine_suggestions = !self.engine_suggestions;
                 }
                 KeyCode::Char('v') => self.verbose = !self.verbose,
                 KeyCode::Char('u') => {
@@ -277,10 +300,9 @@ impl App {
                         piece::PieceColor::Black => &self.player_black,
                     };
 
-                    match player {
-                        PlayerType::Human => self.play_human_move(),
-                        PlayerType::Engine => self.play_engine_move(),
-                    };
+                    if *player == PlayerType::Human {
+                        self.play_human_move();
+                    }
                 }
 
                 _ => {}
@@ -378,12 +400,14 @@ impl App {
         let mut player_white_color = Color::Gray;
         let mut player_black_color = Color::Gray;
 
-        match self.menu_focus {
-            MenuFocus::Start => start_color = Color::Green,
-            MenuFocus::Resume => resume_color = Color::Green,
-            MenuFocus::Quit => quit_color = Color::Green,
-            MenuFocus::White => player_white_color = Color::Green,
-            MenuFocus::Black => player_black_color = Color::Green,
+        if let Focus::Menu { focus, .. } = &self.focus {
+            match focus {
+                MenuFocus::Start => start_color = Color::Green,
+                MenuFocus::Resume => resume_color = Color::Green,
+                MenuFocus::Quit => quit_color = Color::Green,
+                MenuFocus::White => player_white_color = Color::Green,
+                MenuFocus::Black => player_black_color = Color::Green,
+            }
         }
 
         Paragraph::new("--- Options ---")
@@ -496,8 +520,8 @@ impl App {
             self.highlighted_square
         ));
 
-        if self.engine_suggestions_in_debug_panel
-            && let Some(m) = &self.engine_move
+        if self.engine_suggestions
+            && let Some(m) = &self.engine_suggestion
         {
             debug_text.push_str(&format!("Suggested move: {}\n", m));
         }
@@ -614,7 +638,7 @@ Selected Square info:
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.focus {
-            Focus::Menu => self.render_menu(area, buf),
+            Focus::Menu { .. } => self.render_menu(area, buf),
             _ => self.render_main(area, buf),
         }
     }

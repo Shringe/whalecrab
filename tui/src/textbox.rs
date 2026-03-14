@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Textbox {
     /// Current value of the input box
     pub input: String,
