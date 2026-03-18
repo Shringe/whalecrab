@@ -1,5 +1,6 @@
 use std::{
     sync::Arc,
+    thread,
     time::{Duration, Instant},
 };
 
@@ -337,23 +338,37 @@ impl Engine {
         let alpha = Score::MIN;
         let beta = Score::MAX;
 
+        let since = *since;
+        let duration = *duration;
+
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
                 let mut best_score = $best_score;
-                for m in moves {
-                    let score = search_move!(self, m, $search(alpha, beta, depth));
+
+                let handles: Vec<(Move, thread::JoinHandle<(Score, u64)>)> = moves
+                    .into_iter()
+                    .map(|m| {
+                        let mut engine = self.clone();
+                        engine.nodes_searched = 0;
+                        let handle = thread::spawn(move || {
+                            let score = search_move!(engine, m, $search(alpha, beta, depth));
+                            (score, engine.nodes_searched)
+                        });
+                        (m, handle)
+                    })
+                    .collect();
+
+                for (m, handle) in handles {
+                    let (score, nodes) = handle.join().expect("Search thread panicked during minimax search");
+                    self.nodes_searched += nodes;
                     if score $cmp best_score {
                         best_score = score;
                         best_move = Some(m);
                     }
-
-                    let finished = Instant::now();
-                    let elapsed = finished.duration_since(*since);
-                    if elapsed > *duration {
-                        return (best_move, true);
-                    }
                 }
-                (best_move, false)
+
+                let timed_out = since.elapsed() > duration;
+                (best_move, timed_out)
             }};
         }
 
@@ -370,7 +385,8 @@ impl Engine {
         since: &Instant,
         duration: &Duration,
     ) -> (Option<Move>, bool) {
-        self.minimax_with_duration_single_threaded(depth, since, duration)
+        // self.minimax_with_duration_single_threaded(depth, since, duration)
+        self.minimax_with_duration_threaded(depth, since, duration)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
