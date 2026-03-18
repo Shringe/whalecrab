@@ -90,27 +90,28 @@ impl App {
         app
     }
 
+    fn handle_engine_players(&mut self) -> Option<bool> {
+        if self.focus == Focus::Board {
+            let player = match self.engine.game.turn {
+                PieceColor::White => &self.player_white,
+                PieceColor::Black => &self.player_black,
+            };
+
+            if let PlayerType::Engine { search_time } = player {
+                let m = self.engine.iterative_deepening(search_time)?;
+                self.play_move(&m);
+                return Some(true);
+            }
+        }
+
+        Some(false)
+    }
+
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         terminal.draw(|frame| self.draw(frame))?;
         while !self.exit {
-            let mut needs_redraw = false;
-
-            if self.focus == Focus::Board {
-                let player = match self.engine.game.turn {
-                    PieceColor::White => &self.player_white,
-                    PieceColor::Black => &self.player_black,
-                };
-
-                if let PlayerType::Engine { search_time } = player {
-                    let m = self
-                        .engine
-                        .iterative_deepening(search_time)
-                        .expect("Tried to play engine move, but there is no engine move to play");
-                    self.play_move(&m);
-                    needs_redraw = true;
-                }
-            }
+            let mut needs_redraw = self.handle_engine_players().unwrap_or(false);
 
             if self.handle_events()? {
                 needs_redraw = true;
