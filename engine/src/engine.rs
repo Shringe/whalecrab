@@ -381,22 +381,18 @@ impl Engine {
                             let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
                             let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
                         }));
-                    } else {
-                        let score = search_move!(self, m, $search(alpha, beta, depth));
-                        if score $cmp *best_score.lock().unwrap() {
-                            *best_move.lock().unwrap() = Some(m);
-                            *best_score.lock().unwrap() = score;
-                        }
-                        let _ = nodes.fetch_add(self.nodes_searched, Ordering::Relaxed);
-                    }
-
-                    let timed_out = since.elapsed() > duration;
-                    if timed_out {
-                        end!(true);
                     }
                 }
 
-                end!(false);
+                loop {
+                    if num_active_threads.load(Ordering::Relaxed) == 0 {
+                        end!(false);
+                    }
+                    if since.elapsed() > duration {
+                        end!(true);
+                    }
+                    thread::sleep(Duration::from_millis(1));
+                }
             }};
         }
 
@@ -413,8 +409,8 @@ impl Engine {
         since: &Instant,
         duration: &Duration,
     ) -> (Option<Move>, bool) {
-        // self.minimax_with_duration_single_threaded(depth, since, duration)
-        self.minimax_with_duration_threaded(depth, since, duration, 15)
+        self.minimax_with_duration_single_threaded(depth, since, duration)
+        // self.minimax_with_duration_threaded(depth, since, duration, 15)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
