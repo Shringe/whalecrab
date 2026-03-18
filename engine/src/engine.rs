@@ -297,44 +297,29 @@ impl Engine {
         let alpha = Score::MIN;
         let beta = Score::MAX;
 
+        macro_rules! search_loop {
+            ($best_score:expr, $cmp:tt, $search:ident) => {{
+                let mut best_score = $best_score;
+                for m in moves {
+                    let score = search_move!(self, m, $search(alpha, beta, depth));
+                    if score $cmp best_score {
+                        best_score = score;
+                        best_move = Some(m);
+                    }
+
+                    let finished = Instant::now();
+                    let elapsed = finished.duration_since(*since);
+                    if elapsed > *duration {
+                        return (best_move, true);
+                    }
+                }
+                (best_move, false)
+            }};
+        }
+
         match self.game.turn {
-            PieceColor::White => {
-                let mut best_score = Score::MIN;
-                for m in moves {
-                    let score = search_move!(self, m, mini(alpha, beta, depth));
-                    if score > best_score {
-                        best_score = score;
-                        best_move = Some(m);
-                    }
-
-                    let finished = Instant::now();
-                    let elapsed = finished.duration_since(*since);
-                    if elapsed > *duration {
-                        return (best_move, true);
-                    }
-                }
-
-                (best_move, false)
-            }
-
-            PieceColor::Black => {
-                let mut best_score = Score::MAX;
-                for m in moves {
-                    let score = search_move!(self, m, maxi(alpha, beta, depth));
-                    if score < best_score {
-                        best_score = score;
-                        best_move = Some(m);
-                    }
-
-                    let finished = Instant::now();
-                    let elapsed = finished.duration_since(*since);
-                    if elapsed > *duration {
-                        return (best_move, true);
-                    }
-                }
-
-                (best_move, false)
-            }
+            PieceColor::White => search_loop!(Score::MIN, >, mini),
+            PieceColor::Black => search_loop!(Score::MAX, <, maxi),
         }
     }
 
