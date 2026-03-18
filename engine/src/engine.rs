@@ -1,5 +1,8 @@
 use std::{
-    sync::Arc,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -331,9 +334,14 @@ impl Engine {
         depth: u16,
         since: &Instant,
         duration: &Duration,
+        num_threads: u8,
     ) -> (Option<Move>, bool) {
         let moves = order_moves(self.game.legal_moves());
-        let mut best_move = None;
+
+        let best_move = Arc::new(Mutex::new(None));
+        let num_active_threads = Arc::new(AtomicU8::new(0));
+        let nodes = Arc::new(AtomicU64::new(0));
+        let mut handles = Vec::new();
 
         let alpha = Score::MIN;
         let beta = Score::MAX;
@@ -341,34 +349,54 @@ impl Engine {
         let since = *since;
         let duration = *duration;
 
+        macro_rules! end {
+            ($timed_out: expr) => {{
+                for h in handles {
+                    h.join().unwrap();
+                }
+                self.nodes_searched += nodes.load(Ordering::Relaxed);
+                return (*best_move.lock().unwrap(), $timed_out);
+            }};
+        }
+
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
-                let mut best_score = $best_score;
+                let best_score = Arc::new(Mutex::new($best_score));
 
-                let handles: Vec<(Move, thread::JoinHandle<(Score, u64)>)> = moves
-                    .into_iter()
-                    .map(|m| {
+                for m in moves {
+                    if num_active_threads.load(Ordering::Relaxed) < num_threads {
                         let mut engine = self.clone();
                         engine.nodes_searched = 0;
-                        let handle = thread::spawn(move || {
+                        let best_score = best_score.clone();
+                        let best_move = best_move.clone();
+                        let num_active_threads = num_active_threads.clone();
+                        let nodes = nodes.clone();
+                        handles.push(thread::spawn(move || {
+                            let _ = num_active_threads.fetch_add(1, Ordering::Relaxed);
                             let score = search_move!(engine, m, $search(alpha, beta, depth));
-                            (score, engine.nodes_searched)
-                        });
-                        (m, handle)
-                    })
-                    .collect();
+                            if score $cmp *best_score.lock().unwrap() {
+                                *best_move.lock().unwrap() = Some(m);
+                                *best_score.lock().unwrap() = score;
+                            }
+                            let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
+                            let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                        }));
+                    } else {
+                        let score = search_move!(self, m, $search(alpha, beta, depth));
+                        if score $cmp *best_score.lock().unwrap() {
+                            *best_move.lock().unwrap() = Some(m);
+                            *best_score.lock().unwrap() = score;
+                        }
+                        let _ = nodes.fetch_add(self.nodes_searched, Ordering::Relaxed);
+                    }
 
-                for (m, handle) in handles {
-                    let (score, nodes) = handle.join().expect("Search thread panicked during minimax search");
-                    self.nodes_searched += nodes;
-                    if score $cmp best_score {
-                        best_score = score;
-                        best_move = Some(m);
+                    let timed_out = since.elapsed() > duration;
+                    if timed_out {
+                        end!(true);
                     }
                 }
 
-                let timed_out = since.elapsed() > duration;
-                (best_move, timed_out)
+                end!(false);
             }};
         }
 
@@ -386,7 +414,7 @@ impl Engine {
         duration: &Duration,
     ) -> (Option<Move>, bool) {
         // self.minimax_with_duration_single_threaded(depth, since, duration)
-        self.minimax_with_duration_threaded(depth, since, duration)
+        self.minimax_with_duration_threaded(depth, since, duration, 15)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
