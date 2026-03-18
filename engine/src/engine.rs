@@ -425,6 +425,23 @@ mod tests {
     }
 
     #[test]
+    fn iterative_deepening_should_not_take_too_long() {
+        let mut engine = Engine::default();
+        let now = Instant::now();
+        let duration = Duration::from_millis(200);
+        let _ = engine.iterative_deepening(&duration);
+        let elapsed = now.elapsed();
+        let max = duration * 2;
+        assert!(
+            elapsed < max,
+            "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
+            duration,
+            max,
+            elapsed
+        );
+    }
+
+    #[test]
     fn grading_should_not_mutate_position() {
         let mut engine = Engine::default();
         let before = engine.game.clone();
