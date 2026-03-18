@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -7,6 +7,7 @@ use crate::{
     piece_eval::{material_value, square_value},
     score::Score,
 };
+use dashmap::DashMap;
 use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
@@ -58,11 +59,11 @@ fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
     moves
 }
 
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
-    transposition_table: HashMap<u64, Score>,
+    transposition_table: Arc<DashMap<u64, Score>>,
     pub nodes_searched: u64,
 }
 
@@ -70,7 +71,7 @@ impl Engine {
     pub fn from_game(game: Game) -> Engine {
         Engine {
             game,
-            transposition_table: HashMap::new(),
+            transposition_table: Arc::new(DashMap::new()),
             nodes_searched: 0,
         }
     }
@@ -285,7 +286,7 @@ impl Engine {
     }
 
     /// Continues searching until either the depth or duration is reached
-    pub fn minimax_with_duration(
+    pub fn minimax_with_duration_single_threaded(
         &mut self,
         depth: u16,
         since: &Instant,
@@ -321,6 +322,55 @@ impl Engine {
             PieceColor::White => search_loop!(Score::MIN, >, mini),
             PieceColor::Black => search_loop!(Score::MAX, <, maxi),
         }
+    }
+
+    /// Continues searching until either the depth or duration is reached
+    pub fn minimax_with_duration_threaded(
+        &mut self,
+        depth: u16,
+        since: &Instant,
+        duration: &Duration,
+    ) -> (Option<Move>, bool) {
+        let moves = order_moves(self.game.legal_moves());
+        let mut best_move = None;
+
+        let alpha = Score::MIN;
+        let beta = Score::MAX;
+
+        macro_rules! search_loop {
+            ($best_score:expr, $cmp:tt, $search:ident) => {{
+                let mut best_score = $best_score;
+                for m in moves {
+                    let score = search_move!(self, m, $search(alpha, beta, depth));
+                    if score $cmp best_score {
+                        best_score = score;
+                        best_move = Some(m);
+                    }
+
+                    let finished = Instant::now();
+                    let elapsed = finished.duration_since(*since);
+                    if elapsed > *duration {
+                        return (best_move, true);
+                    }
+                }
+                (best_move, false)
+            }};
+        }
+
+        match self.game.turn {
+            PieceColor::White => search_loop!(Score::MIN, >, mini),
+            PieceColor::Black => search_loop!(Score::MAX, <, maxi),
+        }
+    }
+
+    /// Continues searching until either the depth or duration is reached
+    pub fn minimax_with_duration(
+        &mut self,
+        depth: u16,
+        since: &Instant,
+        duration: &Duration,
+    ) -> (Option<Move>, bool) {
+        self.minimax_with_duration_single_threaded(depth, since, duration)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
