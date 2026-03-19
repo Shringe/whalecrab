@@ -408,13 +408,22 @@ impl Engine {
         let alpha = Score::MIN;
         let beta = Score::MAX;
 
-        let since = *since;
-        let duration = *duration;
+        /// Used for quiting the method early in case of an error on the main thread
+        macro_rules! quit {
+            () => {{
+                timed_out.store(true, Ordering::Relaxed);
+                return (None, false);
+            }};
+        }
 
         macro_rules! end {
             ($timed_out: expr) => {{
                 self.nodes_searched += nodes.load(Ordering::Relaxed);
-                return (*best_move.lock().unwrap(), $timed_out);
+                let m = match best_move.lock() {
+                    Ok(m) => *m,
+                    Err(_) => quit!(),
+                };
+                return (m, $timed_out);
             }};
         }
 
@@ -430,7 +439,11 @@ impl Engine {
                     ).is_ok();
 
                     if thread_available {
-                        let m = moves.pop().unwrap();
+                        let m = match moves.pop() {
+                            Some(m) => m,
+                            None => quit!(),
+                        };
+
                         let mut engine = self.clone();
                         engine.nodes_searched = 0;
                         let best_score = best_score.clone();
@@ -455,7 +468,7 @@ impl Engine {
                 loop {
                     if num_active_threads.load(Ordering::Relaxed) == 0 {
                         end!(false);
-                    } else if since.elapsed() > duration {
+                    } else if since.elapsed() > *duration {
                         timed_out.store(true, Ordering::Relaxed);
                         end!(true);
                     } else {
