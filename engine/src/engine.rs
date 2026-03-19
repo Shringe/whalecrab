@@ -340,10 +340,15 @@ impl Engine {
         num_active_threads: Arc<AtomicU8>,
         num_threads: u8,
         root_move: Move,
+        since: Instant,
+        duration: Duration,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
         } else if timed_out.load(Ordering::Relaxed) {
+            return Score::MAX;
+        } else if since.elapsed() > duration {
+            timed_out.store(true, Ordering::Relaxed);
             return Score::MAX;
         }
 
@@ -364,7 +369,9 @@ impl Engine {
                     nodes.clone(),
                     num_active_threads.clone(),
                     num_threads,
-                    root_move
+                    root_move,
+                    since,
+                    duration
                 )
             );
 
@@ -385,7 +392,7 @@ impl Engine {
 
         // Spawn a new thread for the second best move
         if let Some(m2) = m2 // if there is one
-        && max - max2 < Score::new(50) // and its close enough in score to the best move
+        && max.saturating_sub(max2) < Score::new(50) // and it's close enough in score to the best move
         && num_active_threads // and there is a CPU thread available
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
                 if n < num_threads { Some(n + 1) } else { None }
@@ -412,7 +419,9 @@ impl Engine {
                         nodes.clone(),
                         num_active_threads.clone(),
                         num_threads,
-                        root_move
+                        root_move,
+                        since,
+                        duration
                     )
                 );
 
@@ -443,11 +452,16 @@ impl Engine {
         num_active_threads: Arc<AtomicU8>,
         num_threads: u8,
         root_move: Move,
+        since: Instant,
+        duration: Duration,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
         } else if timed_out.load(Ordering::Relaxed) {
-            return Score::MIN;
+            return Score::MAX;
+        } else if since.elapsed() > duration {
+            timed_out.store(true, Ordering::Relaxed);
+            return Score::MAX;
         }
 
         let mut min = Score::MAX;
@@ -467,7 +481,9 @@ impl Engine {
                     nodes.clone(),
                     num_active_threads.clone(),
                     num_threads,
-                    root_move
+                    root_move,
+                    since,
+                    duration
                 )
             );
 
@@ -488,7 +504,7 @@ impl Engine {
 
         // Spawn a new thread for the second best move
         if let Some(m2) = m2 // if there is one
-            && min2 - min < Score::new(50) // and its close enough in score to the best move
+            && min2.saturating_sub(min) < Score::new(50) // and it's close enough in score to the best move
             && num_active_threads // and there is a CPU thread available
                 .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
                     if n < num_threads { Some(n + 1) } else { None }
@@ -515,7 +531,9 @@ impl Engine {
                         nodes.clone(),
                         num_active_threads.clone(),
                         num_threads,
-                        root_move
+                        root_move,
+                        since,
+                        duration
                     )
                 );
 
@@ -538,11 +556,11 @@ impl Engine {
     pub fn minimax_with_duration_threaded(
         &mut self,
         depth: u16,
-        since: &Instant,
-        duration: &Duration,
+        since: Instant,
+        duration: Duration,
         num_threads: u8,
     ) -> (Option<Move>, bool) {
-        let mut moves = order_moves(self.game.legal_moves());
+        let moves = order_moves(self.game.legal_moves());
 
         let num_active_threads = Arc::new(AtomicU8::new(0));
         let nodes = Arc::new(AtomicU64::new(0));
@@ -576,45 +594,25 @@ impl Engine {
                     }};
                 }
 
-                while !moves.is_empty() {
-                    let thread_available = num_active_threads.fetch_update(
-                        Ordering::Relaxed,
-                        Ordering::Relaxed,
-                        |n| if n < num_threads { Some(n + 1) } else { None },
-                    ).is_ok();
+                for m in moves {
+                    if timed_out.load(Ordering::Relaxed) {
+                        end!(true);
+                    }
 
-                    if thread_available {
-                        let m = match moves.pop() {
-                            Some(m) => m,
-                            None => quit!(),
-                        };
+                    let score = search_move!(self, m, $search(alpha, beta, depth, timed_out.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration));
 
-                        let mut engine = self.clone();
-                        engine.nodes_searched = 0;
-                        let best = best.clone();
-                        let num_active_threads = num_active_threads.clone();
-                        let nodes = nodes.clone();
-                        let timed_out = timed_out.clone();
-                        let _ = thread::spawn(move || {
-                            let score = search_move!(engine, m, $search(alpha, beta, depth, timed_out, best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m));
-                            {
-                                let mut best = best.lock().unwrap();
-                                if score $cmp best.0 {
-                                    *best = (score, Some(m));
-                                }
-                            }
-                            let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
-                            let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
-                        });
-                    } else {
-                        thread::sleep(Duration::from_millis(1));
+                    {
+                        let mut best = best.lock().unwrap();
+                        if score $cmp best.0 {
+                            *best = (score, Some(m));
+                        }
                     }
                 }
 
                 loop {
                     if num_active_threads.load(Ordering::Relaxed) == 0 {
                         end!(false);
-                    } else if since.elapsed() > *duration {
+                    } else if since.elapsed() > duration {
                         timed_out.store(true, Ordering::Relaxed);
                         end!(true);
                     } else {
@@ -638,7 +636,7 @@ impl Engine {
         duration: &Duration,
     ) -> (Option<Move>, bool) {
         // self.minimax_with_duration_single_threaded(depth, since, duration)
-        self.minimax_with_duration_threaded(depth, since, duration, 16)
+        self.minimax_with_duration_threaded(depth, *since, *duration, 16)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,

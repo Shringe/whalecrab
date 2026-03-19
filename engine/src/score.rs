@@ -47,6 +47,14 @@ impl Score {
     pub fn new(value: i32) -> Self {
         Self(value)
     }
+
+    pub fn saturating_add(self, rhs: Score) -> Score {
+        Score(self.0.saturating_add(rhs.0))
+    }
+
+    pub fn saturating_sub(self, rhs: Score) -> Score {
+        Score(self.0.saturating_sub(rhs.0))
+    }
 }
 
 #[cfg(test)]
