@@ -559,6 +559,7 @@ impl Engine {
         since: Instant,
         duration: Duration,
         num_threads: u8,
+        wait_for_children: bool,
     ) -> (Option<Move>, bool) {
         let moves = order_moves(self.game.legal_moves());
 
@@ -586,6 +587,9 @@ impl Engine {
                 for m in moves {
                     if cancel_search.load(Ordering::Relaxed) {
                         end!(true);
+                    } else if since.elapsed() > duration {
+                        cancel_search.store(true, Ordering::Relaxed);
+                        end!(true);
                     }
 
                     let score = search_move!(self, m, $search(alpha, beta, depth, cancel_search.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration));
@@ -598,12 +602,21 @@ impl Engine {
                     }
                 }
 
+                if !wait_for_children {
+                    cancel_search.store(true, Ordering::Relaxed);
+                    let timed_out = since.elapsed() > duration;
+                    end!(timed_out);
+                }
+
                 let mut timed_out = false;
-                while num_active_threads.load(Ordering::Relaxed) > 0 {
+                loop {
                     if !timed_out && since.elapsed() > duration {
                         // Let all threads deposit their best values and finish their node
                         cancel_search.store(true, Ordering::Relaxed);
                         timed_out = true;
+                    }
+                    if num_active_threads.load(Ordering::Relaxed) == 0 {
+                        break;
                     }
                     thread::sleep(Duration::from_millis(1));
                 }
@@ -625,7 +638,7 @@ impl Engine {
         duration: &Duration,
     ) -> (Option<Move>, bool) {
         // self.minimax_with_duration_single_threaded(depth, since, duration)
-        self.minimax_with_duration_threaded(depth, *since, *duration, 16)
+        self.minimax_with_duration_threaded(depth, *since, *duration, 16, true)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
