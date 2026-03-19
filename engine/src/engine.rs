@@ -328,6 +328,68 @@ impl Engine {
         }
     }
 
+    fn maxi_threaded(
+        &mut self,
+        mut alpha: Score,
+        beta: Score,
+        depth: u16,
+        timed_out: Arc<AtomicBool>,
+    ) -> Score {
+        if depth == 0 {
+            return self.grade_position();
+        } else if timed_out.load(Ordering::Relaxed) {
+            return Score::MAX;
+        }
+
+        let mut max = Score::MIN;
+        for m in order_moves(self.game.legal_moves()) {
+            let score = search_move!(self, m, mini(alpha, beta, depth - 1));
+            if score > max {
+                max = score;
+                if score > alpha {
+                    alpha = score;
+                }
+            }
+
+            if score >= beta {
+                break;
+            }
+        }
+
+        max
+    }
+
+    fn mini_threaded(
+        &mut self,
+        alpha: Score,
+        mut beta: Score,
+        depth: u16,
+        timed_out: Arc<AtomicBool>,
+    ) -> Score {
+        if depth == 0 {
+            return self.grade_position();
+        } else if timed_out.load(Ordering::Relaxed) {
+            return Score::MIN;
+        }
+
+        let mut min = Score::MAX;
+        for m in order_moves(self.game.legal_moves()) {
+            let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
+            if score < min {
+                min = score;
+                if score < beta {
+                    beta = score;
+                }
+            }
+
+            if score <= alpha {
+                break;
+            }
+        }
+
+        min
+    }
+
     /// Continues searching until either the depth or duration is reached
     pub fn minimax_with_duration_threaded(
         &mut self,
@@ -341,7 +403,7 @@ impl Engine {
         let best_move = Arc::new(Mutex::new(None));
         let num_active_threads = Arc::new(AtomicU8::new(0));
         let nodes = Arc::new(AtomicU64::new(0));
-        let mut handles = Vec::new();
+        let timed_out = Arc::new(AtomicBool::new(false));
 
         let alpha = Score::MIN;
         let beta = Score::MAX;
@@ -351,9 +413,6 @@ impl Engine {
 
         macro_rules! end {
             ($timed_out: expr) => {{
-                for h in handles {
-                    h.join().unwrap();
-                }
                 self.nodes_searched += nodes.load(Ordering::Relaxed);
                 return (*best_move.lock().unwrap(), $timed_out);
             }};
@@ -364,7 +423,13 @@ impl Engine {
                 let best_score = Arc::new(Mutex::new($best_score));
 
                 while !moves.is_empty() {
-                    if num_active_threads.load(Ordering::Relaxed) < num_threads {
+                    let thread_available = num_active_threads.fetch_update(
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                        |n| if n < num_threads { Some(n + 1) } else { None },
+                    ).is_ok();
+
+                    if thread_available {
                         let m = moves.pop().unwrap();
                         let mut engine = self.clone();
                         engine.nodes_searched = 0;
@@ -372,34 +437,37 @@ impl Engine {
                         let best_move = best_move.clone();
                         let num_active_threads = num_active_threads.clone();
                         let nodes = nodes.clone();
-                        handles.push(thread::spawn(move || {
-                            let _ = num_active_threads.fetch_add(1, Ordering::Relaxed);
-                            let score = search_move!(engine, m, $search(alpha, beta, depth));
+                        let timed_out = timed_out.clone();
+                        let _ = thread::spawn(move || {
+                            let score = search_move!(engine, m, $search(alpha, beta, depth, timed_out));
                             if score $cmp *best_score.lock().unwrap() {
                                 *best_move.lock().unwrap() = Some(m);
                                 *best_score.lock().unwrap() = score;
                             }
                             let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
                             let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
-                        }));
+                        });
+                    } else {
+                        thread::sleep(Duration::from_millis(1));
                     }
                 }
 
                 loop {
                     if num_active_threads.load(Ordering::Relaxed) == 0 {
                         end!(false);
-                    }
-                    if since.elapsed() > duration {
+                    } else if since.elapsed() > duration {
+                        timed_out.store(true, Ordering::Relaxed);
                         end!(true);
+                    } else {
+                        thread::sleep(Duration::from_millis(1));
                     }
-                    thread::sleep(Duration::from_millis(1));
                 }
             }};
         }
 
         match self.game.turn {
-            PieceColor::White => search_loop!(Score::MIN, >, mini),
-            PieceColor::Black => search_loop!(Score::MAX, <, maxi),
+            PieceColor::White => search_loop!(Score::MIN, >, mini_threaded),
+            PieceColor::Black => search_loop!(Score::MAX, <, maxi_threaded),
         }
     }
 
@@ -410,8 +478,8 @@ impl Engine {
         since: &Instant,
         duration: &Duration,
     ) -> (Option<Move>, bool) {
-        // self.minimax_with_duration_single_threaded(depth, since, duration)
-        self.minimax_with_duration_threaded(depth, since, duration, 4)
+        self.minimax_with_duration_single_threaded(depth, since, duration)
+        // self.minimax_with_duration_threaded(depth, since, duration, 16)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
