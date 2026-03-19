@@ -334,7 +334,7 @@ impl Engine {
         mut alpha: Score,
         beta: Score,
         depth: u16,
-        timed_out: Arc<AtomicBool>,
+        cancel_search: Arc<AtomicBool>,
         best: Arc<Mutex<(Score, Option<Move>)>>,
         nodes: Arc<AtomicU64>,
         num_active_threads: Arc<AtomicU8>,
@@ -345,10 +345,10 @@ impl Engine {
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
-        } else if timed_out.load(Ordering::Relaxed) {
+        } else if cancel_search.load(Ordering::Relaxed) {
             return Score::MAX;
         } else if since.elapsed() > duration {
-            timed_out.store(true, Ordering::Relaxed);
+            cancel_search.store(true, Ordering::Relaxed);
             return Score::MAX;
         }
 
@@ -364,7 +364,7 @@ impl Engine {
                     alpha,
                     beta,
                     depth - 1,
-                    timed_out.clone(),
+                    cancel_search.clone(),
                     best.clone(),
                     nodes.clone(),
                     num_active_threads.clone(),
@@ -402,7 +402,7 @@ impl Engine {
             let mut engine = self.clone();
             engine.nodes_searched = 0;
             let best = best.clone();
-            let timed_out = timed_out.clone();
+            let cancel_search = cancel_search.clone();
             let num_active_threads = num_active_threads.clone();
             let nodes = nodes.clone();
 
@@ -414,7 +414,7 @@ impl Engine {
                         alpha,
                         beta,
                         depth - 1,
-                        timed_out,
+                        cancel_search,
                         best.clone(),
                         nodes.clone(),
                         num_active_threads.clone(),
@@ -446,7 +446,7 @@ impl Engine {
         alpha: Score,
         mut beta: Score,
         depth: u16,
-        timed_out: Arc<AtomicBool>,
+        cancel_search: Arc<AtomicBool>,
         best: Arc<Mutex<(Score, Option<Move>)>>,
         nodes: Arc<AtomicU64>,
         num_active_threads: Arc<AtomicU8>,
@@ -457,10 +457,10 @@ impl Engine {
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
-        } else if timed_out.load(Ordering::Relaxed) {
+        } else if cancel_search.load(Ordering::Relaxed) {
             return Score::MAX;
         } else if since.elapsed() > duration {
-            timed_out.store(true, Ordering::Relaxed);
+            cancel_search.store(true, Ordering::Relaxed);
             return Score::MAX;
         }
 
@@ -476,7 +476,7 @@ impl Engine {
                     alpha,
                     beta,
                     depth - 1,
-                    timed_out.clone(),
+                    cancel_search.clone(),
                     best.clone(),
                     nodes.clone(),
                     num_active_threads.clone(),
@@ -514,7 +514,7 @@ impl Engine {
             let mut engine = self.clone();
             engine.nodes_searched = 0;
             let best = best.clone();
-            let timed_out = timed_out.clone();
+            let cancel_search = cancel_search.clone();
             let num_active_threads = num_active_threads.clone();
             let nodes = nodes.clone();
 
@@ -526,7 +526,7 @@ impl Engine {
                         alpha,
                         beta,
                         depth - 1,
-                        timed_out,
+                        cancel_search,
                         best.clone(),
                         nodes.clone(),
                         num_active_threads.clone(),
@@ -564,18 +564,10 @@ impl Engine {
 
         let num_active_threads = Arc::new(AtomicU8::new(0));
         let nodes = Arc::new(AtomicU64::new(0));
-        let timed_out = Arc::new(AtomicBool::new(false));
+        let cancel_search = Arc::new(AtomicBool::new(false));
 
         let alpha = Score::MIN;
         let beta = Score::MAX;
-
-        /// Used for quiting the method early in case of an error on the main thread
-        macro_rules! quit {
-            () => {{
-                timed_out.store(true, Ordering::Relaxed);
-                return (None, false);
-            }};
-        }
 
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
@@ -583,23 +575,20 @@ impl Engine {
 
                 macro_rules! end {
                     ($timed_out: expr) => {{
-                        // TODO, wait for all threads to finish so that they can write their best
-                        // moves
                         self.nodes_searched += nodes.load(Ordering::Relaxed);
-                        let m = match best.lock() {
-                            Ok(m) => *m,
-                            Err(_) => quit!(),
-                        };
-                        return (m.1, $timed_out);
+                        match best.lock() {
+                            Ok(m) => (m.1, $timed_out),
+                            Err(_) => (None, $timed_out),
+                        }
                     }};
                 }
 
                 for m in moves {
-                    if timed_out.load(Ordering::Relaxed) {
+                    if cancel_search.load(Ordering::Relaxed) {
                         end!(true);
                     }
 
-                    let score = search_move!(self, m, $search(alpha, beta, depth, timed_out.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration));
+                    let score = search_move!(self, m, $search(alpha, beta, depth, cancel_search.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration));
 
                     {
                         let mut best = best.lock().unwrap();
@@ -609,16 +598,16 @@ impl Engine {
                     }
                 }
 
-                loop {
-                    if num_active_threads.load(Ordering::Relaxed) == 0 {
-                        end!(false);
-                    } else if since.elapsed() > duration {
-                        timed_out.store(true, Ordering::Relaxed);
-                        end!(true);
-                    } else {
-                        thread::sleep(Duration::from_millis(1));
+                let mut timed_out = false;
+                while num_active_threads.load(Ordering::Relaxed) > 0 {
+                    if !timed_out && since.elapsed() > duration {
+                        // Let all threads deposit their best values and finish their node
+                        cancel_search.store(true, Ordering::Relaxed);
+                        timed_out = true;
                     }
+                    thread::sleep(Duration::from_millis(1));
                 }
+                return end!(timed_out);
             }};
         }
 
