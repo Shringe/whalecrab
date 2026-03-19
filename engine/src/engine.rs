@@ -342,6 +342,7 @@ impl Engine {
         root_move: Move,
         since: Instant,
         duration: Duration,
+        spawn_threshold: Arc<AtomicU8>,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
@@ -371,7 +372,8 @@ impl Engine {
                     num_threads,
                     root_move,
                     since,
-                    duration
+                    duration,
+                    spawn_threshold.clone()
                 )
             );
 
@@ -390,51 +392,60 @@ impl Engine {
             }
         }
 
-        // Spawn a new thread for the second best move
-        if let Some(m2) = m2 // if there is one
-        && max.saturating_sub(max2) < Score::new(50) // and it's close enough in score to the best move
-        && num_active_threads // and there is a CPU thread available
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
-                if n < num_threads { Some(n + 1) } else { None }
-            })
-            .is_ok()
-        {
-            let mut engine = self.clone();
-            engine.nodes_searched = 0;
-            let best = best.clone();
-            let cancel_search = cancel_search.clone();
-            let num_active_threads = num_active_threads.clone();
-            let nodes = nodes.clone();
+        // Spawn a new thread for the second best move if its within spawn_threshold and there's a
+        // thread available
+        if let Some(m2) = m2 {
+            let threshold = spawn_threshold.load(Ordering::Relaxed);
+            if max.saturating_sub(max2) < Score::new(threshold as i32) {
+                if num_active_threads
+                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                        if n < num_threads { Some(n + 1) } else { None }
+                    })
+                    .is_ok()
+                {
+                    let mut engine = self.clone();
+                    engine.nodes_searched = 0;
+                    let best = best.clone();
+                    let cancel_search = cancel_search.clone();
+                    let num_active_threads = num_active_threads.clone();
+                    let nodes = nodes.clone();
 
-            let _ = thread::spawn(move || {
-                let score = search_move!(
-                    engine,
-                    m2,
-                    mini_threaded(
-                        alpha,
-                        beta,
-                        depth - 1,
-                        cancel_search,
-                        best.clone(),
-                        nodes.clone(),
-                        num_active_threads.clone(),
-                        num_threads,
-                        root_move,
-                        since,
-                        duration
-                    )
-                );
+                    let _ = thread::spawn(move || {
+                        let score = search_move!(
+                            engine,
+                            m2,
+                            mini_threaded(
+                                alpha,
+                                beta,
+                                depth - 1,
+                                cancel_search,
+                                best.clone(),
+                                nodes.clone(),
+                                num_active_threads.clone(),
+                                num_threads,
+                                root_move,
+                                since,
+                                duration,
+                                spawn_threshold
+                            )
+                        );
 
-                if score > max {
-                    let mut best = best.lock().unwrap();
-                    if score > best.0 {
-                        *best = (score, Some(root_move));
-                    }
+                        if score > max {
+                            let mut best = best.lock().unwrap();
+                            if score > best.0 {
+                                *best = (score, Some(root_move));
+                            }
+                        }
+
+                        let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                        let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
+                    });
+                } else if threshold > u8::MIN + 4 {
+                    spawn_threshold.store(threshold - 5, Ordering::Relaxed);
                 }
-
-                let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
-                let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
-            });
+            } else if threshold < u8::MAX {
+                spawn_threshold.store(threshold + 1, Ordering::Relaxed);
+            }
         }
 
         max
@@ -454,6 +465,7 @@ impl Engine {
         root_move: Move,
         since: Instant,
         duration: Duration,
+        spawn_threshold: Arc<AtomicU8>,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
@@ -483,7 +495,8 @@ impl Engine {
                     num_threads,
                     root_move,
                     since,
-                    duration
+                    duration,
+                    spawn_threshold.clone()
                 )
             );
 
@@ -502,51 +515,60 @@ impl Engine {
             }
         }
 
-        // Spawn a new thread for the second best move
-        if let Some(m2) = m2 // if there is one
-            && min2.saturating_sub(min) < Score::new(50) // and it's close enough in score to the best move
-            && num_active_threads // and there is a CPU thread available
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
-                    if n < num_threads { Some(n + 1) } else { None }
-                })
-                .is_ok()
-        {
-            let mut engine = self.clone();
-            engine.nodes_searched = 0;
-            let best = best.clone();
-            let cancel_search = cancel_search.clone();
-            let num_active_threads = num_active_threads.clone();
-            let nodes = nodes.clone();
+        // Spawn a new thread for the second best move if its within spawn_threshold and there's a
+        // thread available
+        if let Some(m2) = m2 {
+            let threshold = spawn_threshold.load(Ordering::Relaxed);
+            if min2.saturating_sub(min) < Score::new(threshold as i32) {
+                if num_active_threads
+                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                        if n < num_threads { Some(n + 1) } else { None }
+                    })
+                    .is_ok()
+                {
+                    let mut engine = self.clone();
+                    engine.nodes_searched = 0;
+                    let best = best.clone();
+                    let cancel_search = cancel_search.clone();
+                    let num_active_threads = num_active_threads.clone();
+                    let nodes = nodes.clone();
 
-            let _ = thread::spawn(move || {
-                let score = search_move!(
-                    engine,
-                    m2,
-                    maxi_threaded(
-                        alpha,
-                        beta,
-                        depth - 1,
-                        cancel_search,
-                        best.clone(),
-                        nodes.clone(),
-                        num_active_threads.clone(),
-                        num_threads,
-                        root_move,
-                        since,
-                        duration
-                    )
-                );
+                    let _ = thread::spawn(move || {
+                        let score = search_move!(
+                            engine,
+                            m2,
+                            maxi_threaded(
+                                alpha,
+                                beta,
+                                depth - 1,
+                                cancel_search,
+                                best.clone(),
+                                nodes.clone(),
+                                num_active_threads.clone(),
+                                num_threads,
+                                root_move,
+                                since,
+                                duration,
+                                spawn_threshold
+                            )
+                        );
 
-                if score < min {
-                    let mut best = best.lock().unwrap();
-                    if score < best.0 {
-                        *best = (score, Some(root_move));
-                    }
+                        if score < min {
+                            let mut best = best.lock().unwrap();
+                            if score < best.0 {
+                                *best = (score, Some(root_move));
+                            }
+                        }
+
+                        let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                        let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
+                    });
+                } else if threshold > u8::MIN + 4 {
+                    spawn_threshold.store(threshold - 5, Ordering::Relaxed);
                 }
-
-                let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
-                let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
-            });
+            } else if threshold < u8::MAX {
+                spawn_threshold.store(threshold + 1, Ordering::Relaxed);
+            }
         }
 
         min
@@ -592,7 +614,7 @@ impl Engine {
                         end!(true);
                     }
 
-                    let score = search_move!(self, m, $search(alpha, beta, depth, cancel_search.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration));
+                    let score = search_move!(self, m, $search(alpha, beta, depth, cancel_search.clone(), best.clone(), nodes.clone(), num_active_threads.clone(), num_threads, m, since, duration, Arc::new(AtomicU8::new(50))));
 
                     {
                         let mut best = best.lock().unwrap();
@@ -649,9 +671,15 @@ impl Engine {
         let mut best_move_so_far = None;
 
         loop {
-            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, &start, duration);
+            let (best_move, timed_out) = self.minimax_with_duration(depth, &start, duration);
 
-            if ran_out_of_time {
+            #[cfg(debug_assertions)]
+            {
+                let ran_out_of_time = start.elapsed() > *duration;
+                assert_eq!(timed_out, ran_out_of_time);
+            }
+
+            if timed_out {
                 return best_move_so_far;
             }
 
