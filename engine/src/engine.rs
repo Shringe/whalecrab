@@ -336,7 +336,7 @@ impl Engine {
         duration: &Duration,
         num_threads: u8,
     ) -> (Option<Move>, bool) {
-        let moves = order_moves(self.game.legal_moves());
+        let mut moves = order_moves(self.game.legal_moves());
 
         let best_move = Arc::new(Mutex::new(None));
         let num_active_threads = Arc::new(AtomicU8::new(0));
@@ -363,8 +363,9 @@ impl Engine {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
                 let best_score = Arc::new(Mutex::new($best_score));
 
-                for m in moves {
+                while !moves.is_empty() {
                     if num_active_threads.load(Ordering::Relaxed) < num_threads {
+                        let m = moves.pop().unwrap();
                         let mut engine = self.clone();
                         engine.nodes_searched = 0;
                         let best_score = best_score.clone();
@@ -378,8 +379,8 @@ impl Engine {
                                 *best_move.lock().unwrap() = Some(m);
                                 *best_score.lock().unwrap() = score;
                             }
-                            let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
                             let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                            let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
                         }));
                     }
                 }
@@ -409,8 +410,8 @@ impl Engine {
         since: &Instant,
         duration: &Duration,
     ) -> (Option<Move>, bool) {
-        self.minimax_with_duration_single_threaded(depth, since, duration)
-        // self.minimax_with_duration_threaded(depth, since, duration, 15)
+        // self.minimax_with_duration_single_threaded(depth, since, duration)
+        self.minimax_with_duration_threaded(depth, since, duration, 4)
     }
 
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
