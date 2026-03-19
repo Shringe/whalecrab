@@ -577,10 +577,10 @@ impl Engine {
                 macro_rules! end {
                     ($timed_out: expr) => {{
                         self.nodes_searched += nodes.load(Ordering::Relaxed);
-                        match best.lock() {
+                        return match best.lock() {
                             Ok(m) => (m.1, $timed_out),
                             Err(_) => (None, $timed_out),
-                        }
+                        };
                     }};
                 }
 
@@ -620,7 +620,7 @@ impl Engine {
                     }
                     thread::sleep(Duration::from_millis(1));
                 }
-                return end!(timed_out);
+                end!(timed_out);
             }};
         }
 
