@@ -400,7 +400,6 @@ impl Engine {
     ) -> (Option<Move>, bool) {
         let mut moves = order_moves(self.game.legal_moves());
 
-        let best_move = Arc::new(Mutex::new(None));
         let num_active_threads = Arc::new(AtomicU8::new(0));
         let nodes = Arc::new(AtomicU64::new(0));
         let timed_out = Arc::new(AtomicBool::new(false));
@@ -416,20 +415,20 @@ impl Engine {
             }};
         }
 
-        macro_rules! end {
-            ($timed_out: expr) => {{
-                self.nodes_searched += nodes.load(Ordering::Relaxed);
-                let m = match best_move.lock() {
-                    Ok(m) => *m,
-                    Err(_) => quit!(),
-                };
-                return (m, $timed_out);
-            }};
-        }
-
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
-                let best_score = Arc::new(Mutex::new($best_score));
+                let best = Arc::new(Mutex::new(($best_score, None)));
+
+                macro_rules! end {
+                    ($timed_out: expr) => {{
+                        self.nodes_searched += nodes.load(Ordering::Relaxed);
+                        let m = match best.lock() {
+                            Ok(m) => *m,
+                            Err(_) => quit!(),
+                        };
+                        return (m.1, $timed_out);
+                    }};
+                }
 
                 while !moves.is_empty() {
                     let thread_available = num_active_threads.fetch_update(
@@ -446,16 +445,17 @@ impl Engine {
 
                         let mut engine = self.clone();
                         engine.nodes_searched = 0;
-                        let best_score = best_score.clone();
-                        let best_move = best_move.clone();
+                        let best = best.clone();
                         let num_active_threads = num_active_threads.clone();
                         let nodes = nodes.clone();
                         let timed_out = timed_out.clone();
                         let _ = thread::spawn(move || {
                             let score = search_move!(engine, m, $search(alpha, beta, depth, timed_out));
-                            if score $cmp *best_score.lock().unwrap() {
-                                *best_move.lock().unwrap() = Some(m);
-                                *best_score.lock().unwrap() = score;
+                            {
+                                let mut best = best.lock().unwrap();
+                                if score $cmp best.0 {
+                                    *best = (score, Some(m));
+                                }
                             }
                             let _ = nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
                             let _ = num_active_threads.fetch_sub(1, Ordering::Relaxed);
