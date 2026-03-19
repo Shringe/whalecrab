@@ -328,12 +328,17 @@ impl Engine {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn maxi_threaded(
         &mut self,
         mut alpha: Score,
         beta: Score,
         depth: u16,
         timed_out: Arc<AtomicBool>,
+        best: Arc<Mutex<(Score, Option<Move>)>>,
+        nodes: Arc<AtomicU64>,
+        num_active_threads: Arc<AtomicU8>,
+        num_threads: u8,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
@@ -343,28 +348,89 @@ impl Engine {
 
         let mut max = Score::MIN;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, mini(alpha, beta, depth - 1));
-            if score > max {
-                max = score;
-                if score > alpha {
-                    alpha = score;
-                }
-            }
+            let thread_available = num_active_threads
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                    if n < num_threads { Some(n + 1) } else { None }
+                })
+                .is_ok();
 
-            if score >= beta {
-                break;
+            if thread_available {
+                let mut engine = self.clone();
+                engine.nodes_searched = 0;
+                let best = best.clone();
+                let timed_out = timed_out.clone();
+                let num_active_threads = num_active_threads.clone();
+                let nodes = nodes.clone();
+
+                let _ = thread::spawn(move || {
+                    let score = search_move!(
+                        engine,
+                        m,
+                        mini_threaded(
+                            alpha,
+                            beta,
+                            depth - 1,
+                            timed_out,
+                            best.clone(),
+                            nodes.clone(),
+                            num_active_threads.clone(),
+                            num_threads
+                        )
+                    );
+
+                    {
+                        let mut best = best.lock().unwrap();
+                        if score < best.0 {
+                            *best = (score, Some(m));
+                        }
+                    }
+
+                    nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                    num_active_threads.fetch_sub(1, Ordering::Relaxed);
+                });
+            } else {
+                let score = search_move!(
+                    self,
+                    m,
+                    mini_threaded(
+                        alpha,
+                        beta,
+                        depth - 1,
+                        timed_out.clone(),
+                        best.clone(),
+                        nodes.clone(),
+                        num_active_threads.clone(),
+                        num_threads
+                    )
+                );
+
+                if score > max {
+                    max = score;
+                    if score > alpha {
+                        alpha = score;
+                    }
+                }
+
+                if score >= beta {
+                    break;
+                }
             }
         }
 
         max
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn mini_threaded(
         &mut self,
         alpha: Score,
         mut beta: Score,
         depth: u16,
         timed_out: Arc<AtomicBool>,
+        best: Arc<Mutex<(Score, Option<Move>)>>,
+        nodes: Arc<AtomicU64>,
+        num_active_threads: Arc<AtomicU8>,
+        num_threads: u8,
     ) -> Score {
         if depth == 0 {
             return self.grade_position();
@@ -374,16 +440,72 @@ impl Engine {
 
         let mut min = Score::MAX;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
-            if score < min {
-                min = score;
-                if score < beta {
-                    beta = score;
-                }
-            }
+            let thread_available = num_active_threads
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                    if n < num_threads { Some(n + 1) } else { None }
+                })
+                .is_ok();
 
-            if score <= alpha {
-                break;
+            if thread_available {
+                let mut engine = self.clone();
+                engine.nodes_searched = 0;
+                let best = best.clone();
+                let timed_out = timed_out.clone();
+                let num_active_threads = num_active_threads.clone();
+                let nodes = nodes.clone();
+
+                let _ = thread::spawn(move || {
+                    let score = search_move!(
+                        engine,
+                        m,
+                        maxi_threaded(
+                            alpha,
+                            beta,
+                            depth - 1,
+                            timed_out,
+                            best.clone(),
+                            nodes.clone(),
+                            num_active_threads.clone(),
+                            num_threads
+                        )
+                    );
+
+                    {
+                        let mut best = best.lock().unwrap();
+                        if score < best.0 {
+                            *best = (score, Some(m));
+                        }
+                    }
+
+                    nodes.fetch_add(engine.nodes_searched, Ordering::Relaxed);
+                    num_active_threads.fetch_sub(1, Ordering::Relaxed);
+                });
+            } else {
+                let score = search_move!(
+                    self,
+                    m,
+                    maxi_threaded(
+                        alpha,
+                        beta,
+                        depth - 1,
+                        timed_out.clone(),
+                        best.clone(),
+                        nodes.clone(),
+                        num_active_threads.clone(),
+                        num_threads
+                    )
+                );
+
+                if score < min {
+                    min = score;
+                    if score < beta {
+                        beta = score;
+                    }
+                }
+
+                if score <= alpha {
+                    break;
+                }
             }
         }
 
@@ -450,7 +572,7 @@ impl Engine {
                         let nodes = nodes.clone();
                         let timed_out = timed_out.clone();
                         let _ = thread::spawn(move || {
-                            let score = search_move!(engine, m, $search(alpha, beta, depth, timed_out));
+                            let score = search_move!(engine, m, $search(alpha, beta, depth, timed_out, best.clone(), nodes.clone(), num_active_threads.clone(), num_threads));
                             {
                                 let mut best = best.lock().unwrap();
                                 if score $cmp best.0 {
