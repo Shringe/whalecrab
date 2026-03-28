@@ -26,8 +26,7 @@ fn tsc_frequency() -> u64 {
 /// An rdtsc-based move timer. Unsafe but extremely low overhead.
 /// Requires an invariant TSC (virtually all CPUs since ~2008).
 pub struct Rdtsc {
-    start: u64,
-    duration_cycles: u64,
+    deadline: u64,
 }
 
 impl Rdtsc {
@@ -35,8 +34,7 @@ impl Rdtsc {
         let freq = tsc_frequency();
         let duration_cycles = (duration.as_nanos() as u64 * freq) / 1_000_000_000;
         Rdtsc {
-            start: unsafe { _rdtsc() },
-            duration_cycles,
+            deadline: unsafe { _rdtsc() }.wrapping_add(duration_cycles),
         }
     }
 }
@@ -44,8 +42,7 @@ impl Rdtsc {
 impl MoveTimer for Rdtsc {
     #[inline(always)]
     fn over(&self) -> bool {
-        // wrapping_sub handles the rare counter rollover (~585 years at 1GHz)
-        unsafe { _rdtsc() }.wrapping_sub(self.start) > self.duration_cycles
+        (unsafe { _rdtsc() }) > self.deadline
     }
 }
 
