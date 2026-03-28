@@ -3,10 +3,9 @@ use criterion::Criterion;
 
 fn bench(c: &mut Criterion) {
     let mut engine = common::midgame();
-    c.bench_function(
-        "Scoring middle game with transposition table",
-        |b| b.iter(|| engine.grade_position()),
-    );
+    c.bench_function("Scoring middle game with transposition table", |b| {
+        b.iter(|| engine.grade_position())
+    });
 
     let mut engine = common::midgame();
     c.bench_function("Scoring middle game", |b| {
@@ -33,4 +32,4 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-setup_criterion!();
+setup_criterion!(common::configured_criterion());

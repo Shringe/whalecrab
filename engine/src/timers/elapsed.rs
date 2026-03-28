@@ -9,6 +9,11 @@ pub struct Elapsed {
 }
 
 impl Elapsed {
+    #[allow(dead_code)]
+    pub fn new(start: Instant, duration: Duration) -> Elapsed {
+        Elapsed { start, duration }
+    }
+
     pub fn now(duration: Duration) -> Elapsed {
         Elapsed {
             start: Instant::now(),

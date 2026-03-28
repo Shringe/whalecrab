@@ -29,10 +29,10 @@ pub fn configured_criterion() -> Criterion {
 
 #[macro_export]
 macro_rules! setup_criterion {
-    () => {
+    ($config: expr) => {
         criterion::criterion_group! {
             name = benches;
-            config = common::configured_criterion();
+            config = $config;
             targets = bench
         }
         criterion::criterion_main!(benches);

@@ -1,4 +1,4 @@
 pub mod engine;
 mod piece_eval;
 pub mod score;
-mod timers;
+pub mod timers;
