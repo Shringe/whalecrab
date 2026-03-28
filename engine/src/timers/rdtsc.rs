@@ -27,8 +27,11 @@ fn tsc_frequency() -> u64 {
     })
 }
 
-/// An rdtsc-based move timer. Unsafe but extremely low overhead.
+/// An rdtsc-based move timer. Unsafe but extremely low overhead on calling `Rdtsc.over()`.
 /// Requires an invariant TSC (virtually all CPUs since ~2008).
+/// WARNING: Creating this type for the first time induces a 100ms calibration period to sync this type
+/// up with the TSC frequency of the system. The frequency will then be cached and future `Rdtsc`
+/// timers will be cheap to create.
 pub struct Rdtsc {
     deadline: u64,
 }

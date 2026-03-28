@@ -2,8 +2,9 @@ use std::{collections::HashMap, time::Duration};
 
 use crate::{
     piece_eval::{material_value, square_value},
+    platform_timer,
     score::Score,
-    timers::{MoveTimer, elapsed::Elapsed},
+    timers::{MoveTimer, infinite::Infinite},
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
@@ -290,8 +291,7 @@ impl Engine {
 
     /// Contiunes searching until the depth is reached
     pub fn minimax(&mut self, depth: u16) -> Option<Move> {
-        let timer = Elapsed::now(Duration::MAX);
-        self.minimax_with_duration(depth, &timer).0
+        self.minimax_with_duration(depth, &Infinite).0
     }
 
     /// Continues searching until either the depth or duration is reached
@@ -333,7 +333,7 @@ impl Engine {
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
     /// at which point it will return the best move found so far.
     pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
-        let timer = Elapsed::now(*duration);
+        let timer = platform_timer!(*duration);
         let mut depth = 0;
         let mut best_move_so_far = None;
 
