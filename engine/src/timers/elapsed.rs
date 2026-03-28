@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::timers::move_timer::MoveTimer;
+use crate::timers::MoveTimer;
 
 /// An Instant.elapsed() based move timer. Slow but reliable performance
 pub struct Elapsed {

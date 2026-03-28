@@ -2,7 +2,7 @@ mod common;
 use std::time::{Duration, Instant};
 
 use criterion::Criterion;
-use whalecrab_engine::timers::{elapsed::Elapsed, move_timer::MoveTimer, rdtsc::Rdtsc};
+use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed, rdtsc::Rdtsc};
 
 #[track_caller]
 fn bench_timer<T: MoveTimer>(c: &mut Criterion, timer: &T, id: &str) {

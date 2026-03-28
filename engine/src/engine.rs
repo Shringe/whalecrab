@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     piece_eval::{material_value, square_value},
     score::Score,
-    timers::{elapsed::Elapsed, move_timer::MoveTimer},
+    timers::{MoveTimer, elapsed::Elapsed},
 };
 use whalecrab_lib::{
     bitboard::BitBoard,

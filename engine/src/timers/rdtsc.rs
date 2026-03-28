@@ -1,8 +1,12 @@
+#[cfg(target_arch = "x86")]
+use std::arch::x86::_rdtsc;
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::_rdtsc;
+
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
-use crate::timers::move_timer::MoveTimer;
+use crate::timers::MoveTimer;
 
 static TSC_FREQ: OnceLock<u64> = OnceLock::new();
 
