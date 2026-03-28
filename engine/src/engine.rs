@@ -232,14 +232,21 @@ impl Engine {
         end!(score)
     }
 
-    fn maxi(&mut self, mut alpha: Score, beta: Score, depth: u16) -> Score {
-        if depth == 0 {
+    fn maxi(
+        &mut self,
+        mut alpha: Score,
+        beta: Score,
+        depth: u16,
+        start: &Instant,
+        duration: &Duration,
+    ) -> Score {
+        if depth == 0 || start.elapsed() > *duration {
             return self.grade_position();
         }
 
         let mut max = Score::MIN;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, mini(alpha, beta, depth - 1));
+            let score = search_move!(self, m, mini(alpha, beta, depth - 1, start, duration));
             if score > max {
                 max = score;
                 if score > alpha {
@@ -255,14 +262,21 @@ impl Engine {
         max
     }
 
-    fn mini(&mut self, alpha: Score, mut beta: Score, depth: u16) -> Score {
-        if depth == 0 {
+    fn mini(
+        &mut self,
+        alpha: Score,
+        mut beta: Score,
+        depth: u16,
+        start: &Instant,
+        duration: &Duration,
+    ) -> Score {
+        if depth == 0 || start.elapsed() > *duration {
             return self.grade_position();
         }
 
         let mut min = Score::MAX;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, maxi(alpha, beta, depth - 1));
+            let score = search_move!(self, m, maxi(alpha, beta, depth - 1, start, duration));
             if score < min {
                 min = score;
                 if score < beta {
@@ -288,7 +302,7 @@ impl Engine {
     pub fn minimax_with_duration(
         &mut self,
         depth: u16,
-        since: &Instant,
+        start: &Instant,
         duration: &Duration,
     ) -> (Option<Move>, bool) {
         let moves = order_moves(self.game.legal_moves());
@@ -301,16 +315,14 @@ impl Engine {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
                 let mut best_score = $best_score;
                 for m in moves {
-                    let score = search_move!(self, m, $search(alpha, beta, depth));
+                    if start.elapsed() > *duration {
+                        return (best_move, true);
+                    }
+
+                    let score = search_move!(self, m, $search(alpha, beta, depth, start, duration));
                     if score $cmp best_score {
                         best_score = score;
                         best_move = Some(m);
-                    }
-
-                    let finished = Instant::now();
-                    let elapsed = finished.duration_since(*since);
-                    if elapsed > *duration {
-                        return (best_move, true);
                     }
                 }
                 (best_move, false)
@@ -366,7 +378,7 @@ mod tests {
         let duration = Duration::from_millis(duration_ms as u64);
         let _ = engine.iterative_deepening(&duration);
         let elapsed = now.elapsed();
-        let max = Duration::from_millis((duration_ms * 1.05) as u64);
+        let max = Duration::from_millis((duration_ms * 1.02) as u64);
         assert!(
             elapsed < max,
             "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
