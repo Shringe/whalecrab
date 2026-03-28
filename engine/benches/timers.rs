@@ -2,7 +2,7 @@ mod common;
 use std::time::{Duration, Instant};
 
 use criterion::Criterion;
-use whalecrab_engine::timers::{elapsed::Elapsed, move_timer::MoveTimer};
+use whalecrab_engine::timers::{elapsed::Elapsed, move_timer::MoveTimer, rdtsc::Rdtsc};
 
 #[track_caller]
 fn bench_timer<T: MoveTimer>(c: &mut Criterion, timer: &T, id: &str) {
@@ -27,6 +27,20 @@ fn bench(c: &mut Criterion) {
         c,
         &Elapsed::new(start, Duration::from_secs(0)),
         "Elapsed timer finished",
+    );
+
+    bench_timer(
+        c,
+        &Rdtsc::now(Duration::from_secs(6)),
+        "Rdtsc timer 6 second",
+    );
+
+    bench_timer(c, &Rdtsc::now(Duration::MAX), "Rdtsc timer infinite");
+
+    bench_timer(
+        c,
+        &Rdtsc::now(Duration::from_secs(0)),
+        "Rdtsc timer finished",
     );
 }
 
