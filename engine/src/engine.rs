@@ -1,11 +1,9 @@
-use std::{
-    collections::HashMap,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, time::Duration};
 
 use crate::{
     piece_eval::{material_value, square_value},
     score::Score,
+    timers::{elapsed::Elapsed, move_timer::MoveTimer},
 };
 use whalecrab_lib::{
     bitboard::BitBoard,
@@ -232,21 +230,20 @@ impl Engine {
         end!(score)
     }
 
-    fn maxi(
+    fn maxi<T: MoveTimer>(
         &mut self,
         mut alpha: Score,
         beta: Score,
         depth: u16,
-        start: &Instant,
-        duration: &Duration,
+        timer: &T,
     ) -> Score {
-        if depth == 0 || start.elapsed() > *duration {
+        if depth == 0 || timer.over() {
             return self.grade_position();
         }
 
         let mut max = Score::MIN;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, mini(alpha, beta, depth - 1, start, duration));
+            let score = search_move!(self, m, mini(alpha, beta, depth - 1, timer));
             if score > max {
                 max = score;
                 if score > alpha {
@@ -262,21 +259,20 @@ impl Engine {
         max
     }
 
-    fn mini(
+    fn mini<T: MoveTimer>(
         &mut self,
         alpha: Score,
         mut beta: Score,
         depth: u16,
-        start: &Instant,
-        duration: &Duration,
+        timer: &T,
     ) -> Score {
-        if depth == 0 || start.elapsed() > *duration {
+        if depth == 0 || timer.over() {
             return self.grade_position();
         }
 
         let mut min = Score::MAX;
         for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, maxi(alpha, beta, depth - 1, start, duration));
+            let score = search_move!(self, m, maxi(alpha, beta, depth - 1, timer));
             if score < min {
                 min = score;
                 if score < beta {
@@ -294,16 +290,15 @@ impl Engine {
 
     /// Contiunes searching until the depth is reached
     pub fn minimax(&mut self, depth: u16) -> Option<Move> {
-        self.minimax_with_duration(depth, &Instant::now(), &Duration::MAX)
-            .0
+        let timer = Elapsed::now(Duration::MAX);
+        self.minimax_with_duration(depth, &timer).0
     }
 
     /// Continues searching until either the depth or duration is reached
-    pub fn minimax_with_duration(
+    pub fn minimax_with_duration<T: MoveTimer>(
         &mut self,
         depth: u16,
-        start: &Instant,
-        duration: &Duration,
+        timer: &T,
     ) -> (Option<Move>, bool) {
         let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
@@ -315,11 +310,11 @@ impl Engine {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
                 let mut best_score = $best_score;
                 for m in moves {
-                    if start.elapsed() > *duration {
+                    if timer.over() {
                         return (best_move, true);
                     }
 
-                    let score = search_move!(self, m, $search(alpha, beta, depth, start, duration));
+                    let score = search_move!(self, m, $search(alpha, beta, depth, timer));
                     if score $cmp best_score {
                         best_score = score;
                         best_move = Some(m);
@@ -338,12 +333,12 @@ impl Engine {
     /// The engine will continue searching deeper and deeper depths until the duration has passed,
     /// at which point it will return the best move found so far.
     pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
-        let start = Instant::now();
+        let timer = Elapsed::now(*duration);
         let mut depth = 0;
         let mut best_move_so_far = None;
 
         loop {
-            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, &start, duration);
+            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, &timer);
 
             if ran_out_of_time {
                 return best_move_so_far;
