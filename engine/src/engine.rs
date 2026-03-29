@@ -334,11 +334,15 @@ impl Engine {
     /// at which point it will return the best move found so far.
     pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
         let timer = platform_timer!(*duration);
+        self.iterative_deepening_with_timer(&timer)
+    }
+
+    pub fn iterative_deepening_with_timer<T: MoveTimer>(&mut self, timer: &T) -> Option<Move> {
         let mut depth = 0;
         let mut best_move_so_far = None;
 
         loop {
-            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, &timer);
+            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, timer);
 
             if ran_out_of_time {
                 return best_move_so_far;
@@ -368,12 +372,16 @@ mod tests {
     #[test]
     fn iterative_deepening_should_not_take_too_long() {
         let mut engine = Engine::default();
-        let now = Instant::now();
+
         let duration_ms = 200.0;
         let duration = Duration::from_millis(duration_ms as u64);
-        let _ = engine.iterative_deepening(&duration);
-        let elapsed = now.elapsed();
         let max = Duration::from_millis((duration_ms * 1.02) as u64);
+        let timer = platform_timer!(duration);
+
+        let now = Instant::now();
+        let _ = engine.iterative_deepening_with_timer(&timer);
+        let elapsed = now.elapsed();
+
         assert!(
             elapsed < max,
             "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
