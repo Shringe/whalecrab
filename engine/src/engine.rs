@@ -370,12 +370,14 @@ mod tests {
     }
 
     #[test]
-    fn iterative_deepening_should_not_take_too_long() {
+    fn iterative_deepening_should_take_the_right_amount_of_time() {
         let mut engine = Engine::default();
 
         let duration_ms = 200.0;
         let duration = Duration::from_millis(duration_ms as u64);
+        let min = Duration::from_millis((duration_ms * 0.98) as u64);
         let max = Duration::from_millis((duration_ms * 1.02) as u64);
+
         let timer = platform_timer!(duration);
 
         let now = Instant::now();
@@ -383,8 +385,16 @@ mod tests {
         let elapsed = now.elapsed();
 
         assert!(
+            elapsed > min,
+            "minimax for {:?} should have completed after {:?}, but took {:?}",
+            duration,
+            min,
+            elapsed
+        );
+
+        assert!(
             elapsed < max,
-            "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
+            "minimax for {:?} should have completed within {:?}, but took {:?}",
             duration,
             max,
             elapsed
