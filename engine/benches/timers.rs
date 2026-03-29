@@ -46,4 +46,4 @@ fn bench(c: &mut Criterion) {
     bench_timer(c, &Infinite, "Infinite timer");
 }
 
-setup_criterion!(Criterion::default());
+setup_criterion!(common::configured_criterion());
