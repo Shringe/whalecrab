@@ -11,7 +11,8 @@ use crate::timers::MoveTimer;
 /// The number of clock cycles per each nanosecond
 static CYCLES_PER_NANOSECOND: OnceLock<u64> = OnceLock::new();
 /// The amount of time to spend estimating CYCLES_PER_NANOSECOND
-const CALIBRATION_TIME: Duration = Duration::from_nanos(1);
+const CALIBRATION_TIME: Duration = Duration::from_millis(1);
+const CALIBRATION_PRECISION: u64 = Duration::from_secs(1).as_nanos() as u64;
 
 /// Calculates the TSC frequency
 fn calibrate_tsc_frequency(calibration_time: Duration) -> u64 {
@@ -24,7 +25,7 @@ fn calibrate_tsc_frequency(calibration_time: Duration) -> u64 {
     let ns_elapsed = wall_start.elapsed().as_nanos() as u64;
 
     // cycles/sec = cycles / (ns / 1e9) = cycles * 1e9 / ns
-    tsc_elapsed / ns_elapsed
+    tsc_elapsed * CALIBRATION_PRECISION / ns_elapsed
 }
 
 /// Calibrates the TSC frequency in Nanohertz by comparing it against
@@ -45,7 +46,7 @@ pub struct Rdtsc {
 impl Rdtsc {
     pub fn now(duration: Duration) -> Rdtsc {
         let freq = tsc_frequency();
-        let duration_cycles = duration.as_nanos() as u64 * freq;
+        let duration_cycles = (duration.as_nanos() as u64 * freq) / CALIBRATION_PRECISION;
         let deadline = unsafe { _rdtsc() }.wrapping_add(duration_cycles);
         Rdtsc { deadline }
     }
@@ -63,6 +64,8 @@ mod tests {
     use super::*;
     use crate::timers::elapsed::Elapsed;
 
+    const TSC_VARIANCE_TOLERANCE: f64 = 0.001;
+
     fn timeit<T, F: FnOnce() -> T>(f: F) -> (Duration, T) {
         let start = Instant::now();
         let result = f();
@@ -72,9 +75,19 @@ mod tests {
 
     #[track_caller]
     fn test_compare_calibrations_at_different_durations(left: Duration, right: Duration) {
-        let left_freq = calibrate_tsc_frequency(left);
-        let right_freq = calibrate_tsc_frequency(right);
-        assert_eq!(left_freq, right_freq);
+        let left_freq = calibrate_tsc_frequency(left) as f64;
+        let right_freq = calibrate_tsc_frequency(right) as f64;
+        let ratio = (left_freq - right_freq).abs() / right_freq;
+        assert!(
+            ratio < TSC_VARIANCE_TOLERANCE,
+            "calibration at {:?} ({}) and {:?} ({}) differ by {:.5}%, exceeding tolerance of {:.5}%",
+            left,
+            left_freq,
+            right,
+            right_freq,
+            ratio * 100.0,
+            TSC_VARIANCE_TOLERANCE * 100.0,
+        );
     }
 
     #[test]
@@ -101,9 +114,17 @@ mod tests {
 
     #[test]
     fn cached_tsc_freq_equals_manual_calibration() {
-        let uncached = calibrate_tsc_frequency(CALIBRATION_TIME);
-        let cached = tsc_frequency();
-        assert_eq!(cached, uncached);
+        let uncached = calibrate_tsc_frequency(CALIBRATION_TIME) as f64;
+        let cached = tsc_frequency() as f64;
+        let ratio = (cached - uncached).abs() / uncached;
+        assert!(
+            ratio < TSC_VARIANCE_TOLERANCE,
+            "cached frequency ({}) and manual calibration ({}) differ by {:.5}%, exceeding tolerance of {:.5}%",
+            cached,
+            uncached,
+            ratio * 100.0,
+            TSC_VARIANCE_TOLERANCE * 100.0,
+        );
     }
 
     #[test]

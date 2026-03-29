@@ -372,16 +372,18 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_iterative_deepening_timing<T: MoveTimer>(timer: &T) {
+    fn assert_iterative_deepening_timing<T: MoveTimer, M: FnOnce(Duration) -> T>(make_timer: M) {
         let mut engine = Engine::default();
 
-        let duration_ms = 200.0;
-        let duration = Duration::from_millis(duration_ms as u64);
-        let min = Duration::from_millis((duration_ms * 0.98) as u64);
-        let max = Duration::from_millis((duration_ms * 1.02) as u64);
+        let duration = Duration::from_millis(1000);
+        let min = Duration::from_micros((duration.as_micros() as f64 * 0.98) as u64);
+        let max = Duration::from_micros((duration.as_micros() as f64 * 1.02) as u64);
 
+        let timer = make_timer(duration);
         let now = Instant::now();
-        let _ = engine.iterative_deepening_with_timer(timer);
+        assert!(!timer.over());
+        let _ = engine.iterative_deepening_with_timer(&timer);
+        assert!(timer.over());
         let elapsed = now.elapsed();
 
         assert!(
@@ -403,24 +405,18 @@ mod tests {
 
     #[test]
     fn iterative_deepening_should_take_the_right_amount_of_time_on_elapsed() {
-        let duration = Duration::from_millis(200);
-        let timer = Elapsed::now(duration);
-        assert_iterative_deepening_timing(&timer);
+        assert_iterative_deepening_timing(Elapsed::now);
     }
 
     #[test]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     fn iterative_deepening_should_take_the_right_amount_of_time_on_rdtsc() {
-        let duration = Duration::from_millis(200);
-        let timer = crate::timers::rdtsc::Rdtsc::now(duration);
-        assert_iterative_deepening_timing(&timer);
+        assert_iterative_deepening_timing(crate::timers::rdtsc::Rdtsc::now);
     }
 
     #[test]
     fn iterative_deepening_should_take_the_right_amount_of_time_on_platform() {
-        let duration = Duration::from_millis(200);
-        let timer = platform_timer!(duration);
-        assert_iterative_deepening_timing(&timer);
+        assert_iterative_deepening_timing(|duration| platform_timer!(duration));
     }
 
     #[test]
