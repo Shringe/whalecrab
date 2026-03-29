@@ -303,11 +303,11 @@ impl Engine {
         let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
 
-        let alpha = Score::MIN;
-        let beta = Score::MAX;
+        let mut alpha = Score::MIN;
+        let mut beta = Score::MAX;
 
         macro_rules! search_loop {
-            ($best_score:expr, $cmp:tt, $search:ident) => {{
+            ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
                 let mut best_score = $best_score;
                 for m in moves {
                     if timer.over() {
@@ -318,6 +318,9 @@ impl Engine {
                     if score $cmp best_score {
                         best_score = score;
                         best_move = Some(m);
+                        if score $cmp $prune {
+                            $prune = score;
+                        }
                     }
                 }
                 (best_move, false)
@@ -325,8 +328,8 @@ impl Engine {
         }
 
         match self.game.turn {
-            PieceColor::White => search_loop!(Score::MIN, >, mini),
-            PieceColor::Black => search_loop!(Score::MAX, <, maxi),
+            PieceColor::White => search_loop!(Score::MIN, >, mini, alpha),
+            PieceColor::Black => search_loop!(Score::MAX, <, maxi, beta),
         }
     }
 
