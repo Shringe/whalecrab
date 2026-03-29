@@ -310,10 +310,6 @@ impl Engine {
             ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
                 let mut best_score = $best_score;
                 for m in moves {
-                    if timer.over() {
-                        return (best_move, true);
-                    }
-
                     let score = search_move!(self, m, $search(alpha, beta, depth, timer));
                     if score $cmp best_score {
                         best_score = score;
@@ -321,6 +317,10 @@ impl Engine {
                         if score $cmp $prune {
                             $prune = score;
                         }
+                    }
+
+                    if timer.over() {
+                        return (best_move, true);
                     }
                 }
                 (best_move, false)
