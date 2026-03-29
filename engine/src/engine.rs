@@ -289,7 +289,7 @@ impl Engine {
         min
     }
 
-    /// Contiunes searching until the depth is reached
+    /// Continues searching until the depth is reached
     pub fn minimax(&mut self, depth: u16) -> Option<Move> {
         self.minimax_with_duration(depth, &Infinite).0
     }
