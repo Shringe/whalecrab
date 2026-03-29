@@ -358,6 +358,8 @@ impl Engine {
 mod tests {
     use std::time::{Duration, Instant};
 
+    use crate::timers::elapsed::Elapsed;
+
     use super::*;
     use whalecrab_lib::{movegen::pieces::piece::PieceType, square::Square};
 
@@ -369,8 +371,8 @@ mod tests {
         (result, duration)
     }
 
-    #[test]
-    fn iterative_deepening_should_take_the_right_amount_of_time() {
+    #[track_caller]
+    fn assert_iterative_deepening_timing<T: MoveTimer>(timer: &T) {
         let mut engine = Engine::default();
 
         let duration_ms = 200.0;
@@ -378,15 +380,13 @@ mod tests {
         let min = Duration::from_millis((duration_ms * 0.98) as u64);
         let max = Duration::from_millis((duration_ms * 1.02) as u64);
 
-        let timer = platform_timer!(duration);
-
         let now = Instant::now();
-        let _ = engine.iterative_deepening_with_timer(&timer);
+        let _ = engine.iterative_deepening_with_timer(timer);
         let elapsed = now.elapsed();
 
         assert!(
             elapsed > min,
-            "minimax for {:?} should have completed after {:?}, but took {:?}",
+            "iterative_deepening for {:?} should have completed after {:?}, but took {:?}",
             duration,
             min,
             elapsed
@@ -394,11 +394,33 @@ mod tests {
 
         assert!(
             elapsed < max,
-            "minimax for {:?} should have completed within {:?}, but took {:?}",
+            "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
             duration,
             max,
             elapsed
         );
+    }
+
+    #[test]
+    fn iterative_deepening_should_take_the_right_amount_of_time_on_elapsed() {
+        let duration = Duration::from_millis(200);
+        let timer = Elapsed::now(duration);
+        assert_iterative_deepening_timing(&timer);
+    }
+
+    #[test]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    fn iterative_deepening_should_take_the_right_amount_of_time_on_rdtsc() {
+        let duration = Duration::from_millis(200);
+        let timer = crate::timers::rdtsc::Rdtsc::now(duration);
+        assert_iterative_deepening_timing(&timer);
+    }
+
+    #[test]
+    fn iterative_deepening_should_take_the_right_amount_of_time_on_platform() {
+        let duration = Duration::from_millis(200);
+        let timer = platform_timer!(duration);
+        assert_iterative_deepening_timing(&timer);
     }
 
     #[test]
