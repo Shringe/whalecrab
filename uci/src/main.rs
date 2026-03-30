@@ -1,12 +1,12 @@
 mod command;
 mod interface;
+mod logger;
 
 use std::io::{BufRead, BufWriter, Write};
 use std::str::FromStr;
 use std::time::Duration;
 use std::{fs::File, io};
 
-use whalecrab_engine::engine::Engine;
 use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{game::Game, movegen::moves::Move};
 
@@ -17,34 +17,15 @@ const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
 
 fn main() {
-    let logfile = File::create("/tmp/whalecrab_uci.log");
-    let mut writer = match logfile {
-        Ok(f) => Some(BufWriter::new(f)),
-        Err(e) => {
-            eprintln!("Can't log to file: {}", e);
-            None
-        }
-    };
-
-    macro_rules! log {
-            ($($arg:tt)*) => {{
-                let msg = format!($($arg)*) + "\n";
-                eprint!("{}", msg);
-                if let Some(writer) = &mut writer {
-                    if let Err(e) = writer.write_all(msg.as_bytes()) {
-                        eprintln!("Couldn't write to log buffer: {}", e);
-                    }
-                }
-            }};
-        }
+    logger::init("/tmp/whalecrab_uci.log");
 
     macro_rules! uci_send {
-            ($($arg:tt)*) => {{
-                let msg = format!($($arg)*);
-                log!("Sent: {}", msg);
-                println!("{}", msg);
-            }};
-        }
+        ($($arg:tt)*) => {{
+            let msg = format!($($arg)*);
+            log!("Sent: {}", msg);
+            println!("{}", msg);
+        }};
+    }
 
     // TODO, allow setoption for depth
     let mut uci = UciInterface::default();
@@ -166,13 +147,6 @@ fn main() {
                 uci_send!("bestmove {}", best_move_uci);
                 engine.game.play(&best_move);
             }
-        }
-    }
-
-    if let Some(writer) = &mut writer {
-        match writer.flush() {
-            Ok(_) => eprintln!("Log flushed successfully"),
-            Err(e) => eprintln!("Failed to flush log file: {}", e),
         }
     }
 }
