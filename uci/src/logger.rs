@@ -30,7 +30,11 @@ pub struct Logger;
 
 impl Default for Logger {
     fn default() -> Self {
-        Self::init("/tmp/whalecrab_uci.log")
+        #[cfg(debug_assertions)]
+        let path = "/tmp/whalecrab_uci_debug.log";
+        #[cfg(not(debug_assertions))]
+        let path = "/tmp/whalecrab_uci.log";
+        Self::init(path)
     }
 }
 
