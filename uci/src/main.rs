@@ -7,6 +7,7 @@ use std::time::Duration;
 use std::{fs::File, io};
 
 use whalecrab_engine::engine::Engine;
+use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{game::Game, movegen::moves::Move};
 
 use crate::command::UciCommand;
@@ -135,7 +136,20 @@ fn main() {
                 log!("Game state: {:?}", engine.game.state);
             }
 
-            UciCommand::Go => {
+            UciCommand::Go {
+                movetime: _,
+                wtime,
+                btime,
+                winc,
+                binc,
+            } => {
+                let (time, inc) = match uci.engine.game.turn {
+                    PieceColor::White => (wtime, winc),
+                    PieceColor::Black => (btime, binc),
+                };
+
+                log!("time: {:?}; inc: {:?}", time, inc);
+
                 let engine = &mut uci.engine;
                 let best_move = match engine.minimax(uci.depth) {
                     Some(m) => m,

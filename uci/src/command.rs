@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, str::FromStr, time::Duration};
 
 /// Enum of supported uci commands to recieve
 pub enum UciCommand {
@@ -6,9 +6,20 @@ pub enum UciCommand {
     Uci,
     Quit,
     IsReady,
-    Position { uci_moves: String },
-    Go,
-    SetOption { name: String, value: String },
+    Position {
+        uci_moves: String,
+    },
+    Go {
+        movetime: Option<Duration>,
+        wtime: Option<Duration>,
+        btime: Option<Duration>,
+        winc: Option<Duration>,
+        binc: Option<Duration>,
+    },
+    SetOption {
+        name: String,
+        value: String,
+    },
 }
 
 #[derive(Debug)]
@@ -55,7 +66,25 @@ impl FromStr for UciCommand {
                     uci_moves: moves.to_string(),
                 })
             }
-            "go" => Ok(Self::Go),
+            "go" => {
+                let tokens: Vec<&str> = line.split(' ').collect();
+
+                let parse_token = |key: &str| -> Option<Duration> {
+                    tokens
+                        .windows(2)
+                        .find(|w| w[0] == key)
+                        .and_then(|w| w[1].parse::<u64>().ok())
+                        .map(Duration::from_millis)
+                };
+
+                Ok(Self::Go {
+                    movetime: parse_token("movetime"),
+                    wtime: parse_token("wtime"),
+                    btime: parse_token("btime"),
+                    winc: parse_token("winc"),
+                    binc: parse_token("binc"),
+                })
+            }
             "setoption" => {
                 let split: Vec<&str> = line.split(' ').collect();
                 let name = match split.get(2) {
