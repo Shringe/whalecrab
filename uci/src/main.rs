@@ -2,22 +2,23 @@ mod command;
 mod interface;
 mod logger;
 
-use std::io::{BufRead, BufWriter, Write};
+use std::io;
+use std::io::BufRead;
 use std::str::FromStr;
 use std::time::Duration;
-use std::{fs::File, io};
 
 use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{game::Game, movegen::moves::Move};
 
 use crate::command::UciCommand;
 use crate::interface::UciInterface;
+use crate::logger::Logger;
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
 
 fn main() {
-    logger::init("/tmp/whalecrab_uci.log");
+    let _g = Logger::init("/tmp/whalecrab_uci2.log");
 
     macro_rules! uci_send {
         ($($arg:tt)*) => {{
