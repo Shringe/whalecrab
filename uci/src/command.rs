@@ -105,3 +105,136 @@ impl FromStr for UciCommand {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn uci() {
+        assert!(matches!(UciCommand::from_str("uci"), Ok(UciCommand::Uci)));
+    }
+
+    #[test]
+    fn ucinewgame() {
+        assert!(matches!(
+            UciCommand::from_str("ucinewgame"),
+            Ok(UciCommand::UciNewGame)
+        ));
+    }
+
+    #[test]
+    fn quit() {
+        assert!(matches!(UciCommand::from_str("quit"), Ok(UciCommand::Quit)));
+    }
+
+    #[test]
+    fn isready() {
+        assert!(matches!(
+            UciCommand::from_str("isready"),
+            Ok(UciCommand::IsReady)
+        ));
+    }
+
+    #[test]
+    fn position() {
+        let cmd = UciCommand::from_str("position startpos moves e2e4 e7e5").unwrap();
+        assert!(matches!(cmd, UciCommand::Position { uci_moves } if uci_moves == "e2e4 e7e5"));
+    }
+
+    #[test]
+    fn position_no_moves() {
+        assert!(matches!(
+            UciCommand::from_str("position startpos"),
+            Err(UciError::ParseMove(_))
+        ));
+    }
+
+    #[test]
+    fn go_bare() {
+        let cmd = UciCommand::from_str("go").unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::Go {
+                movetime: None,
+                wtime: None,
+                btime: None,
+                winc: None,
+                binc: None,
+            }
+        ));
+    }
+
+    #[test]
+    fn go_movetime() {
+        let cmd = UciCommand::from_str("go movetime 1000").unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::Go {
+                movetime: Some(d),
+                ..
+            } if d == Duration::from_millis(1000)
+        ));
+    }
+
+    #[test]
+    fn go_wtime_btime() {
+        let cmd = UciCommand::from_str("go wtime 60000 btime 60000 winc 500 binc 500").unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::Go {
+                movetime: None,
+                wtime: Some(w),
+                btime: Some(b),
+                winc: Some(wi),
+                binc: Some(bi),
+            } if w == Duration::from_millis(60000)
+              && b == Duration::from_millis(60000)
+              && wi == Duration::from_millis(500)
+              && bi == Duration::from_millis(500)
+        ));
+    }
+
+    #[test]
+    fn setoption_depth() {
+        let cmd = UciCommand::from_str("setoption name Depth value 5").unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::SetOption { name, value } if name == "Depth" && value == "5"
+        ));
+    }
+
+    #[test]
+    fn setoption_movetime() {
+        let cmd = UciCommand::from_str("setoption name MaxMoveTimeMs value 3000").unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::SetOption { name, value } if name == "MaxMoveTimeMs" && value == "3000"
+        ));
+    }
+
+    #[test]
+    fn unrecognized_command() {
+        assert!(matches!(
+            UciCommand::from_str("notacommand"),
+            Err(UciError::UnrecognizedCommand(_))
+        ));
+    }
+
+    #[test]
+    fn setoption_missing_value() {
+        assert!(matches!(
+            UciCommand::from_str("setoption name Depth"),
+            Err(UciError::ParseOptionValue(_))
+        ));
+    }
+
+    #[test]
+    fn setoption_missing_name() {
+        assert!(matches!(
+            UciCommand::from_str("setoption"),
+            Err(UciError::ParseOptionName(_))
+        ));
+    }
+}
