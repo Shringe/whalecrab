@@ -7,7 +7,7 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Engine against self with minimax");
     let mut sample_engine = Engine::default();
 
-    for depth in 0..=3 {
+    for depth in 0..=5 {
         sample_engine.nodes_searched = 0;
         let _ = sample_engine.minimax(depth);
         let sample = sample_engine.nodes_searched;
