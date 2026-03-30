@@ -11,6 +11,7 @@ use crate::{command::UciCommand, log};
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
 
+#[derive(Debug, PartialEq)]
 pub enum UciHandleAction {
     Quit,
     Continue,
@@ -192,8 +193,8 @@ mod test {
     /// Creates a UciCommand from a formatted string. Unwraps parsing errors.
     /// ```rust
     /// let mut uci = UciInterface::default();
-    /// let _ = uci.handle(uci!("uci"));
-    /// let _ = uci.handle(uci!("go movetime {}", 5000));
+    /// let _ = uci.handle(&uci!("uci"));
+    /// let _ = uci.handle(&uci!("go movetime {}", 5000));
     /// ```
     macro_rules! uci {
         ($($arg:tt)*) => {{
@@ -205,7 +206,37 @@ mod test {
     #[test]
     fn greeting() {
         let mut uci = UciInterface::default();
-        let (response, _) = uci.handle(&uci!("uci"));
+        let response = uci.handle(&uci!("uci")).0;
         assert!(response.contains(&"uciok".to_string()));
+    }
+
+    #[test]
+    fn new_game() {
+        let mut uci = UciInterface::default();
+        let _ = uci.handle(&uci!("ucinewgame")).0;
+        assert_eq!(uci.engine.game, Game::default());
+        let response = uci.handle(&uci!("isready")).0;
+        assert!(response.contains(&"readyok".to_string()));
+    }
+
+    #[test]
+    fn simple_game() {
+        let mut uci = UciInterface::default();
+
+        uci.handle(&uci!("ucinewgame"));
+        uci.handle(&uci!("isready"));
+
+        // Play a few moves and let the engine respond
+        for _ in 0..5 {
+            let (responses, action) = uci.handle(&uci!("go movetime 50"));
+            assert_eq!(action, UciHandleAction::Continue);
+
+            let bestmove = responses.iter().find(|r| r.starts_with("bestmove"));
+            let bestmove = bestmove.expect("Engine should return a bestmove");
+            let mv = bestmove.strip_prefix("bestmove ").unwrap();
+
+            // Feed the engine's move back as the opponent's move
+            uci.handle(&uci!("position startpos moves {}", mv));
+        }
     }
 }
