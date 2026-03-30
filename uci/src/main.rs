@@ -3,6 +3,7 @@ mod interface;
 
 use std::io::{BufRead, BufWriter, Write};
 use std::str::FromStr;
+use std::time::Duration;
 use std::{fs::File, io};
 
 use whalecrab_engine::engine::Engine;
@@ -45,10 +46,7 @@ fn main() {
         }
 
     // TODO, allow setoption for depth
-    let mut uci = UciInterface {
-        engine: None,
-        depth: 3,
-    };
+    let mut uci = UciInterface::default();
 
     let stdin = io::stdin();
     'outer: for line in stdin.lock().lines() {
@@ -72,14 +70,19 @@ fn main() {
         };
 
         match cmd {
-            UciCommand::UciNewGame => uci.engine = Some(Engine::default()),
+            UciCommand::UciNewGame => uci.engine.with_new_game(Game::default()),
             UciCommand::Quit => break,
             UciCommand::IsReady => uci_send!("readyok"),
 
             UciCommand::Uci => {
                 uci_send!("id name {ID_NAME}");
                 uci_send!("id author {ID_AUTHOR}");
-                uci_send!("option name Depth type spin default 4");
+                uci_send!("option name Depth type spin default 20 min 0 max 200",);
+                uci_send!(
+                    "option name MaxMoveTimeMs type spin default {} min 0 max {}",
+                    Duration::from_mins(1).as_millis(),
+                    Duration::from_hours(1).as_millis(),
+                );
                 uci_send!("uciok");
             }
 
@@ -93,27 +96,32 @@ fn main() {
                         log!("Failed to parse depth: {}", e);
                     }
                 },
+                "maxmovetimems" => match value.parse::<u64>() {
+                    Ok(0) => {
+                        log!("Move time limit disabled");
+                        uci.duration = Duration::MAX;
+                    }
+                    Ok(ms) => {
+                        log!("Setting max move time to {}ms", ms);
+                        uci.duration = Duration::from_millis(ms);
+                    }
+                    Err(e) => log!("Failed to parse movetime: {}", e),
+                },
                 _ => {
                     log!("Unknown option: {}", name);
                 }
             },
 
             UciCommand::Position { uci_moves } => {
-                let game = match &mut uci.engine {
-                    Some(game) => game,
-                    None => {
-                        log!("Can't accept moves when game is uninitialized");
-                        continue;
-                    }
-                };
+                let engine = &mut uci.engine;
 
                 // Reset to starting position
-                game.with_new_game(Game::default());
+                engine.with_new_game(Game::default());
 
                 // Play all moves in sequence
                 log!("{:#?}", uci_moves);
                 for uci_move in uci_moves.split(' ') {
-                    let move_to_play = match Move::from_uci(uci_move, &game.game) {
+                    let move_to_play = match Move::from_uci(uci_move, &engine.game) {
                         Ok(m) => m,
                         Err(e) => {
                             log!("Failed to parse uci move '{}': {:?}", uci_move, e);
@@ -121,34 +129,29 @@ fn main() {
                         }
                     };
                     log!("Playing move: {}", move_to_play);
-                    game.game.play(&move_to_play);
+                    engine.game.play(&move_to_play);
                 }
-                log!("Final position FEN: {}", game.game.to_fen());
-                log!("Game state: {:?}", game.game.state);
+                log!("Final position FEN: {}", engine.game.to_fen());
+                log!("Game state: {:?}", engine.game.state);
             }
 
-            UciCommand::Go => match &mut uci.engine {
-                Some(game) => {
-                    let best_move = match game.minimax(uci.depth) {
-                        Some(m) => m,
-                        None => {
-                            log!("No engine move found. Maybe the game is finished?");
-                            log!("Game state: {:?}", game.game.state);
-                            continue;
-                        }
-                    };
+            UciCommand::Go => {
+                let engine = &mut uci.engine;
+                let best_move = match engine.minimax(uci.depth) {
+                    Some(m) => m,
+                    None => {
+                        log!("No engine move found. Maybe the game is finished?");
+                        log!("Game state: {:?}", engine.game.state);
+                        continue;
+                    }
+                };
 
-                    let best_move_uci = best_move.to_uci(&game.game);
-                    log!("Playing engine move: {}", best_move);
-                    log!("Fen before playing the move: {}", game.game.to_fen());
-                    uci_send!("bestmove {}", best_move_uci);
-                    game.game.play(&best_move);
-                }
-                None => {
-                    log!("Tried to find best move but game is uninitialized");
-                    continue;
-                }
-            },
+                let best_move_uci = best_move.to_uci(&engine.game);
+                log!("Playing engine move: {}", best_move);
+                log!("Fen before playing the move: {}", engine.game.to_fen());
+                uci_send!("bestmove {}", best_move_uci);
+                engine.game.play(&best_move);
+            }
         }
     }
 
