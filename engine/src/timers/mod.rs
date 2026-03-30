@@ -4,6 +4,7 @@ pub mod infinite;
 pub mod rdtsc;
 
 /// Returns the high performance `Rdtsc` timer on supported platforms, otherwise returns an `Elapsed` timer
+/// TODO: return an Infinite timer if the Duration == Duration::MAX
 #[macro_export]
 macro_rules! platform_timer {
     ($duration:expr) => {{
