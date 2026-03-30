@@ -151,21 +151,22 @@ impl UciInterface {
             }
 
             UciCommand::Go {
-                movetime: _,
+                movetime,
                 wtime,
                 btime,
                 winc,
                 binc,
             } => {
-                let (time, inc) = match self.engine.game.turn {
+                let engine = &mut self.engine;
+
+                let (time, inc) = match engine.game.turn {
                     PieceColor::White => (wtime, winc),
                     PieceColor::Black => (btime, binc),
                 };
 
-                log!("time: {:?}; inc: {:?}", time, inc);
+                let movetime = movetime.unwrap_or(Duration::from_millis(100));
 
-                let engine = &mut self.engine;
-                let best_move = match engine.minimax(self.depth) {
+                let best_move = match engine.iterative_deepening(&movetime) {
                     Some(m) => m,
                     None => {
                         log!("No engine move found. Maybe the game is finished?");
@@ -188,6 +189,11 @@ impl UciInterface {
 
 #[cfg(test)]
 mod test {
+    use std::time::Instant;
+
+    use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed};
+    use whalecrab_lib::square::Square;
+
     use super::*;
 
     /// Creates a UciCommand from a formatted string. Unwraps parsing errors.
@@ -227,15 +233,26 @@ mod test {
         uci.handle(&uci!("isready"));
 
         // Play a few moves and let the engine respond
-        for _ in 0..5 {
-            let (responses, action) = uci.handle(&uci!("go movetime 50"));
+        let movetime = Duration::from_millis(10);
+        for _ in 0..10 {
+            let start = Instant::now();
+            let (responses, action) = uci.handle(&uci!("go movetime {}", movetime.as_millis()));
             assert_eq!(action, UciHandleAction::Continue);
+            let elapsed = start.elapsed();
+            assert!(elapsed > movetime);
+            assert!(elapsed < movetime * 2);
 
             let bestmove = responses.iter().find(|r| r.starts_with("bestmove"));
             let bestmove = bestmove.expect("Engine should return a bestmove");
             let mv = bestmove.strip_prefix("bestmove ").unwrap();
 
-            // Feed the engine's move back as the opponent's move
+            // Mirror the engine
+            let mv = format!(
+                "{}{}",
+                Square::from_str(&mv[..2]).unwrap().flip_side(),
+                Square::from_str(&mv[2..]).unwrap().flip_side()
+            );
+
             uci.handle(&uci!("position startpos moves {}", mv));
         }
     }
