@@ -71,6 +71,8 @@ impl UciInterface {
         }
     }
 
+    /// Handles a single UciCommand. Returns a vector of responses and a UciHandleAction to
+    /// describe things that must be handled by the caller.
     pub fn handle(&mut self, cmd: &UciCommand) -> (Vec<String>, UciHandleAction) {
         let mut out = Vec::new();
 
