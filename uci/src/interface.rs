@@ -191,7 +191,6 @@ impl UciInterface {
 mod test {
     use std::time::Instant;
 
-    use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed};
     use whalecrab_lib::square::Square;
 
     use super::*;
