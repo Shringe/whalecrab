@@ -81,6 +81,50 @@ fn bench(c: &mut Criterion) {
             }
         });
     });
+
+    c.bench_function("Iterate using game.occupied and piece_lookup", |b| {
+        b.iter(|| {
+            for sq in game.occupied {
+                let (piece, color) = game.piece_lookup(sq).unwrap();
+                black_box((sq, piece, color));
+            }
+        });
+    });
+
+    c.bench_function("Single square game.determine_piece", |b| {
+        let sq = Square::E1;
+        let sqbb = BitBoard::from_square(sq);
+        b.iter(|| {
+            let (piece, color) = game.determine_piece(&sqbb).unwrap();
+            black_box((piece, color));
+        });
+    });
+
+    c.bench_function("Single square sq -> sqbb -> game.determine_piece", |b| {
+        let sq = Square::E1;
+        b.iter(|| {
+            let sqbb = BitBoard::from_square(sq);
+            let (piece, color) = game.determine_piece(&sqbb).unwrap();
+            black_box((piece, color));
+        });
+    });
+
+    c.bench_function("Single square game.piece_lookup", |b| {
+        let sq = Square::E1;
+        b.iter(|| {
+            let (piece, color) = game.piece_lookup(sq).unwrap();
+            black_box((piece, color));
+        });
+    });
+
+    c.bench_function("Single square sqbb -> sq -> game.piece_lookup", |b| {
+        let sqbb = BitBoard::from_square(Square::E1);
+        b.iter(|| {
+            let sq = sqbb.to_square();
+            let (piece, color) = game.piece_lookup(sq).unwrap();
+            black_box((piece, color));
+        });
+    });
 }
 
 setup_criterion!();

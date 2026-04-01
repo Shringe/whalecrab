@@ -13,6 +13,7 @@ use crate::{
         moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
     },
+    piece_table::PieceTable,
     rank::Rank,
     square::Square,
 };
@@ -97,6 +98,7 @@ pub struct Game {
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
     pub legal_moves: Option<Vec<Move>>,
+    piece_table: PieceTable,
 }
 
 impl PartialEq for Game {
@@ -161,10 +163,12 @@ impl Default for Game {
             occupied: EMPTY,
             position_history: Vec::new(),
             legal_moves: None,
+            piece_table: PieceTable::new(),
         };
 
         game.refresh();
         game.seen_positions.insert(game.hash, 1);
+        game.populate_piece_table();
         game
     }
 }
@@ -215,6 +219,7 @@ impl Game {
             occupied: EMPTY,
             position_history: Vec::new(),
             legal_moves: None,
+            piece_table: PieceTable::new(),
         }
     }
 
@@ -547,6 +552,61 @@ impl Game {
         }
     }
 
+    /// Fully recalculates the piece table
+    fn populate_piece_table(&mut self) {
+        // Clear the table first
+        self.piece_table = PieceTable::new();
+
+        for sq in self.white_pawns {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Pawn, PieceColor::White)));
+        }
+        for sq in self.white_knights {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Knight, PieceColor::White)));
+        }
+        for sq in self.white_bishops {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Bishop, PieceColor::White)));
+        }
+        for sq in self.white_rooks {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Rook, PieceColor::White)));
+        }
+        for sq in self.white_queens {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Queen, PieceColor::White)));
+        }
+        for sq in self.white_kings {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::King, PieceColor::White)));
+        }
+        for sq in self.black_pawns {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Pawn, PieceColor::Black)));
+        }
+        for sq in self.black_knights {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Knight, PieceColor::Black)));
+        }
+        for sq in self.black_bishops {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Bishop, PieceColor::Black)));
+        }
+        for sq in self.black_rooks {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Rook, PieceColor::Black)));
+        }
+        for sq in self.black_queens {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::Queen, PieceColor::Black)));
+        }
+        for sq in self.black_kings {
+            self.piece_table
+                .set(sq.to_int(), Some((PieceType::King, PieceColor::Black)));
+        }
+    }
+
     /// Checks if the current player's king is in check
     pub fn is_in_check(&self) -> bool {
         match self.turn {
@@ -744,6 +804,10 @@ impl Game {
         } else {
             None
         }
+    }
+
+    pub fn piece_lookup(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
+        self.piece_table.get(sq.to_int())
     }
 
     /// Generates all psuedo legal moves for the current player

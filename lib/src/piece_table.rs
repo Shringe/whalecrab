@@ -1,3 +1,5 @@
+use std::clone;
+
 use crate::movegen::pieces::piece::{PieceColor, PieceType};
 
 /// Bit-packed pair of squares.
@@ -10,6 +12,7 @@ use crate::movegen::pieces::piece::{PieceColor, PieceType};
 ///   1100 = white rook   | 1001 = black rook
 ///   0010 = white queen  | 0101 = black queen
 ///   1010 = white king   | 1101 = black king
+#[derive(Clone)]
 struct PieceTableEntry(u8);
 
 impl PieceTableEntry {
@@ -69,6 +72,7 @@ impl PieceTableEntry {
     }
 }
 
+#[derive(Clone)]
 pub struct PieceTable([PieceTableEntry; 32]);
 
 impl PieceTable {
