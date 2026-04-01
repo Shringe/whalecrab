@@ -1,45 +1,37 @@
-use crate::{
-    movegen::pieces::piece::{PieceColor, PieceType},
-    square::Square,
-};
+use crate::movegen::pieces::piece::{PieceColor, PieceType};
 
 /// Bit packed table entry.
 /// Layout (0-indexed bits):
-/// - Bits  0- 5: Square (6 bits, values 0-63)
-/// - Bits  6- 9: Option<PieceType> (4 bits; sentinel 0b1111 = None)
-/// - Bits 10-11: Option<PieceColor> (2 bits; sentinel 0b11 = None)
-struct PieceTableEntry(u16);
+/// - Bits 0-3: Option<PieceType> (4 bits; sentinel 0b1111 = None)
+/// - Bits 4-5: Option<PieceColor> (2 bits; sentinel 0b11 = None)
+struct PieceTableEntry(u8);
 
 impl PieceTableEntry {
-    const PIECE_SENTINAL: u16 = 0b1111;
-    const COLOR_SENTINAL: u16 = 0b11;
+    const PIECE_SENTINAL: u8 = 0b1111;
+    const COLOR_SENTINAL: u8 = 0b11;
 
-    fn new(square: Square, piece: Option<PieceType>, color: Option<PieceColor>) -> PieceTableEntry {
-        let sq = square.to_int() as u16;
-        let pc = match piece {
-            Some(p) => (p.to_int() as u16) << 6,
-            None => Self::PIECE_SENTINAL << 6,
+    const fn new(piece: Option<PieceType>, color: Option<PieceColor>) -> PieceTableEntry {
+        let mut out = match piece {
+            Some(p) => p.to_int(),
+            None => Self::PIECE_SENTINAL,
         };
-        let co = match color {
-            Some(c) => (c.to_int() as u16) << 10,
-            None => Self::COLOR_SENTINAL << 10,
+
+        out |= match color {
+            Some(c) => c.to_int() << 4,
+            None => Self::COLOR_SENTINAL << 4,
         };
-        PieceTableEntry(sq | pc | co)
+
+        PieceTableEntry(out)
     }
 
-    /// Bits 0-5
-    fn square(&self) -> Square {
-        Square::new((self.0 & 0b11_1111) as u8)
+    /// Bits 0-3; sentinel 0b1111 = None
+    const fn piece(&self) -> Option<PieceType> {
+        PieceType::from_int(self.0 & Self::PIECE_SENTINAL)
     }
 
-    /// Bits 6-9; sentinel 0b1111 = None
-    fn piece(&self) -> Option<PieceType> {
-        PieceType::from_int(((self.0 >> 6) & 0b1111) as u8)
-    }
-
-    /// Bits 10-11; sentinel 0b11 = None
-    fn color(&self) -> Option<PieceColor> {
-        PieceColor::from_int(((self.0 >> 10) & 0b11) as u8)
+    /// Bits 4-5; sentinel 0b11 = None
+    const fn color(&self) -> Option<PieceColor> {
+        PieceColor::from_int((self.0 >> 4) & Self::COLOR_SENTINAL)
     }
 }
 
@@ -49,22 +41,18 @@ mod test {
 
     #[test]
     fn piece_table_entry() {
-        let square = Square::H8;
         let piece = Some(PieceType::King);
         let color = Some(PieceColor::Black);
-        let entry = PieceTableEntry::new(square, piece, color);
-        assert_eq!(entry.square(), square);
+        let entry = PieceTableEntry::new(piece, color);
         assert_eq!(entry.piece(), piece);
         assert_eq!(entry.color(), color);
     }
 
     #[test]
     fn empty_piece_table_entry() {
-        let square = Square::H8;
         let piece = None;
         let color = None;
-        let entry = PieceTableEntry::new(square, piece, color);
-        assert_eq!(entry.square(), square);
+        let entry = PieceTableEntry::new(piece, color);
         assert_eq!(entry.piece(), piece);
         assert_eq!(entry.color(), color);
     }
