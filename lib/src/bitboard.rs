@@ -6,6 +6,7 @@ use std::ops::{
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not, Shl, Shr,
 };
 
+// TODO: implement operations using crate::utils::implement_operations!
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
