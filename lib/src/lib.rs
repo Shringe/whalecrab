@@ -8,3 +8,4 @@ pub mod rank;
 pub mod square;
 #[cfg(test)]
 pub mod test_utils;
+pub mod utils;
