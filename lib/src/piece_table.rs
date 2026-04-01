@@ -3,45 +3,43 @@ use crate::{
     square::Square,
 };
 
-/// Bit packed table entry
+/// Bit packed table entry.
+/// Layout (0-indexed bits):
+/// - Bits  0- 5: Square (6 bits, values 0-63)
+/// - Bits  6- 9: Option<PieceType> (4 bits; sentinel 0b1111 = None)
+/// - Bits 10-11: Option<PieceColor> (2 bits; sentinel 0b11 = None)
 struct PieceTableEntry(u16);
 
 impl PieceTableEntry {
+    const PIECE_SENTINAL: u16 = 0b1111;
+    const COLOR_SENTINAL: u16 = 0b11;
+
     fn new(square: Square, piece: Option<PieceType>, color: Option<PieceColor>) -> PieceTableEntry {
         let sq = square.to_int() as u16;
-
         let pc = match piece {
-            Some(piece) => (piece.to_int() as u16) << 7, // bit 6 = 0, not None
-            None => 1 << 6,                              // bit 6 = 1, None
+            Some(p) => (p.to_int() as u16) << 6,
+            None => Self::PIECE_SENTINAL << 6,
         };
-
         let co = match color {
-            Some(color) => (color.to_int() as u16) << 12, // bit 11 = 0, not None
-            None => 1 << 11,                              // bit 11 = 1, None
+            Some(c) => (c.to_int() as u16) << 10,
+            None => Self::COLOR_SENTINAL << 10,
         };
-
-        Self(sq | pc | co)
+        PieceTableEntry(sq | pc | co)
     }
 
-    /// Bits 1 to 6
+    /// Bits 0-5
     fn square(&self) -> Square {
-        Square::new((self.0 & 0b111111) as u8)
+        Square::new((self.0 & 0b11_1111) as u8)
     }
 
-    /// Bit 7 -> None, bits 8 to 11 -> Some(PieceType)
+    /// Bits 6-9; sentinel 0b1111 = None
     fn piece(&self) -> Option<PieceType> {
-        if (self.0 >> 6) & 1 == 1 {
-            return None;
-        }
-        PieceType::from_int(((self.0 >> 7) & 0b1111) as u8)
+        PieceType::from_int(((self.0 >> 6) & 0b1111) as u8)
     }
 
-    /// Bit 12 -> None, Bit 13 -> Some(PieceColor)
+    /// Bits 10-11; sentinel 0b11 = None
     fn color(&self) -> Option<PieceColor> {
-        if (self.0 >> 11) & 1 == 1 {
-            return None;
-        }
-        PieceColor::from_int(((self.0 >> 12) & 0b1) as u8)
+        PieceColor::from_int(((self.0 >> 10) & 0b11) as u8)
     }
 }
 
@@ -54,6 +52,17 @@ mod test {
         let square = Square::H8;
         let piece = Some(PieceType::King);
         let color = Some(PieceColor::Black);
+        let entry = PieceTableEntry::new(square, piece, color);
+        assert_eq!(entry.square(), square);
+        assert_eq!(entry.piece(), piece);
+        assert_eq!(entry.color(), color);
+    }
+
+    #[test]
+    fn empty_piece_table_entry() {
+        let square = Square::H8;
+        let piece = None;
+        let color = None;
         let entry = PieceTableEntry::new(square, piece, color);
         assert_eq!(entry.square(), square);
         assert_eq!(entry.piece(), piece);

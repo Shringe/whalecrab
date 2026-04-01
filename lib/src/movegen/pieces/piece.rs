@@ -13,7 +13,7 @@ pub enum PieceColor {
 }
 
 impl PieceColor {
-    pub fn from_int(value: u8) -> Option<PieceColor> {
+    pub const fn from_int(value: u8) -> Option<PieceColor> {
         match value {
             0 => Some(PieceColor::White),
             1 => Some(PieceColor::Black),
@@ -21,7 +21,7 @@ impl PieceColor {
         }
     }
 
-    pub fn to_int(&self) -> u8 {
+    pub const fn to_int(&self) -> u8 {
         match self {
             PieceColor::White => 0,
             PieceColor::Black => 1,
@@ -63,7 +63,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn from_int(value: u8) -> Option<PieceType> {
+    pub const fn from_int(value: u8) -> Option<PieceType> {
         match value {
             0 => Some(PieceType::Pawn),
             1 => Some(PieceType::Knight),
@@ -75,7 +75,7 @@ impl PieceType {
         }
     }
 
-    pub fn to_int(&self) -> u8 {
+    pub const fn to_int(&self) -> u8 {
         match self {
             PieceType::Pawn => 0,
             PieceType::Knight => 1,
