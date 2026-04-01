@@ -13,6 +13,21 @@ pub enum PieceColor {
 }
 
 impl PieceColor {
+    pub fn from_int(value: u8) -> Option<PieceColor> {
+        match value {
+            0 => Some(PieceColor::White),
+            1 => Some(PieceColor::Black),
+            _ => None,
+        }
+    }
+
+    pub fn to_int(&self) -> u8 {
+        match self {
+            PieceColor::White => 0,
+            PieceColor::Black => 1,
+        }
+    }
+
     pub fn opponent(&self) -> PieceColor {
         match self {
             PieceColor::White => PieceColor::Black,
@@ -48,6 +63,29 @@ pub enum PieceType {
 }
 
 impl PieceType {
+    pub fn from_int(value: u8) -> Option<PieceType> {
+        match value {
+            0 => Some(PieceType::Pawn),
+            1 => Some(PieceType::Knight),
+            2 => Some(PieceType::Bishop),
+            3 => Some(PieceType::Rook),
+            4 => Some(PieceType::Queen),
+            5 => Some(PieceType::King),
+            _ => None,
+        }
+    }
+
+    pub fn to_int(&self) -> u8 {
+        match self {
+            PieceType::Pawn => 0,
+            PieceType::Knight => 1,
+            PieceType::Bishop => 2,
+            PieceType::Rook => 3,
+            PieceType::Queen => 4,
+            PieceType::King => 5,
+        }
+    }
+
     pub fn psuedo_legal_moves(&self, game: &Game, square: &Square) -> Vec<Move> {
         match self {
             PieceType::Pawn => square.pawn_psuedo_legal_moves(game),

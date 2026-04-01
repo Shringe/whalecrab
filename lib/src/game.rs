@@ -48,6 +48,7 @@ pub enum State {
     Timeout,
     Repetition,
 }
+
 /// Non-restoreable information needed to undo a move
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct UnRestoreable {

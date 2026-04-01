@@ -4,6 +4,7 @@ pub mod castling;
 pub mod file;
 pub mod game;
 pub mod movegen;
+mod piece_table;
 pub mod rank;
 pub mod square;
 #[cfg(test)]
