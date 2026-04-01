@@ -67,6 +67,10 @@ macro_rules! implement_operation {
 /// // Implement a subset of operators for the inner type
 /// implement_operations!(Score, i32, [Add, Sub]);
 ///
+/// // You can also implement operators on both the inner and parent simultaneously
+/// struct BitBoard(u64);
+/// implement_operations!(BitBoard, Self, u64, [Add, Sub]);
+///
 /// let mut score = Score(5);
 /// score ^= Score(5); // Use BitOrAssign on the parent type
 ///
@@ -75,6 +79,10 @@ macro_rules! implement_operation {
 /// ```
 #[macro_export]
 macro_rules! implement_operations {
+    ($struct:ident, $parent:ident, $inner:ident, [$($op:ident),*]) => {
+        $($crate::implement_operations!(@single $struct, $parent, $op);)*
+        $($crate::implement_operations!(@single $struct, $inner, $op);)*
+    };
     ($struct:ident, $type:ident, [$($op:ident),*]) => {
         $($crate::implement_operations!(@single $struct, $type, $op);)*
     };
@@ -94,13 +102,13 @@ macro_rules! implement_operations {
         $crate::implement_operation!($struct, Mul, mul, *, $type, new);
     };
     (@single $struct:ident, $type:ident, MulAssign) => {
-        $crate::implement_operation!($struct, MulAssign, mul, *=, $type, new);
+        $crate::implement_operation!($struct, MulAssign, mul_assign, *=, $type, assign);
     };
     (@single $struct:ident, $type:ident, Div) => {
         $crate::implement_operation!($struct, Div, div, /, $type, new);
     };
     (@single $struct:ident, $type:ident, DivAssign) => {
-        $crate::implement_operation!($struct, Div, div, /=, $type, new);
+        $crate::implement_operation!($struct, DivAssign, div_assign, /=, $type, assign);
     };
     (@single $struct:ident, $type:ident, BitAnd) => {
         $crate::implement_operation!($struct, BitAnd, bitand, &, $type, new);

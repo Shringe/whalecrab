@@ -4,8 +4,7 @@ use whalecrab_lib::implement_operations;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
 pub struct Score(i32);
 
-implement_operations!(Score, Self, [Add, AddAssign, Sub, SubAssign]);
-implement_operations!(Score, i32, [Add, Sub]);
+implement_operations!(Score, Self, i32, [Add, AddAssign, Sub, SubAssign]);
 
 impl fmt::Display for Score {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
