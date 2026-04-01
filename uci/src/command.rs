@@ -1,6 +1,8 @@
 use std::{fmt, str::FromStr, time::Duration};
 
-/// Enum of supported uci commands to recieve
+/// Enum of supported uci commands to recieve.
+/// This behavior is implemented using the below documentation as a reference.
+/// https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf
 pub enum UciCommand {
     UciNewGame,
     Uci,
@@ -67,6 +69,7 @@ impl FromStr for UciCommand {
                 })
             }
             "go" => {
+                // TODO: if durations are 0ms, they should be mapped to None
                 let tokens: Vec<&str> = line.split(' ').collect();
 
                 let parse_token = |key: &str| -> Option<Duration> {
