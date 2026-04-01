@@ -29,7 +29,10 @@ impl Default for UciInterface {
         Self {
             engine: Engine::default(),
             depth: 20,
-            duration: Duration::from_mins(1),
+            #[cfg(debug_assertions)]
+            duration: Duration::from_millis(30),
+            #[cfg(not(debug_assertions))]
+            duration: Duration::from_secs(3),
         }
     }
 }
@@ -57,7 +60,7 @@ impl UciInterface {
                 }
             };
 
-            let (responses, action) = self.handle(&cmd);
+            let (responses, action) = self.handle(cmd);
             for msg in &responses {
                 log!("Sent: {}", msg);
             }
@@ -74,7 +77,7 @@ impl UciInterface {
 
     /// Handles a single UciCommand. Returns a vector of responses and a UciHandleAction to
     /// describe things that must be handled by the caller.
-    pub fn handle(&mut self, cmd: &UciCommand) -> (Vec<String>, UciHandleAction) {
+    pub fn handle(&mut self, cmd: UciCommand) -> (Vec<String>, UciHandleAction) {
         let mut out = Vec::new();
 
         macro_rules! uci_send {
@@ -95,7 +98,7 @@ impl UciInterface {
                 uci_send!("option name Depth type spin default 20 min 0 max 200");
                 uci_send!(
                     "option name MaxMoveTimeMs type spin default {} min 0 max {}",
-                    Duration::from_mins(1).as_millis(),
+                    Duration::from_secs(3).as_millis(),
                     Duration::from_hours(1).as_millis(),
                 );
                 uci_send!("uciok");
@@ -154,36 +157,50 @@ impl UciInterface {
                 movetime,
                 wtime,
                 btime,
-                winc,
-                binc,
+                ..
             } => {
-                let engine = &mut self.engine;
+                let movetime = self.determine_movetime(movetime, wtime, btime);
 
-                let (time, inc) = match engine.game.turn {
-                    PieceColor::White => (wtime, winc),
-                    PieceColor::Black => (btime, binc),
-                };
-
-                let movetime = movetime.unwrap_or(Duration::from_millis(100));
-
-                let best_move = match engine.iterative_deepening(&movetime) {
+                let best_move = match self.engine.iterative_deepening(&movetime) {
                     Some(m) => m,
                     None => {
-                        log!("No engine move found. Maybe the game is finished?");
-                        log!("Game state: {:?}", engine.game.state);
+                        log!("No self.engine move found. Maybe the game is finished?");
+                        log!("Game state: {:?}", self.engine.game.state);
                         return (out, UciHandleAction::Continue);
                     }
                 };
 
-                let best_move_uci = best_move.to_uci(&engine.game);
-                log!("Playing engine move: {}", best_move);
-                log!("Fen before playing the move: {}", engine.game.to_fen());
+                let best_move_uci = best_move.to_uci(&self.engine.game);
+                log!("Playing self.engine move: {}", best_move);
+                log!("Fen before playing the move: {}", self.engine.game.to_fen());
                 uci_send!("bestmove {}", best_move_uci);
-                engine.game.play(&best_move);
+                self.engine.game.play(&best_move);
             }
         }
 
         (out, UciHandleAction::Continue)
+    }
+
+    /// Decides how long the engine should spend searching for its move
+    fn determine_movetime(
+        &self,
+        movetime: Option<Duration>,
+        wtime: Option<Duration>,
+        btime: Option<Duration>,
+    ) -> Duration {
+        if let Some(movetime) = movetime {
+            return movetime;
+        }
+
+        let remaining = match self.engine.game.turn {
+            PieceColor::White => wtime,
+            PieceColor::Black => btime,
+        };
+
+        match remaining {
+            Some(remaining) => remaining / 30,
+            None => self.duration,
+        }
     }
 }
 
@@ -198,8 +215,8 @@ mod test {
     /// Creates a UciCommand from a formatted string. Unwraps parsing errors.
     /// ```rust
     /// let mut uci = UciInterface::default();
-    /// let _ = uci.handle(&uci!("uci"));
-    /// let _ = uci.handle(&uci!("go movetime {}", 5000));
+    /// let _ = uci.handle(uci!("uci"));
+    /// let _ = uci.handle(uci!("go movetime {}", 5000));
     /// ```
     macro_rules! uci {
         ($($arg:tt)*) => {{
@@ -209,18 +226,29 @@ mod test {
     }
 
     #[test]
+    fn determine_movetime() {
+        let uci = UciInterface::default();
+        let remaining = Duration::from_secs(2);
+        let min = Duration::from_millis(20);
+        let max = Duration::from_millis(2000);
+        let actual = uci.determine_movetime(None, Some(remaining), Some(remaining));
+        assert!(actual > min);
+        assert!(actual < max);
+    }
+
+    #[test]
     fn greeting() {
         let mut uci = UciInterface::default();
-        let response = uci.handle(&uci!("uci")).0;
+        let response = uci.handle(uci!("uci")).0;
         assert!(response.contains(&"uciok".to_string()));
     }
 
     #[test]
     fn new_game() {
         let mut uci = UciInterface::default();
-        let _ = uci.handle(&uci!("ucinewgame")).0;
+        let _ = uci.handle(uci!("ucinewgame")).0;
         assert_eq!(uci.engine.game, Game::default());
-        let response = uci.handle(&uci!("isready")).0;
+        let response = uci.handle(uci!("isready")).0;
         assert!(response.contains(&"readyok".to_string()));
     }
 
@@ -228,14 +256,14 @@ mod test {
     fn simple_game() {
         let mut uci = UciInterface::default();
 
-        uci.handle(&uci!("ucinewgame"));
-        uci.handle(&uci!("isready"));
+        uci.handle(uci!("ucinewgame"));
+        uci.handle(uci!("isready"));
 
         // Play a few moves and let the engine respond
         let movetime = Duration::from_millis(10);
         for _ in 0..10 {
             let start = Instant::now();
-            let (responses, action) = uci.handle(&uci!("go movetime {}", movetime.as_millis()));
+            let (responses, action) = uci.handle(uci!("go movetime {}", movetime.as_millis()));
             assert_eq!(action, UciHandleAction::Continue);
             let elapsed = start.elapsed();
             assert!(elapsed > movetime);
@@ -252,7 +280,7 @@ mod test {
                 Square::from_str(&mv[2..]).unwrap().flip_side()
             );
 
-            uci.handle(&uci!("position startpos moves {}", mv));
+            uci.handle(uci!("position startpos moves {}", mv));
         }
     }
 }
