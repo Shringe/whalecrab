@@ -91,8 +91,17 @@ fn bench(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Single square game.determine_piece", |b| {
+    c.bench_function("Single square game.determine_piece king", |b| {
         let sq = Square::E1;
+        let sqbb = BitBoard::from_square(sq);
+        b.iter(|| {
+            let (piece, color) = game.determine_piece(&sqbb).unwrap();
+            black_box((piece, color));
+        });
+    });
+
+    c.bench_function("Single square game.determine_piece pawn", |b| {
+        let sq = Square::E2;
         let sqbb = BitBoard::from_square(sq);
         b.iter(|| {
             let (piece, color) = game.determine_piece(&sqbb).unwrap();

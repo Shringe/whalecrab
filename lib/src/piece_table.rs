@@ -1,5 +1,3 @@
-use std::clone;
-
 use crate::movegen::pieces::piece::{PieceColor, PieceType};
 
 /// Bit-packed pair of squares.
