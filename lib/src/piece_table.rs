@@ -52,19 +52,20 @@ impl PieceTableEntry {
         }
     }
 
-    const fn new(
-        lo: Option<(PieceType, PieceColor)>,
-        hi: Option<(PieceType, PieceColor)>,
-    ) -> PieceTableEntry {
-        PieceTableEntry(Self::encode(lo) | (Self::encode(hi) << 4))
-    }
-
-    const fn lo(&self) -> Option<(PieceType, PieceColor)> {
+    const fn first(&self) -> Option<(PieceType, PieceColor)> {
         Self::decode(self.0 & 0x0F)
     }
 
-    const fn hi(&self) -> Option<(PieceType, PieceColor)> {
+    const fn second(&self) -> Option<(PieceType, PieceColor)> {
         Self::decode((self.0 >> 4) & 0x0F)
+    }
+
+    const fn set_first(&mut self, val: Option<(PieceType, PieceColor)>) {
+        self.0 = (self.0 & 0xF0) | Self::encode(val);
+    }
+
+    const fn set_second(&mut self, val: Option<(PieceType, PieceColor)>) {
+        self.0 = (self.0 & 0x0F) | (Self::encode(val) << 4);
     }
 }
 
@@ -79,19 +80,18 @@ impl PieceTable {
     pub const fn get(&self, square: u8) -> Option<(PieceType, PieceColor)> {
         let entry = &self.0[(square >> 1) as usize];
         if square & 1 == 0 {
-            entry.lo()
+            entry.first()
         } else {
-            entry.hi()
+            entry.second()
         }
     }
 
-    pub fn set(&mut self, square: u8, val: Option<(PieceType, PieceColor)>) {
-        let idx = (square >> 1) as usize;
-        let nibble = PieceTableEntry::encode(val);
+    pub const fn set(&mut self, square: u8, val: Option<(PieceType, PieceColor)>) {
+        let entry = &mut self.0[(square >> 1) as usize];
         if square & 1 == 0 {
-            self.0[idx].0 = (self.0[idx].0 & 0xF0) | nibble;
+            entry.set_first(val);
         } else {
-            self.0[idx].0 = (self.0[idx].0 & 0x0F) | (nibble << 4);
+            entry.set_second(val);
         }
     }
 }
@@ -120,15 +120,6 @@ mod test {
         for val in cases {
             assert_eq!(PieceTableEntry::decode(PieceTableEntry::encode(val)), val);
         }
-    }
-
-    #[test]
-    fn piece_table_entry_both_squares() {
-        let lo = Some((PieceType::King, PieceColor::White));
-        let hi = Some((PieceType::Pawn, PieceColor::Black));
-        let entry = PieceTableEntry::new(lo, hi);
-        assert_eq!(entry.lo(), lo);
-        assert_eq!(entry.hi(), hi);
     }
 
     #[test]
