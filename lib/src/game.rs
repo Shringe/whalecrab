@@ -98,7 +98,7 @@ pub struct Game {
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
     pub legal_moves: Option<Vec<Move>>,
-    piece_table: PieceTable,
+    pub(crate) piece_table: PieceTable,
 }
 
 impl PartialEq for Game {
@@ -166,6 +166,7 @@ impl Default for Game {
             piece_table: PieceTable::new(),
         };
 
+        game.populate_piece_table();
         game.refresh();
         game.seen_positions.insert(game.hash, 1);
         game
@@ -473,7 +474,7 @@ impl Game {
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
     fn refresh(&mut self) {
-        self.populate_piece_table();
+        // self.populate_piece_table();
 
         let white_pieces = self.white_pawns
             | self.white_knights

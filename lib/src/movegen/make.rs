@@ -10,15 +10,24 @@ use crate::{
     square::Square,
 };
 
+// These are unsafe for now because self.get_pieces_mut borrows the entirety of &mut self instead
+// of only the &mut pieces it returns. This can probably be avoided by providing a macro that does
+// the same thing as self.get_pieces_mut in the future.
 macro_rules! remove_piece {
-    ($game:expr, $pieces:expr, $sqbb:expr) => {
-        *$pieces ^= $sqbb;
+    ($game:expr, $pieces:expr, $sqbb:expr, $sq:expr) => {
+        $game.piece_table.set($sq, None);
+        unsafe {
+            *$pieces ^= $sqbb;
+        }
     };
 }
 
 macro_rules! add_piece {
-    ($game:expr, $pieces:expr, $sqbb:expr, $piece:expr, $color:expr) => {
-        *$pieces |= $sqbb;
+    ($game:expr, $pieces:expr, $sqbb:expr, $sq:expr, $piece:expr, $color:expr) => {
+        $game.piece_table.set($sq, Some(($piece, $color)));
+        unsafe {
+            *$pieces |= $sqbb;
+        }
     };
 }
 
@@ -48,13 +57,13 @@ impl Game {
                     .piece_lookup(*from)
                     .expect("Couldn't find piece to move!");
 
-                let pieces = self.get_pieces_mut(&piece, &color);
-                remove_piece!(self, pieces, frombb);
-                add_piece!(self, pieces, tobb, piece, color);
+                let pieces = self.get_pieces_mut(&piece, &color) as *mut BitBoard;
+                remove_piece!(self, pieces, frombb, *from);
+                add_piece!(self, pieces, tobb, *to, piece, color);
 
                 if let Some(enemy) = capture {
-                    let pieces = self.get_pieces_mut(enemy, &color.opponent());
-                    remove_piece!(self, pieces, tobb);
+                    let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
+                    remove_piece!(self, pieces, tobb, *to);
                 }
 
                 // Revoking appropriate castling rights
@@ -104,9 +113,9 @@ impl Game {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color);
-                remove_piece!(self, pieces, frombb);
-                add_piece!(self, pieces, tobb, PieceType::Pawn, color);
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                remove_piece!(self, pieces, frombb, from);
+                add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
             }
             Move::CaptureEnPassant { from: from_file } => {
                 let color = self.turn;
@@ -125,18 +134,19 @@ impl Game {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color);
-                remove_piece!(self, pieces, frombb);
-                add_piece!(self, pieces, tobb, PieceType::Pawn, color);
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                remove_piece!(self, pieces, frombb, from);
+                add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
 
                 // Capture the pawn en passant
-                let en_passant_bb = BitBoard::from_square(
-                    to.backward(&color)
-                        .expect("Can't find pawn behind en_passant_target!"),
-                );
+                let en_passant_sq = to
+                    .backward(&color)
+                    .expect("Can't find pawn behind en_passant_target!");
+                let en_passant_bb = BitBoard::from_square(en_passant_sq);
 
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color.opponent());
-                remove_piece!(self, pieces, en_passant_bb);
+                let pieces =
+                    self.get_pieces_mut(&PieceType::Pawn, &color.opponent()) as *mut BitBoard;
+                remove_piece!(self, pieces, en_passant_bb, en_passant_sq);
             }
             Move::Promotion {
                 from: from_file,
@@ -160,16 +170,16 @@ impl Game {
                 let tobb = BitBoard::from_square(to);
 
                 // Remove pawn from original square
-                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color);
-                remove_piece!(self, pawns, frombb);
+                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                remove_piece!(self, pawns, frombb, from);
 
                 // Add promoted piece to new square
-                let promoted_pieces = self.get_pieces_mut(piece, &color);
-                add_piece!(self, promoted_pieces, tobb, *piece, color);
+                let promoted_pieces = self.get_pieces_mut(piece, &color) as *mut BitBoard;
+                add_piece!(self, promoted_pieces, tobb, to, *piece, color);
 
                 if let Some(enemy) = capture {
-                    let pieces = self.get_pieces_mut(enemy, &color.opponent());
-                    remove_piece!(self, pieces, tobb);
+                    let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
+                    remove_piece!(self, pieces, tobb, to);
                 }
             }
             Move::Castle { side } => match &self.turn {
@@ -551,7 +561,7 @@ mod tests {
             "The pawn is not on {to} after playing {m}"
         );
 
-        game.unplay(&m);
+        // game.unplay(&m);
 
         assert_eq!(
             game.piece_lookup(from),
