@@ -15,7 +15,9 @@ pub enum UciCommand {
         movetime: Option<Duration>,
         wtime: Option<Duration>,
         btime: Option<Duration>,
+        #[allow(dead_code)]
         winc: Option<Duration>,
+        #[allow(dead_code)]
         binc: Option<Duration>,
     },
     SetOption {
