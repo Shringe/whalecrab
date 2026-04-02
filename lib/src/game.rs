@@ -168,7 +168,6 @@ impl Default for Game {
 
         game.refresh();
         game.seen_positions.insert(game.hash, 1);
-        game.populate_piece_table();
         game
     }
 }
@@ -475,6 +474,7 @@ impl Game {
     /// Recalculates certain cached values regarding the position
     /// Should be called on Self initialization and position updates
     fn refresh(&mut self) {
+        self.populate_piece_table();
         let white_pieces = self.white_pawns
             | self.white_knights
             | self.white_bishops
