@@ -750,7 +750,8 @@ impl Game {
         }
     }
 
-    /// Determines color of standing piece
+    /// Determines color of standing piece.
+    /// This is faster than calling Game.piece_lookup and then discarding the piece type.
     pub fn determine_color(&self, sqbb: &BitBoard) -> Option<PieceColor> {
         if self.white_occupied.has_square(sqbb) {
             Some(PieceColor::White)
@@ -761,15 +762,7 @@ impl Game {
         }
     }
 
-    /// Determines type and color of standing piece
-    #[deprecated(note = "Use Game.piece_lookup instead")]
-    pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, PieceColor)> {
-        let sq = sqbb.to_square();
-        self.piece_lookup(sq)
-    }
-
-    /// Gets the color and type of piece on a square.
-    /// This is a faster variant of self.determine_piece using a lookup table.
+    /// Gets the type and color of a potential piece on the given square
     pub fn piece_lookup(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
         self.piece_table.get(sq.to_int())
     }
