@@ -1,6 +1,7 @@
 use crate::{
     add_piece,
     bitboard::BitBoard,
+    castle,
     castling::{self, CastleSide},
     game::Game,
     movegen::{
@@ -163,114 +164,78 @@ impl Game {
                     remove_piece!(self, pieces, tobb, to);
                 }
             }
-            Move::Castle { side } => {
-                macro_rules! castle {
-                    ($game:expr, $kings:expr, $rooks:expr,
-                     $king_from_bb:expr, $king_from:expr, $king_to_bb:expr, $king_to:expr,
-                     $rook_from_bb:expr, $rook_from:expr, $rook_to_bb:expr, $rook_to:expr,
-                     $color:expr) => {
-                        remove_piece!($game, $kings, $king_from_bb, $king_from);
-                        add_piece!(
-                            $game,
-                            $kings,
-                            $king_to_bb,
-                            $king_to,
-                            PieceType::King,
-                            $color
-                        );
-                        remove_piece!($game, $rooks, $rook_from_bb, $rook_from);
-                        add_piece!(
-                            $game,
-                            $rooks,
-                            $rook_to_bb,
-                            $rook_to,
-                            PieceType::Rook,
-                            $color
-                        );
-                    };
-                }
+            Move::Castle { side } => match &self.turn {
+                PieceColor::White => {
+                    self.castling_rights.white_queenside = false;
+                    self.castling_rights.white_kingside = false;
 
-                match &self.turn {
-                    PieceColor::White => {
-                        self.castling_rights.white_queenside = false;
-                        self.castling_rights.white_kingside = false;
-
-                        match side {
-                            CastleSide::Queenside => {
-                                castle!(
-                                    self,
-                                    &mut self.white_kings as *mut BitBoard,
-                                    &mut self.white_rooks as *mut BitBoard,
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_FROM_BB,
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_FROM,
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB,
-                                    castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM_BB,
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM,
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_TO_BB,
-                                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_TO,
-                                    PieceColor::White
-                                );
-                            }
-                            CastleSide::Kingside => {
-                                castle!(
-                                    self,
-                                    &mut self.white_kings as *mut BitBoard,
-                                    &mut self.white_rooks as *mut BitBoard,
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_FROM_BB,
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_FROM,
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB,
-                                    castling::WHITE_CASTLE_KINGSIDE_KING_TO,
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM_BB,
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM,
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_TO_BB,
-                                    castling::WHITE_CASTLE_KINGSIDE_ROOK_TO,
-                                    PieceColor::White
-                                );
-                            }
-                        }
-                    }
-                    PieceColor::Black => {
-                        self.castling_rights.black_queenside = false;
-                        self.castling_rights.black_kingside = false;
-
-                        match side {
-                            CastleSide::Queenside => {
-                                castle!(
-                                    self,
-                                    &mut self.black_kings as *mut BitBoard,
-                                    &mut self.black_rooks as *mut BitBoard,
-                                    castling::BLACK_CASTLE_QUEENSIDE_KING_FROM_BB,
-                                    castling::BLACK_CASTLE_QUEENSIDE_KING_FROM,
-                                    castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB,
-                                    castling::BLACK_CASTLE_QUEENSIDE_KING_TO,
-                                    castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM_BB,
-                                    castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM,
-                                    castling::BLACK_CASTLE_QUEENSIDE_ROOK_TO_BB,
-                                    castling::BLACK_CASTLE_QUEENSIDE_ROOK_TO,
-                                    PieceColor::Black
-                                );
-                            }
-                            CastleSide::Kingside => {
-                                castle!(
-                                    self,
-                                    &mut self.black_kings as *mut BitBoard,
-                                    &mut self.black_rooks as *mut BitBoard,
-                                    castling::BLACK_CASTLE_KINGSIDE_KING_FROM_BB,
-                                    castling::BLACK_CASTLE_KINGSIDE_KING_FROM,
-                                    castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB,
-                                    castling::BLACK_CASTLE_KINGSIDE_KING_TO,
-                                    castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM_BB,
-                                    castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM,
-                                    castling::BLACK_CASTLE_KINGSIDE_ROOK_TO_BB,
-                                    castling::BLACK_CASTLE_KINGSIDE_ROOK_TO,
-                                    PieceColor::Black
-                                );
-                            }
-                        }
+                    match side {
+                        CastleSide::Queenside => castle!(
+                            self,
+                            &mut self.white_kings as *mut BitBoard,
+                            &mut self.white_rooks as *mut BitBoard,
+                            castling::WHITE_CASTLE_QUEENSIDE_KING_FROM_BB,
+                            castling::WHITE_CASTLE_QUEENSIDE_KING_FROM,
+                            castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB,
+                            castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
+                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM_BB,
+                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM,
+                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_TO_BB,
+                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_TO,
+                            PieceColor::White
+                        ),
+                        CastleSide::Kingside => castle!(
+                            self,
+                            &mut self.white_kings as *mut BitBoard,
+                            &mut self.white_rooks as *mut BitBoard,
+                            castling::WHITE_CASTLE_KINGSIDE_KING_FROM_BB,
+                            castling::WHITE_CASTLE_KINGSIDE_KING_FROM,
+                            castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB,
+                            castling::WHITE_CASTLE_KINGSIDE_KING_TO,
+                            castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM_BB,
+                            castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM,
+                            castling::WHITE_CASTLE_KINGSIDE_ROOK_TO_BB,
+                            castling::WHITE_CASTLE_KINGSIDE_ROOK_TO,
+                            PieceColor::White
+                        ),
                     }
                 }
-            }
+                PieceColor::Black => {
+                    self.castling_rights.black_queenside = false;
+                    self.castling_rights.black_kingside = false;
+
+                    match side {
+                        CastleSide::Queenside => castle!(
+                            self,
+                            &mut self.black_kings as *mut BitBoard,
+                            &mut self.black_rooks as *mut BitBoard,
+                            castling::BLACK_CASTLE_QUEENSIDE_KING_FROM_BB,
+                            castling::BLACK_CASTLE_QUEENSIDE_KING_FROM,
+                            castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB,
+                            castling::BLACK_CASTLE_QUEENSIDE_KING_TO,
+                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM_BB,
+                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM,
+                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_TO_BB,
+                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_TO,
+                            PieceColor::Black
+                        ),
+                        CastleSide::Kingside => castle!(
+                            self,
+                            &mut self.black_kings as *mut BitBoard,
+                            &mut self.black_rooks as *mut BitBoard,
+                            castling::BLACK_CASTLE_KINGSIDE_KING_FROM_BB,
+                            castling::BLACK_CASTLE_KINGSIDE_KING_FROM,
+                            castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB,
+                            castling::BLACK_CASTLE_KINGSIDE_KING_TO,
+                            castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM_BB,
+                            castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM,
+                            castling::BLACK_CASTLE_KINGSIDE_ROOK_TO_BB,
+                            castling::BLACK_CASTLE_KINGSIDE_ROOK_TO,
+                            PieceColor::Black
+                        ),
+                    }
+                }
+            },
         }
 
         self.next_turn(m);

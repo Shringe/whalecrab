@@ -22,3 +22,30 @@ macro_rules! add_piece {
         }
     };
 }
+
+#[macro_export]
+macro_rules! castle {
+    ($game:expr, $kings:expr, $rooks:expr,
+     $king_from_bb:expr, $king_from:expr, $king_to_bb:expr, $king_to:expr,
+     $rook_from_bb:expr, $rook_from:expr, $rook_to_bb:expr, $rook_to:expr,
+     $color:expr) => {{
+        remove_piece!($game, $kings, $king_from_bb, $king_from);
+        add_piece!(
+            $game,
+            $kings,
+            $king_to_bb,
+            $king_to,
+            PieceType::King,
+            $color
+        );
+        remove_piece!($game, $rooks, $rook_from_bb, $rook_from);
+        add_piece!(
+            $game,
+            $rooks,
+            $rook_to_bb,
+            $rook_to,
+            PieceType::Rook,
+            $color
+        );
+    }};
+}
