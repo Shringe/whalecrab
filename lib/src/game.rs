@@ -319,10 +319,9 @@ impl Game {
             let mut empty_count: u8 = 0;
 
             for file in 0..8 {
-                let square = Square::make_square(Rank::from_index(rank), File::from_index(file));
-                let sqbb = BitBoard::from_square(square);
+                let sq = Square::make_square(Rank::from_index(rank), File::from_index(file));
 
-                if let Some((piece, color)) = self.determine_piece(&sqbb) {
+                if let Some((piece, color)) = self.piece_lookup(sq) {
                     // If we had empty squares, add the count first
                     if empty_count > 0 {
                         fen.push_str(&empty_count.to_string());
@@ -512,8 +511,7 @@ impl Game {
         let mut check_rays = EMPTY;
 
         for sq in *self.get_occupied(color) {
-            let sqbb = BitBoard::from_square(sq);
-            let (piece, _) = self.determine_piece(&sqbb).unwrap();
+            let (piece, _) = self.piece_lookup(sq).unwrap();
             let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
             attacks |= moveinfo.attacks;
             check_rays |= moveinfo.check_rays;
@@ -660,11 +658,7 @@ impl Game {
         // Half move timeout
         let should_reset_half_move_timeout = match last_move {
             Move::Normal { to, capture, .. } => {
-                capture.is_some()
-                    || matches!(
-                        self.determine_piece(&BitBoard::from_square(*to)),
-                        Some((PieceType::Pawn, _))
-                    )
+                capture.is_some() || matches!(self.piece_lookup(*to), Some((PieceType::Pawn, _)))
             }
             Move::CreateEnPassant { .. } => true,
             Move::CaptureEnPassant { .. } => true,
@@ -768,7 +762,7 @@ impl Game {
     }
 
     /// Determines type and color of standing piece
-    // #[deprecated(note = "Use Game.piece_lookup instead")]
+    #[deprecated(note = "Use Game.piece_lookup instead")]
     pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, PieceColor)> {
         let sq = sqbb.to_square();
         self.piece_lookup(sq)
@@ -787,8 +781,7 @@ impl Game {
         let occupied = self.get_occupied(color);
 
         for sq in *occupied {
-            let sqbb = BitBoard::from_square(sq);
-            if let Some((piece, _)) = self.determine_piece(&sqbb) {
+            if let Some((piece, _)) = self.piece_lookup(sq) {
                 let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
                 for t in moveinfo.targets {
                     moves.push(Move::infer(sq, t, self));
@@ -1080,19 +1073,16 @@ mod tests {
         let queen = Square::D8;
 
         assert_eq!(
-            game.determine_piece(&BitBoard::from_square(pawn))
-                .map(|(p, _)| p),
+            game.piece_lookup(pawn).map(|(p, _)| p),
             Some(PieceType::Pawn)
         );
-        assert_eq!(game.determine_piece(&BitBoard::from_square(empty)), None);
+        assert_eq!(game.piece_lookup(empty), None);
         assert_eq!(
-            game.determine_piece(&BitBoard::from_square(knight))
-                .map(|(p, _)| p),
+            game.piece_lookup(knight).map(|(p, _)| p),
             Some(PieceType::Knight)
         );
         assert_eq!(
-            game.determine_piece(&BitBoard::from_square(queen))
-                .map(|(p, _)| p),
+            game.piece_lookup(queen).map(|(p, _)| p),
             Some(PieceType::Queen)
         );
     }

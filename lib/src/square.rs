@@ -300,13 +300,13 @@ impl Square {
         let mut ray = EMPTY;
         let mut check_ray = EMPTY;
         let enemy = game.turn.opponent();
+        let kingbb = game.get_pieces(&PieceType::King, &game.turn);
 
         let mut current = *self;
         let mut is_check = false;
         let mut is_check_ray = false;
         while let Some(forward) = current.walk(direction) {
-            let forwardbb = BitBoard::from_square(forward);
-            if let Some((piece, color)) = game.determine_piece(&forwardbb) {
+            if let Some((piece, color)) = game.piece_lookup(forward) {
                 let is_king = piece == PieceType::King;
                 let is_enemy = color == enemy;
                 if is_enemy {
@@ -319,8 +319,7 @@ impl Square {
                     } else if let Some(extra) = forward.walk(direction) {
                         check_ray.set(extra);
                         let extrabb = BitBoard::from_square(extra);
-                        is_check_ray =
-                            matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
+                        is_check_ray = kingbb.has_square(&extrabb);
                     }
                 }
 
@@ -350,8 +349,7 @@ impl Square {
             let (ray, _, _) = self.ray_old(direction, game);
 
             for sq in ray {
-                let sqbb = BitBoard::from_square(sq);
-                let capture = game.determine_piece(&sqbb).map(|(piece, _)| piece);
+                let capture = game.piece_lookup(sq).map(|(piece, _)| piece);
 
                 let m = Move::Normal {
                     from: *self,
@@ -378,11 +376,13 @@ impl Square {
             .unwrap_or(game.turn)
             .opponent();
 
+        let kingbb = game.get_pieces(&PieceType::King, &enemy);
+
         let mut current = *self;
         let mut is_check = false;
         while let Some(forward) = current.walk(direction) {
             let forwardbb = BitBoard::from_square(forward);
-            if let Some((piece, color)) = game.determine_piece(&forwardbb) {
+            if let Some((piece, color)) = game.piece_lookup(forward) {
                 let is_king = piece == PieceType::King;
                 let is_enemy = color == enemy;
 
@@ -397,9 +397,7 @@ impl Square {
                     } else if let Some(extra) = forward.walk(direction) {
                         let extrabb = BitBoard::from_square(extra);
                         moveinfo.check_rays |= extrabb;
-                        is_check = game.determine_piece(&extrabb) == Some((PieceType::King, enemy));
-                        // is_check =
-                        //     matches!(game.determine_piece(&extrabb), Some((PieceType::King, _)));
+                        is_check = kingbb.has_square(&extrabb);
                     }
                 }
 

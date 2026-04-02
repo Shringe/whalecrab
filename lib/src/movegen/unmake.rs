@@ -20,7 +20,7 @@ impl Game {
                 let frombb = BitBoard::from_square(*from);
                 let tobb = BitBoard::from_square(*to);
                 let (piece, color) = self
-                    .determine_piece(&tobb)
+                    .piece_lookup(*to)
                     .expect("Couldn't find piece to unmove!");
 
                 let pieces = self.get_pieces_mut(&piece, &color);

@@ -146,8 +146,7 @@ mod tests {
             (Square::E7, Square::F6),
         ] {
             let m = Move::infer(from, to, &game);
-            let frombb = BitBoard::from_square(from);
-            if matches!(game.determine_piece(&frombb), Some((PieceType::King, _))) {
+            if matches!(game.piece_lookup(from), Some((PieceType::King, _))) {
                 let moves = from.king_psuedo_legal_moves(&game);
                 should_generate(&moves, &m);
             }

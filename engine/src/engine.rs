@@ -7,7 +7,6 @@ use crate::{
     timers::{MoveTimer, infinite::Infinite},
 };
 use whalecrab_lib::{
-    bitboard::BitBoard,
     file::File,
     game::{Game, State},
     movegen::{moves::Move, pieces::piece::PieceColor},
@@ -96,8 +95,7 @@ impl Engine {
         let mut score = Score::default();
 
         for sq in self.game.occupied {
-            let sqbb = BitBoard::from_square(sq);
-            let (piece, color) = self.game.determine_piece(&sqbb).unwrap();
+            let (piece, color) = self.game.piece_lookup(sq).unwrap();
 
             match color {
                 PieceColor::White => {

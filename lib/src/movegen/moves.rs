@@ -116,14 +116,12 @@ impl Move {
             _ => {
                 macro_rules! to_piece_type {
                     () => {
-                        game.determine_piece(&BitBoard::from_square(to))
-                            .map(|(t, _)| t)
+                        game.piece_lookup(to).map(|(t, _)| t)
                     };
                 }
 
-                let frombb = BitBoard::from_square(from);
                 let (piece_type, piece_color) = game
-                    .determine_piece(&frombb)
+                    .piece_lookup(from)
                     .expect("Tried to construct a move from a nonexistant piece");
 
                 if piece_type == PieceType::Pawn {

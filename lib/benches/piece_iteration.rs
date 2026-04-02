@@ -61,19 +61,6 @@ fn piece_iterator(game: &Game) -> impl Iterator<Item = (Square, PieceType, Piece
 fn bench(c: &mut Criterion) {
     let game = Game::default();
 
-    c.bench_function(
-        "Iterate using game.occupied and game.determine_piece",
-        |b| {
-            b.iter(|| {
-                for sq in game.occupied {
-                    let sqbb = BitBoard::from_square(sq);
-                    let (piece, color) = game.determine_piece(&sqbb).unwrap();
-                    black_box((sq, piece, color));
-                }
-            });
-        },
-    );
-
     c.bench_function("Iterate using game.iterate_pieces", |b| {
         b.iter(|| {
             for (sq, piece, color) in piece_iterator(&game) {
@@ -88,33 +75,6 @@ fn bench(c: &mut Criterion) {
                 let (piece, color) = game.piece_lookup(sq).unwrap();
                 black_box((sq, piece, color));
             }
-        });
-    });
-
-    c.bench_function("Single square game.determine_piece king", |b| {
-        let sq = Square::E1;
-        let sqbb = BitBoard::from_square(sq);
-        b.iter(|| {
-            let (piece, color) = game.determine_piece(&sqbb).unwrap();
-            black_box((piece, color));
-        });
-    });
-
-    c.bench_function("Single square game.determine_piece pawn", |b| {
-        let sq = Square::E2;
-        let sqbb = BitBoard::from_square(sq);
-        b.iter(|| {
-            let (piece, color) = game.determine_piece(&sqbb).unwrap();
-            black_box((piece, color));
-        });
-    });
-
-    c.bench_function("Single square sq -> sqbb -> game.determine_piece", |b| {
-        let sq = Square::E1;
-        b.iter(|| {
-            let sqbb = BitBoard::from_square(sq);
-            let (piece, color) = game.determine_piece(&sqbb).unwrap();
-            black_box((piece, color));
         });
     });
 

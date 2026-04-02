@@ -19,9 +19,7 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        bitboard::BitBoard, movegen::pieces::piece::PieceType, test_utils::format_pretty_list,
-    };
+    use crate::{movegen::pieces::piece::PieceType, test_utils::format_pretty_list};
 
     use super::*;
 
@@ -41,8 +39,7 @@ mod tests {
             (Square::A3, Square::A1),
         ] {
             let m = Move::infer(from, to, &game);
-            let frombb = BitBoard::from_square(m.from(&game));
-            if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
+            if matches!(game.piece_lookup(from), Some((PieceType::Queen, _))) {
                 let moves = m.from(&game).queen_psuedo_legal_moves(&game);
                 assert!(
                     moves.contains(&m),
@@ -71,8 +68,7 @@ mod tests {
             (Square::G2, Square::F1),
         ] {
             let m = Move::infer(from, to, &game);
-            let frombb = BitBoard::from_square(m.from(&game));
-            if matches!(game.determine_piece(&frombb), Some((PieceType::Queen, _))) {
+            if matches!(game.piece_lookup(from), Some((PieceType::Queen, _))) {
                 let moves = m.from(&game).queen_psuedo_legal_moves(&game);
                 assert!(
                     moves.contains(&m),

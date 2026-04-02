@@ -31,9 +31,9 @@ impl Game {
     pub fn play(&mut self, m: &Move) {
         #[cfg(debug_assertions)]
         {
-            let frombb = BitBoard::from_square(m.from(self));
+            let from = m.from(self);
             let (piece, color) = self
-                .determine_piece(&frombb)
+                .piece_lookup(from)
                 .expect("Tried to move nonexistant piece");
             assert_eq!(
                 color, self.turn,
@@ -49,7 +49,7 @@ impl Game {
                 let frombb = BitBoard::from_square(*from);
                 let tobb = BitBoard::from_square(*to);
                 let (piece, color) = self
-                    .determine_piece(&frombb)
+                    .piece_lookup(*from)
                     .expect("Couldn't find piece to move!");
 
                 m.move_piece(self, &piece, &color, frombb, tobb);

@@ -260,8 +260,7 @@ impl App {
         } else {
             self.select(new);
 
-            let newbb = BitBoard::from_square(new);
-            if let Some((piece, color)) = self.engine.game.determine_piece(&newbb)
+            if let Some((piece, color)) = self.engine.game.piece_lookup(new)
                 && self.engine.game.turn == color
             {
                 self.potential_targets = moves_to_targets_vec(
@@ -550,7 +549,7 @@ impl App {
 
         if let Some(sq) = self.selected_square {
             let sqbb = BitBoard::from_square(sq);
-            if let Some(piece) = self.engine.game.determine_piece(&sqbb) {
+            if let Some(piece) = self.engine.game.piece_lookup(sq) {
                 debug_text.push_str(&format!(
                     "
 Selected Square info:
@@ -606,16 +605,14 @@ Selected Square info:
                 // Get square index
                 let file = File::from_index(f);
                 let square_index = Square::make_square(rank, file);
-                let square_indexbb = BitBoard::from_square(square_index);
 
                 // Get ascii art
-                let ascii = if let Some((piece, color)) =
-                    self.engine.game.determine_piece(&square_indexbb)
-                {
-                    self.ascii.get(&piece, &color)
-                } else {
-                    ""
-                };
+                let ascii =
+                    if let Some((piece, color)) = self.engine.game.piece_lookup(square_index) {
+                        self.ascii.get(&piece, &color)
+                    } else {
+                        ""
+                    };
 
                 // Highlight selected square and suggested square
                 if self.potential_targets.contains(&square_index) {
