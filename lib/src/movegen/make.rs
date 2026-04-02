@@ -1,4 +1,5 @@
 use crate::{
+    add_piece,
     bitboard::BitBoard,
     castling::{self, CastleSide},
     game::Game,
@@ -7,29 +8,9 @@ use crate::{
         pieces::piece::{PieceColor, PieceType},
     },
     rank::Rank,
+    remove_piece,
     square::Square,
 };
-
-// These are unsafe for now because self.get_pieces_mut borrows the entirety of &mut self instead
-// of only the &mut pieces it returns. This can probably be avoided by providing a macro that does
-// the same thing as self.get_pieces_mut in the future.
-macro_rules! remove_piece {
-    ($game:expr, $pieces:expr, $sqbb:expr, $sq:expr) => {
-        $game.piece_table.set($sq, None);
-        unsafe {
-            *$pieces ^= $sqbb;
-        }
-    };
-}
-
-macro_rules! add_piece {
-    ($game:expr, $pieces:expr, $sqbb:expr, $sq:expr, $piece:expr, $color:expr) => {
-        $game.piece_table.set($sq, Some(($piece, $color)));
-        unsafe {
-            *$pieces |= $sqbb;
-        }
-    };
-}
 
 impl Game {
     /// Plays a move on the board
