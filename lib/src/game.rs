@@ -474,6 +474,7 @@ impl Game {
     /// Should be called on Self initialization and position updates
     fn refresh(&mut self) {
         self.populate_piece_table();
+
         let white_pieces = self.white_pawns
             | self.white_knights
             | self.white_bishops

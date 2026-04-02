@@ -10,20 +10,16 @@ use crate::{
     square::Square,
 };
 
-impl Move {
-    /// Helper method to move a piece from one square to another
-    fn move_piece(
-        &self,
-        game: &mut Game,
-        piece: &PieceType,
-        color: &PieceColor,
-        frombb: BitBoard,
-        tobb: BitBoard,
-    ) {
-        let pieces = game.get_pieces_mut(piece, color);
-        *pieces ^= frombb;
-        *pieces |= tobb;
-    }
+macro_rules! remove_piece {
+    ($game:expr, $pieces:expr, $sqbb:expr) => {
+        *$pieces ^= $sqbb;
+    };
+}
+
+macro_rules! add_piece {
+    ($game:expr, $pieces:expr, $sqbb:expr, $piece:expr, $color:expr) => {
+        *$pieces |= $sqbb;
+    };
 }
 
 impl Game {
@@ -52,10 +48,13 @@ impl Game {
                     .piece_lookup(*from)
                     .expect("Couldn't find piece to move!");
 
-                m.move_piece(self, &piece, &color, frombb, tobb);
+                let pieces = self.get_pieces_mut(&piece, &color);
+                remove_piece!(self, pieces, frombb);
+                add_piece!(self, pieces, tobb, piece, color);
+
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent());
-                    *pieces ^= tobb;
+                    remove_piece!(self, pieces, tobb);
                 }
 
                 // Revoking appropriate castling rights
@@ -105,7 +104,9 @@ impl Game {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                m.move_piece(self, &PieceType::Pawn, &color, frombb, tobb);
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color);
+                remove_piece!(self, pieces, frombb);
+                add_piece!(self, pieces, tobb, PieceType::Pawn, color);
             }
             Move::CaptureEnPassant { from: from_file } => {
                 let color = self.turn;
@@ -124,15 +125,18 @@ impl Game {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                m.move_piece(self, &PieceType::Pawn, &color, frombb, tobb);
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color);
+                remove_piece!(self, pieces, frombb);
+                add_piece!(self, pieces, tobb, PieceType::Pawn, color);
 
                 // Capture the pawn en passant
                 let en_passant_bb = BitBoard::from_square(
                     to.backward(&color)
                         .expect("Can't find pawn behind en_passant_target!"),
                 );
-                let enemy_pawns = self.get_pieces_mut(&PieceType::Pawn, &color.opponent());
-                *enemy_pawns ^= en_passant_bb;
+
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color.opponent());
+                remove_piece!(self, pieces, en_passant_bb);
             }
             Move::Promotion {
                 from: from_file,
@@ -157,15 +161,15 @@ impl Game {
 
                 // Remove pawn from original square
                 let pawns = self.get_pieces_mut(&PieceType::Pawn, &color);
-                *pawns ^= frombb;
+                remove_piece!(self, pawns, frombb);
 
                 // Add promoted piece to new square
                 let promoted_pieces = self.get_pieces_mut(piece, &color);
-                *promoted_pieces |= tobb;
+                add_piece!(self, promoted_pieces, tobb, *piece, color);
 
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent());
-                    *pieces ^= tobb;
+                    remove_piece!(self, pieces, tobb);
                 }
             }
             Move::Castle { side } => match &self.turn {
@@ -515,5 +519,45 @@ mod tests {
         assert_eq!(game.en_passant_target, None);
         game.play(&m);
         assert_eq!(game.en_passant_target, Some(Square::E3));
+    }
+
+    #[test]
+    fn piece_table_is_updated() {
+        let mut game = Game::default();
+        let from = Square::E2;
+        let to = Square::E4;
+        let m = Move::infer(from, to, &game);
+        let pawn = Some((PieceType::Pawn, PieceColor::White));
+
+        assert_eq!(game.piece_lookup(from), pawn);
+
+        game.play(&m);
+
+        assert_ne!(
+            game.piece_lookup(from),
+            pawn,
+            "There is still a pawn on {from} after playing {m}"
+        );
+
+        assert_eq!(
+            game.piece_lookup(from),
+            None,
+            "Something is still occupying {from} after playing {m}"
+        );
+
+        assert_eq!(
+            game.piece_lookup(to),
+            pawn,
+            "The pawn is not on {to} after playing {m}"
+        );
+
+        game.unplay(&m);
+
+        assert_eq!(
+            game.piece_lookup(from),
+            pawn,
+            "The pawn was not moved back to {from}"
+        );
+        assert_eq!(game.piece_lookup(to), None, "Something is still in {to}");
     }
 }
