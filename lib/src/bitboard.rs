@@ -139,7 +139,7 @@ impl BitBoard {
 
     /// Construct a new `BitBoard` with a particular `Square` set
     #[inline]
-    pub fn from_square(sq: Square) -> BitBoard {
+    pub const fn from_square(sq: Square) -> BitBoard {
         BitBoard(1u64 << sq.to_int())
     }
 
