@@ -166,9 +166,7 @@ impl Default for Game {
             piece_table: PieceTable::new(),
         };
 
-        game.populate_piece_table();
-        game.refresh();
-        game.seen_positions.insert(game.hash, 1);
+        game.initialize();
         game
     }
 }
@@ -183,6 +181,13 @@ impl Game {
     color_field_getters!(attacks, BitBoard);
     color_field_getters!(check_rays, BitBoard);
     color_field_getters!(occupied, BitBoard);
+
+    /// Initalizes the game. This should only be called inside of constructors
+    fn initialize(&mut self) {
+        self.populate_piece_table();
+        self.refresh();
+        self.seen_positions.insert(self.hash, 1);
+    }
 
     pub fn empty() -> Self {
         Self {
@@ -306,8 +311,7 @@ impl Game {
             game.full_move_clock = full_moves;
         }
 
-        game.refresh();
-        game.seen_positions.insert(game.hash, 1);
+        game.initialize();
 
         Some(game)
     }
