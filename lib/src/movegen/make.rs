@@ -41,12 +41,13 @@ impl Game {
 
                 let pieces = self.get_pieces_mut(&piece, &color) as *mut BitBoard;
                 remove_piece!(self, pieces, frombb, *from);
-                add_piece!(self, pieces, tobb, *to, piece, color);
 
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
                     remove_piece!(self, pieces, tobb, *to);
                 }
+
+                add_piece!(self, pieces, tobb, *to, piece, color);
 
                 // Revoking appropriate castling rights
                 match piece {
@@ -118,7 +119,6 @@ impl Game {
                 let tobb = BitBoard::from_square(to);
                 let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
                 remove_piece!(self, pieces, frombb, from);
-                add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
 
                 // Capture the pawn en passant
                 let en_passant_sq = to
@@ -129,6 +129,8 @@ impl Game {
                 let pieces =
                     self.get_pieces_mut(&PieceType::Pawn, &color.opponent()) as *mut BitBoard;
                 remove_piece!(self, pieces, en_passant_bb, en_passant_sq);
+
+                add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
             }
             Move::Promotion {
                 from: from_file,
@@ -155,14 +157,14 @@ impl Game {
                 let pawns = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
                 remove_piece!(self, pawns, frombb, from);
 
-                // Add promoted piece to new square
-                let promoted_pieces = self.get_pieces_mut(piece, &color) as *mut BitBoard;
-                add_piece!(self, promoted_pieces, tobb, to, *piece, color);
-
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
                     remove_piece!(self, pieces, tobb, to);
                 }
+
+                // Add promoted piece to new square
+                let promoted_pieces = self.get_pieces_mut(piece, &color) as *mut BitBoard;
+                add_piece!(self, promoted_pieces, tobb, to, *piece, color);
             }
             Move::Castle { side } => match &self.turn {
                 PieceColor::White => {
