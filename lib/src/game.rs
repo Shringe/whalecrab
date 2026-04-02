@@ -557,51 +557,51 @@ impl Game {
 
         for sq in self.white_pawns {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Pawn, PieceColor::White)));
+                .set(sq, Some((PieceType::Pawn, PieceColor::White)));
         }
         for sq in self.white_knights {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Knight, PieceColor::White)));
+                .set(sq, Some((PieceType::Knight, PieceColor::White)));
         }
         for sq in self.white_bishops {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Bishop, PieceColor::White)));
+                .set(sq, Some((PieceType::Bishop, PieceColor::White)));
         }
         for sq in self.white_rooks {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Rook, PieceColor::White)));
+                .set(sq, Some((PieceType::Rook, PieceColor::White)));
         }
         for sq in self.white_queens {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Queen, PieceColor::White)));
+                .set(sq, Some((PieceType::Queen, PieceColor::White)));
         }
         for sq in self.white_kings {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::King, PieceColor::White)));
+                .set(sq, Some((PieceType::King, PieceColor::White)));
         }
         for sq in self.black_pawns {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Pawn, PieceColor::Black)));
+                .set(sq, Some((PieceType::Pawn, PieceColor::Black)));
         }
         for sq in self.black_knights {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Knight, PieceColor::Black)));
+                .set(sq, Some((PieceType::Knight, PieceColor::Black)));
         }
         for sq in self.black_bishops {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Bishop, PieceColor::Black)));
+                .set(sq, Some((PieceType::Bishop, PieceColor::Black)));
         }
         for sq in self.black_rooks {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Rook, PieceColor::Black)));
+                .set(sq, Some((PieceType::Rook, PieceColor::Black)));
         }
         for sq in self.black_queens {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::Queen, PieceColor::Black)));
+                .set(sq, Some((PieceType::Queen, PieceColor::Black)));
         }
         for sq in self.black_kings {
             self.piece_table
-                .set(sq.to_int(), Some((PieceType::King, PieceColor::Black)));
+                .set(sq, Some((PieceType::King, PieceColor::Black)));
         }
     }
 
@@ -764,7 +764,7 @@ impl Game {
 
     /// Gets the type and color of a potential piece on the given square
     pub fn piece_lookup(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
-        self.piece_table.get(sq.to_int())
+        self.piece_table.get(sq)
     }
 
     /// Generates all psuedo legal moves for the current player

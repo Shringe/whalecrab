@@ -139,11 +139,11 @@ impl Square {
     pub const G8: Square = Square(62);
     pub const H8: Square = Square(63);
 
-    pub fn new(sq: u8) -> Square {
+    pub const fn new(sq: u8) -> Square {
         Square(sq & 63)
     }
 
-    pub fn to_int(&self) -> u8 {
+    pub const fn to_int(&self) -> u8 {
         self.0
     }
 

@@ -1,4 +1,7 @@
-use crate::movegen::pieces::piece::{PieceColor, PieceType};
+use crate::{
+    movegen::pieces::piece::{PieceColor, PieceType},
+    square::Square,
+};
 
 /// Bit-packed pair of squares.
 /// Low nibble (bits 0–3): even square. High nibble (bits 4–7): odd square.
@@ -79,18 +82,20 @@ impl PieceTable {
         PieceTable([EMPTY; 32])
     }
 
-    pub const fn get(&self, square: u8) -> Option<(PieceType, PieceColor)> {
-        let entry = &self.0[(square >> 1) as usize];
-        if square & 1 == 0 {
+    pub const fn get(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
+        let index = sq.to_int();
+        let entry = &self.0[(index >> 1) as usize];
+        if index & 1 == 0 {
             entry.first()
         } else {
             entry.second()
         }
     }
 
-    pub const fn set(&mut self, square: u8, val: Option<(PieceType, PieceColor)>) {
-        let entry = &mut self.0[(square >> 1) as usize];
-        if square & 1 == 0 {
+    pub const fn set(&mut self, sq: Square, val: Option<(PieceType, PieceColor)>) {
+        let index = sq.to_int();
+        let entry = &mut self.0[(index >> 1) as usize];
+        if index & 1 == 0 {
             entry.set_first(val);
         } else {
             entry.set_second(val);
@@ -127,17 +132,23 @@ mod test {
     #[test]
     fn piece_table_set_get() {
         let mut table = PieceTable::new();
-        table.set(0, Some((PieceType::Rook, PieceColor::White)));
-        table.set(1, Some((PieceType::King, PieceColor::Black)));
-        assert_eq!(table.get(0), Some((PieceType::Rook, PieceColor::White)));
-        assert_eq!(table.get(1), Some((PieceType::King, PieceColor::Black)));
+        let first = Square::new(0);
+        let second = Square::new(1);
+        table.set(first, Some((PieceType::Rook, PieceColor::White)));
+        table.set(second, Some((PieceType::King, PieceColor::Black)));
+        assert_eq!(table.get(first), Some((PieceType::Rook, PieceColor::White)));
+        assert_eq!(
+            table.get(second),
+            Some((PieceType::King, PieceColor::Black))
+        );
     }
 
     #[test]
     fn piece_table_clear() {
         let mut table = PieceTable::new();
-        table.set(32, Some((PieceType::Queen, PieceColor::Black)));
-        table.set(32, None);
-        assert_eq!(table.get(32), None);
+        let sq = Square::new(32);
+        table.set(sq, Some((PieceType::Queen, PieceColor::Black)));
+        table.set(sq, None);
+        assert_eq!(table.get(sq), None);
     }
 }
