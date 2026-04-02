@@ -14,25 +14,24 @@ use super::piece::PieceMoveInfo;
 
 impl Square {
     /// King safety not considered.
-    pub fn king_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(self.king_psuedo_legal_targets(game).targets, *self, game)
+    pub fn king_psuedo_legal_moves(self, game: &Game) -> Vec<Move> {
+        targets_to_moves(self.king_psuedo_legal_targets(game).targets, self, game)
     }
 
-    pub fn king_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    pub fn king_psuedo_legal_targets(self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
 
         let enemy_or_empty = !*game.get_occupied(&game.turn);
 
-        let sqbb = BitBoard::from_square(*self);
+        let sqbb = BitBoard::from_square(self);
         let not_a_file = !File::A.mask();
         let not_h_file = !File::H.mask();
 
-        let left = (sqbb >> BitBoard(1)) & not_h_file;
-        let right = (sqbb << BitBoard(1)) & not_a_file;
+        let left = (sqbb >> 1) & not_h_file;
+        let right = (sqbb << 1) & not_a_file;
         let middle_three = left | sqbb | right;
 
-        let attacks =
-            (middle_three >> BitBoard(8)) | (middle_three << BitBoard(8)) | (middle_three ^ sqbb);
+        let attacks = (middle_three >> 8) | (middle_three << 8) | (middle_three ^ sqbb);
 
         moveinfo.attacks |= attacks;
         moveinfo.targets |= attacks & enemy_or_empty;

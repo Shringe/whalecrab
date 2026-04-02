@@ -4,10 +4,10 @@ use crate::{implement_operation, implement_operations, square::*};
 use std::fmt;
 
 /// A good old-fashioned bitboard
-/// You *do* have access to the actual value, but you are probably better off
+/// You *do* have access to the actual value through BitBoard.to_int(), but you are probably better off
 /// using the implemented operators to work with this object.
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash)]
-pub struct BitBoard(pub u64);
+pub struct BitBoard(u64);
 
 implement_operation!(BitBoard, Not);
 implement_operations!(
@@ -108,8 +108,14 @@ impl BitBoard {
 
     /// Construct a new bitboard from a u64
     #[inline]
-    pub fn new(b: u64) -> BitBoard {
+    pub const fn new(b: u64) -> BitBoard {
         BitBoard(b)
+    }
+
+    /// Get the inner u64
+    #[inline]
+    pub const fn to_int(self) -> u64 {
+        self.0
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set

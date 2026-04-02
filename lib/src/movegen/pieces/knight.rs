@@ -25,14 +25,14 @@ impl Square {
         let not_file_g = !File::G.mask();
         let not_file_h = !File::H.mask();
 
-        let attacks = (sqbb << BitBoard(17)) & not_file_a
-            | (sqbb << BitBoard(15)) & not_file_h
-            | (sqbb << BitBoard(10)) & not_file_a & not_file_b
-            | (sqbb << BitBoard(6)) & not_file_g & not_file_h
-            | (sqbb >> BitBoard(6)) & not_file_a & not_file_b
-            | (sqbb >> BitBoard(10)) & not_file_g & not_file_h
-            | (sqbb >> BitBoard(15)) & not_file_a
-            | (sqbb >> BitBoard(17)) & not_file_h;
+        let attacks = (sqbb << 17) & not_file_a
+            | (sqbb << 15) & not_file_h
+            | (sqbb << 10) & not_file_a & not_file_b
+            | (sqbb << 6) & not_file_g & not_file_h
+            | (sqbb >> 6) & not_file_a & not_file_b
+            | (sqbb >> 10) & not_file_g & not_file_h
+            | (sqbb >> 15) & not_file_a
+            | (sqbb >> 17) & not_file_h;
 
         moveinfo.attacks = attacks;
         moveinfo.targets = attacks & enemy_or_empty;

@@ -66,7 +66,7 @@ impl File {
     /// Creates a bitboard with the entire file set
     #[inline]
     pub fn mask(self) -> BitBoard {
-        BitBoard(0x0101010101010101 << self as u8)
+        BitBoard::new(0x0101010101010101 << self as u8)
     }
 
     /// Go one file to the left.  If impossible, wrap around.
@@ -95,8 +95,9 @@ mod test {
     #[test]
     fn to_bitboard() {
         let file = File::C;
-        let expected =
-            BitBoard(0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100);
+        let expected = BitBoard::new(
+            0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100,
+        );
         assert_eq!(file.mask(), expected);
     }
 }
