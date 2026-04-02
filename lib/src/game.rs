@@ -768,44 +768,14 @@ impl Game {
     }
 
     /// Determines type and color of standing piece
+    // #[deprecated(note = "Use Game.piece_lookup instead")]
     pub fn determine_piece(&self, sqbb: &BitBoard) -> Option<(PieceType, PieceColor)> {
-        if self.white_occupied.has_square(sqbb) {
-            if self.white_pawns.has_square(sqbb) {
-                Some((PieceType::Pawn, PieceColor::White))
-            } else if self.white_knights.has_square(sqbb) {
-                Some((PieceType::Knight, PieceColor::White))
-            } else if self.white_bishops.has_square(sqbb) {
-                Some((PieceType::Bishop, PieceColor::White))
-            } else if self.white_rooks.has_square(sqbb) {
-                Some((PieceType::Rook, PieceColor::White))
-            } else if self.white_queens.has_square(sqbb) {
-                Some((PieceType::Queen, PieceColor::White))
-            } else if self.white_kings.has_square(sqbb) {
-                Some((PieceType::King, PieceColor::White))
-            } else {
-                unreachable!("The white occupied bitboard has a square that no white pieces have!")
-            }
-        } else if self.black_occupied.has_square(sqbb) {
-            if self.black_pawns.has_square(sqbb) {
-                Some((PieceType::Pawn, PieceColor::Black))
-            } else if self.black_knights.has_square(sqbb) {
-                Some((PieceType::Knight, PieceColor::Black))
-            } else if self.black_bishops.has_square(sqbb) {
-                Some((PieceType::Bishop, PieceColor::Black))
-            } else if self.black_rooks.has_square(sqbb) {
-                Some((PieceType::Rook, PieceColor::Black))
-            } else if self.black_queens.has_square(sqbb) {
-                Some((PieceType::Queen, PieceColor::Black))
-            } else if self.black_kings.has_square(sqbb) {
-                Some((PieceType::King, PieceColor::Black))
-            } else {
-                unreachable!("The black occupied bitboard has a square that no black pieces have!")
-            }
-        } else {
-            None
-        }
+        let sq = sqbb.to_square();
+        self.piece_lookup(sq)
     }
 
+    /// Gets the color and type of piece on a square.
+    /// This is a faster variant of self.determine_piece using a lookup table.
     pub fn piece_lookup(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
         self.piece_table.get(sq.to_int())
     }
