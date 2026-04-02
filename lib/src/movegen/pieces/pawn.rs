@@ -38,7 +38,7 @@ impl Square {
 
         let sqbb = BitBoard::from_square(*self);
         let friendly = game
-            .determine_color(&BitBoard::from_square(*self))
+            .determine_color(BitBoard::from_square(*self))
             .expect("Tried to move non existent pawn");
 
         let file = self.get_file();
@@ -48,13 +48,13 @@ impl Square {
                 let oncebb = sqbb << BitBoard(8);
                 assert_shift!(oncebb, self.up());
 
-                if !game.occupied.has_square(&oncebb) {
+                if !game.occupied.has_square(oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Second {
                         let twicebb = oncebb << BitBoard(8);
                         assert_shift!(twicebb, self.up().and_then(|s| s.up()));
 
-                        if !game.occupied.has_square(&twicebb) {
+                        if !game.occupied.has_square(twicebb) {
                             moveinfo.targets |= twicebb;
                         }
                     }
@@ -65,7 +65,7 @@ impl Square {
                     assert_shift!(uleft, self.uleft());
 
                     moveinfo.attacks |= uleft;
-                    if game.black_occupied.has_square(&uleft) {
+                    if game.black_occupied.has_square(uleft) {
                         moveinfo.targets |= uleft;
                     } else if let Some(target) = game.en_passant_target
                         && uleft == BitBoard::from_square(target)
@@ -79,7 +79,7 @@ impl Square {
                     assert_shift!(uright, self.uright());
 
                     moveinfo.attacks |= uright;
-                    if game.black_occupied.has_square(&uright) {
+                    if game.black_occupied.has_square(uright) {
                         moveinfo.targets |= uright;
                     } else if let Some(target) = game.en_passant_target
                         && uright == BitBoard::from_square(target)
@@ -93,13 +93,13 @@ impl Square {
                 let oncebb = sqbb >> BitBoard(8);
                 assert_shift!(oncebb, self.down());
 
-                if !game.occupied.has_square(&oncebb) {
+                if !game.occupied.has_square(oncebb) {
                     moveinfo.targets |= oncebb;
                     if self.get_rank() == Rank::Seventh {
                         let twicebb = oncebb >> BitBoard(8);
                         assert_shift!(twicebb, self.down().and_then(|s| s.down()));
 
-                        if !game.occupied.has_square(&twicebb) {
+                        if !game.occupied.has_square(twicebb) {
                             moveinfo.targets |= twicebb;
                         }
                     }
@@ -110,7 +110,7 @@ impl Square {
                     assert_shift!(dleft, self.dleft());
 
                     moveinfo.attacks |= dleft;
-                    if game.white_occupied.has_square(&dleft) {
+                    if game.white_occupied.has_square(dleft) {
                         moveinfo.targets |= dleft;
                     } else if let Some(target) = game.en_passant_target
                         && dleft == BitBoard::from_square(target)
@@ -124,7 +124,7 @@ impl Square {
                     assert_shift!(dright, self.dright());
 
                     moveinfo.attacks |= dright;
-                    if game.white_occupied.has_square(&dright) {
+                    if game.white_occupied.has_square(dright) {
                         moveinfo.targets |= dright;
                     } else if let Some(target) = game.en_passant_target
                         && dright == BitBoard::from_square(target)

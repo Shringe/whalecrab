@@ -560,7 +560,7 @@ Selected Square info:
 ",
                     sq,
                     piece,
-                    self.engine.game.determine_color(&sqbb).unwrap(),
+                    self.engine.game.determine_color(sqbb).unwrap(),
                     &self.potential_targets
                 ));
             }

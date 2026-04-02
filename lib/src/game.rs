@@ -608,8 +608,8 @@ impl Game {
     /// Checks if the current player's king is in check
     pub fn is_in_check(&self) -> bool {
         match self.turn {
-            PieceColor::White => self.black_attacks.has_square(&self.white_kings),
-            PieceColor::Black => self.white_attacks.has_square(&self.black_kings),
+            PieceColor::White => self.black_attacks.has_square(self.white_kings),
+            PieceColor::Black => self.white_attacks.has_square(self.black_kings),
         }
     }
 
@@ -617,21 +617,21 @@ impl Game {
     pub fn attackers(&self, sq: Square) -> BitBoard {
         let mut attackers = EMPTY;
         let sqbb = BitBoard::from_square(sq);
-        let color = if let Some(color) = self.determine_color(&sqbb) {
+        let color = if let Some(color) = self.determine_color(sqbb) {
             color
         } else {
             return attackers;
         };
 
         let enemy = color.opponent();
-        if !self.get_attacks(&enemy).has_square(&sqbb) {
+        if !self.get_attacks(&enemy).has_square(sqbb) {
             return attackers;
         }
 
         for piece in ALL_PIECE_TYPES {
             let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
             let potential_enemy = self.get_pieces(&piece, &enemy);
-            attackers |= moveinfo.attacks & potential_enemy;
+            attackers |= moveinfo.attacks & *potential_enemy;
         }
 
         attackers
@@ -752,7 +752,7 @@ impl Game {
 
     /// Determines color of standing piece.
     /// This is faster than calling Game.piece_lookup and then discarding the piece type.
-    pub fn determine_color(&self, sqbb: &BitBoard) -> Option<PieceColor> {
+    pub fn determine_color(&self, sqbb: BitBoard) -> Option<PieceColor> {
         if self.white_occupied.has_square(sqbb) {
             Some(PieceColor::White)
         } else if self.black_occupied.has_square(sqbb) {
@@ -1042,16 +1042,16 @@ mod tests {
         let queen = Square::D1;
 
         assert_eq!(
-            game.determine_color(&BitBoard::from_square(white)),
+            game.determine_color(BitBoard::from_square(white)),
             Some(PieceColor::White)
         );
-        assert_eq!(game.determine_color(&BitBoard::from_square(empty)), None);
+        assert_eq!(game.determine_color(BitBoard::from_square(empty)), None);
         assert_eq!(
-            game.determine_color(&BitBoard::from_square(black)),
+            game.determine_color(BitBoard::from_square(black)),
             Some(PieceColor::Black)
         );
         assert_eq!(
-            game.determine_color(&BitBoard::from_square(queen)),
+            game.determine_color(BitBoard::from_square(queen)),
             Some(PieceColor::White)
         );
     }

@@ -1,17 +1,31 @@
 use crate::file::{ALL_FILES, File};
 use crate::rank::{ALL_RANKS, Rank};
-use crate::square::*;
+use crate::{implement_operation, implement_operations, square::*};
 use std::fmt;
-use std::ops::{
-    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not, Shl, Shr,
-};
 
-// TODO: implement operations using crate::utils::implement_operations!
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash)]
 pub struct BitBoard(pub u64);
+
+implement_operation!(BitBoard, Not);
+implement_operations!(
+    BitBoard,
+    Self,
+    u64,
+    [
+        BitAnd,
+        BitAndAssign,
+        BitOr,
+        BitOrAssign,
+        BitXor,
+        BitXorAssign,
+        Mul,
+        Shl,
+        Shr
+    ]
+);
 
 impl fmt::Debug for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -44,7 +58,7 @@ impl fmt::Display for BitBoard {
         for r in ranks {
             for f in files {
                 let sqbb = BitBoard::from_rank_file(r, f);
-                if self.has_square(&sqbb) {
+                if self.has_square(sqbb) {
                     out.push_str("1 ");
                 } else {
                     out.push_str("0 ");
@@ -64,255 +78,6 @@ impl fmt::Display for BitBoard {
 
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.
 pub const EMPTY: BitBoard = BitBoard(0);
-
-impl Shr for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn shr(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 >> other.0)
-    }
-}
-
-impl Shr for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn shr(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 >> other.0)
-    }
-}
-
-impl Shl for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn shl(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 << other.0)
-    }
-}
-
-impl Shl for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn shl(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 << other.0)
-    }
-}
-
-impl BitAnd for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitand(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 & other.0)
-    }
-}
-
-impl BitAnd for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitand(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 & other.0)
-    }
-}
-
-impl BitAnd<&BitBoard> for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitand(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 & other.0)
-    }
-}
-
-impl BitAnd<BitBoard> for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitand(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 & other.0)
-    }
-}
-
-// Impl BitOr
-impl BitOr for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitor(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 | other.0)
-    }
-}
-
-impl BitOr for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitor(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 | other.0)
-    }
-}
-
-impl BitOr<&BitBoard> for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitor(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 | other.0)
-    }
-}
-
-impl BitOr<BitBoard> for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitor(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 | other.0)
-    }
-}
-
-// Impl BitXor
-
-impl BitXor for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitxor(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 ^ other.0)
-    }
-}
-
-impl BitXor for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitxor(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 ^ other.0)
-    }
-}
-
-impl BitXor<&BitBoard> for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitxor(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0 ^ other.0)
-    }
-}
-
-impl BitXor<BitBoard> for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn bitxor(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0 ^ other.0)
-    }
-}
-
-// Impl BitAndAssign
-
-impl BitAndAssign for BitBoard {
-    #[inline]
-    fn bitand_assign(&mut self, other: BitBoard) {
-        self.0 &= other.0;
-    }
-}
-
-impl BitAndAssign<&BitBoard> for BitBoard {
-    #[inline]
-    fn bitand_assign(&mut self, other: &BitBoard) {
-        self.0 &= other.0;
-    }
-}
-
-// Impl BitOrAssign
-impl BitOrAssign for BitBoard {
-    #[inline]
-    fn bitor_assign(&mut self, other: BitBoard) {
-        self.0 |= other.0;
-    }
-}
-
-impl BitOrAssign<&BitBoard> for BitBoard {
-    #[inline]
-    fn bitor_assign(&mut self, other: &BitBoard) {
-        self.0 |= other.0;
-    }
-}
-
-// Impl BitXor Assign
-impl BitXorAssign for BitBoard {
-    #[inline]
-    fn bitxor_assign(&mut self, other: BitBoard) {
-        self.0 ^= other.0;
-    }
-}
-
-impl BitXorAssign<&BitBoard> for BitBoard {
-    #[inline]
-    fn bitxor_assign(&mut self, other: &BitBoard) {
-        self.0 ^= other.0;
-    }
-}
-
-// Impl Mul
-impl Mul for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn mul(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0.wrapping_mul(other.0))
-    }
-}
-
-impl Mul for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn mul(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0.wrapping_mul(other.0))
-    }
-}
-
-impl Mul<&BitBoard> for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn mul(self, other: &BitBoard) -> BitBoard {
-        BitBoard(self.0.wrapping_mul(other.0))
-    }
-}
-
-impl Mul<BitBoard> for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn mul(self, other: BitBoard) -> BitBoard {
-        BitBoard(self.0.wrapping_mul(other.0))
-    }
-}
-
-// Impl Not
-impl Not for BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn not(self) -> BitBoard {
-        BitBoard(!self.0)
-    }
-}
-
-impl Not for &BitBoard {
-    type Output = BitBoard;
-
-    #[inline]
-    fn not(self) -> BitBoard {
-        BitBoard(!self.0)
-    }
-}
 
 impl BitBoard {
     pub const INITIAL_BLACK_PAWN: BitBoard =
@@ -386,7 +151,7 @@ impl BitBoard {
 
     /// Check if a square's index is on in the bitboard
     /// The BitBoard should only have a single square on
-    pub fn has_square(&self, sqbb: &BitBoard) -> bool {
+    pub fn has_square(self, sqbb: BitBoard) -> bool {
         self & sqbb != EMPTY
     }
 
@@ -440,9 +205,9 @@ mod tests {
         let second = BitBoard::from_square(Square::H1);
         let empty = BitBoard::from_square(Square::G3);
 
-        assert!(occupied.has_square(&first));
-        assert!(occupied.has_square(&second));
-        assert!(!occupied.has_square(&empty));
+        assert!(occupied.has_square(first));
+        assert!(occupied.has_square(second));
+        assert!(!occupied.has_square(empty));
     }
 
     #[test]

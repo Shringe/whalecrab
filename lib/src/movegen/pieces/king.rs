@@ -37,7 +37,7 @@ impl Square {
         moveinfo.attacks |= attacks;
         moveinfo.targets |= attacks & enemy_or_empty;
 
-        let occupied = &game.occupied;
+        let occupied = game.occupied;
         match game.turn {
             PieceColor::White => {
                 if game.castling_rights.white_queenside

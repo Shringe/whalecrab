@@ -30,6 +30,14 @@ macro_rules! implement_operation {
             }
         }
     };
+    ($struct:ident, Not) => {
+        impl std::ops::Not for $struct {
+            type Output = $struct;
+            fn not(self) -> $struct {
+                $struct(!self.0)
+            }
+        }
+    };
 }
 
 /// Used to implement standard operations on wrapper types and their inner value.

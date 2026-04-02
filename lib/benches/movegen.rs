@@ -7,8 +7,8 @@ use whalecrab_lib::movegen::{
 
 macro_rules! bench_piece_method {
     ($c:expr, $game:expr, $type:expr, $method:ident) => {
-        let squares = $game.get_pieces(&$type, &PieceColor::White)
-            | $game.get_pieces(&$type, &PieceColor::Black);
+        let squares = *$game.get_pieces(&$type, &PieceColor::White)
+            | *$game.get_pieces(&$type, &PieceColor::Black);
 
         $c.bench_function(
             &format!(

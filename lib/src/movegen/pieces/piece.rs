@@ -148,7 +148,7 @@ impl Game {
 
         let enemy = self.turn.opponent();
         let attack_board = self.get_attacks(&enemy);
-        let checks = self.get_check_rays(&enemy);
+        let checks = *self.get_check_rays(&enemy);
 
         let kingbb = self.get_pieces(&PieceType::King, &self.turn);
         let king = kingbb.to_square();
@@ -160,17 +160,17 @@ impl Game {
             let frombb = BitBoard::from_square(from);
             let tobb = BitBoard::from_square(to);
 
-            let is_moving_king = kingbb.has_square(&frombb);
+            let is_moving_king = kingbb.has_square(frombb);
 
             // Handle being in check
             match king_attackers.popcnt() {
                 1 => {
                     let is_blocking = (between_two_squares(king, king_attackers.to_square())
                         & checks)
-                        .has_square(&tobb);
+                        .has_square(tobb);
                     let is_capturing = m.is_capture();
                     let is_capturing_attacking_piece =
-                        is_capturing && king_attackers.has_square(&tobb);
+                        is_capturing && king_attackers.has_square(tobb);
 
                     if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
                         continue;
@@ -186,12 +186,12 @@ impl Game {
 
             if is_moving_king {
                 // Prevent moving into check
-                if attack_board.has_square(&tobb) {
+                if attack_board.has_square(tobb) {
                     continue;
                 }
             } else {
                 // Prevent moving piece blocking check (pin)
-                if checks.has_square(&frombb) {
+                if checks.has_square(frombb) {
                     continue;
                 }
             }

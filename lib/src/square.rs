@@ -275,7 +275,7 @@ impl Square {
 
     /// Consumes the square and determines if it is on it the given bitboard
     pub fn in_bitboard(&self, bb: &BitBoard) -> bool {
-        bb.has_square(&BitBoard::from_square(*self))
+        bb.has_square(BitBoard::from_square(*self))
     }
 
     /// Moves one square in a direction. Useful for ray pieces.
@@ -319,7 +319,7 @@ impl Square {
                     } else if let Some(extra) = forward.walk(direction) {
                         check_ray.set(extra);
                         let extrabb = BitBoard::from_square(extra);
-                        is_check_ray = kingbb.has_square(&extrabb);
+                        is_check_ray = kingbb.has_square(extrabb);
                     }
                 }
 
@@ -371,10 +371,7 @@ impl Square {
         let selfbb = BitBoard::from_square(*self);
 
         // Maybe I should take in color as a parameter?
-        let enemy = game
-            .determine_color(&selfbb)
-            .unwrap_or(game.turn)
-            .opponent();
+        let enemy = game.determine_color(selfbb).unwrap_or(game.turn).opponent();
 
         let kingbb = game.get_pieces(&PieceType::King, &enemy);
 
@@ -397,7 +394,7 @@ impl Square {
                     } else if let Some(extra) = forward.walk(direction) {
                         let extrabb = BitBoard::from_square(extra);
                         moveinfo.check_rays |= extrabb;
-                        is_check = kingbb.has_square(&extrabb);
+                        is_check = kingbb.has_square(extrabb);
                     }
                 }
 

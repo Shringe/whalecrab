@@ -82,7 +82,7 @@ fn bench(c: &mut Criterion) {
         let sq = Square::E8;
         let sqbb = BitBoard::from_square(sq);
         b.iter(|| {
-            let color = game.determine_color(&sqbb).unwrap();
+            let color = game.determine_color(sqbb).unwrap();
             black_box(color);
         });
     });
@@ -91,7 +91,7 @@ fn bench(c: &mut Criterion) {
         let sq = Square::E8;
         b.iter(|| {
             let sqbb = BitBoard::from_square(sq);
-            let color = game.determine_color(&sqbb).unwrap();
+            let color = game.determine_color(sqbb).unwrap();
             black_box(color);
         });
     });
