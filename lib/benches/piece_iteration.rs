@@ -118,6 +118,24 @@ fn bench(c: &mut Criterion) {
         });
     });
 
+    c.bench_function("Single square game.determine_color", |b| {
+        let sq = Square::E8;
+        let sqbb = BitBoard::from_square(sq);
+        b.iter(|| {
+            let color = game.determine_color(&sqbb).unwrap();
+            black_box(color);
+        });
+    });
+
+    c.bench_function("Single square sq -> sqbb -> game.determine_color", |b| {
+        let sq = Square::E8;
+        b.iter(|| {
+            let sqbb = BitBoard::from_square(sq);
+            let color = game.determine_color(&sqbb).unwrap();
+            black_box(color);
+        });
+    });
+
     c.bench_function("Single square game.piece_lookup", |b| {
         let sq = Square::E1;
         b.iter(|| {
