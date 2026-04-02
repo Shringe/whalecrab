@@ -39,14 +39,13 @@ impl Game {
                     .piece_lookup(*from)
                     .expect("Couldn't find piece to move!");
 
-                let pieces = self.get_pieces_mut(&piece, &color) as *mut BitBoard;
-                remove_piece!(self, pieces, frombb, *from);
-
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
                     remove_piece!(self, pieces, tobb, *to);
                 }
 
+                let pieces = self.get_pieces_mut(&piece, &color) as *mut BitBoard;
+                remove_piece!(self, pieces, frombb, *from);
                 add_piece!(self, pieces, tobb, *to, piece, color);
 
                 // Revoking appropriate castling rights
@@ -115,11 +114,6 @@ impl Game {
                     ),
                 };
 
-                let frombb = BitBoard::from_square(from);
-                let tobb = BitBoard::from_square(to);
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
-                remove_piece!(self, pieces, frombb, from);
-
                 // Capture the pawn en passant
                 let en_passant_sq = to
                     .backward(&color)
@@ -130,6 +124,10 @@ impl Game {
                     self.get_pieces_mut(&PieceType::Pawn, &color.opponent()) as *mut BitBoard;
                 remove_piece!(self, pieces, en_passant_bb, en_passant_sq);
 
+                let frombb = BitBoard::from_square(from);
+                let tobb = BitBoard::from_square(to);
+                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                remove_piece!(self, pieces, frombb, from);
                 add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
             }
             Move::Promotion {
@@ -153,14 +151,14 @@ impl Game {
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
 
-                // Remove pawn from original square
-                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
-                remove_piece!(self, pawns, frombb, from);
-
                 if let Some(enemy) = capture {
                     let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
                     remove_piece!(self, pieces, tobb, to);
                 }
+
+                // Remove pawn from original square
+                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                remove_piece!(self, pawns, frombb, from);
 
                 // Add promoted piece to new square
                 let promoted_pieces = self.get_pieces_mut(piece, &color) as *mut BitBoard;
