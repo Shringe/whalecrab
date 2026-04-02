@@ -2,7 +2,7 @@
 macro_rules! implement_operation {
     ($struct:ident, $trait:ident, $method:ident, $op:tt, Self, assign) => {
         impl std::ops::$trait for $struct {
-            fn $method(&mut self, other: Self) {
+            fn $method(&mut self, other: $struct) {
                 self.0 $op other.0;
             }
         }
@@ -16,17 +16,17 @@ macro_rules! implement_operation {
     };
     ($struct:ident, $trait:ident, $method:ident, $op:tt, Self, new) => {
         impl std::ops::$trait for $struct {
-            type Output = Self;
-            fn $method(self, other: Self) -> Self {
-                Self(self.0 $op other.0)
+            type Output = $struct;
+            fn $method(self, other: $struct) -> $struct {
+                $struct(self.0 $op other.0)
             }
         }
     };
     ($struct:ident, $trait:ident, $method:ident, $op:tt, $type:ident, new) => {
         impl std::ops::$trait<$type> for $struct {
-            type Output = Self;
-            fn $method(self, other: $type) -> Self {
-                Self(self.0 $op other)
+            type Output = $struct;
+            fn $method(self, other: $type) -> $struct {
+                $struct(self.0 $op other)
             }
         }
     };
