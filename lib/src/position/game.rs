@@ -391,7 +391,8 @@ impl Game {
         self.castling_rights = last_position.castling_rights;
         self.half_move_timeout = last_position.half_move_timeout;
         self.en_passant_target = last_position.en_passant_target;
-        self.state = last_position.state;
+        // We can assume that this position was reached from a non-terminal state
+        self.state = State::InProgress;
     }
 
     /// Captures essential position information to be restored later
@@ -400,7 +401,6 @@ impl Game {
             castling_rights: self.castling_rights,
             half_move_timeout: self.half_move_timeout,
             en_passant_target: self.en_passant_target,
-            state: self.state,
         };
         self.position_history.push(last_position);
     }
@@ -422,6 +422,15 @@ impl Game {
             self.full_move_clock += 1;
         }
         self.refresh();
+        if let Some(moves) = &self.legal_moves
+            && moves.is_empty()
+        {
+            self.state = if self.is_in_check() {
+                State::Checkmate
+            } else {
+                State::Stalemate
+            };
+        }
 
         // Half move timeout
         let should_reset_half_move_timeout = match last_move {
@@ -514,6 +523,8 @@ impl Game {
         self.hash = hasher.finish();
 
         self.update_attacks();
+        let moves = self.generate_all_legal_moves();
+        self.legal_moves = Some(moves);
     }
 
     /// Calculates the attack bitboard for the given player
@@ -545,20 +556,6 @@ impl Game {
             *self.get_attacks_mut(&enemy),
             *self.get_check_rays_mut(&enemy),
         ) = self.calculate_attacks(&enemy);
-
-        if self.state == State::InProgress {
-            let moves = self.generate_all_legal_moves();
-
-            if moves.is_empty() {
-                self.state = if self.is_in_check() {
-                    State::Checkmate
-                } else {
-                    State::Stalemate
-                };
-            }
-
-            self.legal_moves = Some(moves);
-        }
     }
 
     /// Fully recalculates the piece table

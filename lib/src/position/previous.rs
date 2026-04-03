@@ -9,8 +9,6 @@ pub struct UnRestoreable {
     pub castling_rights: CastlingRights,
     pub half_move_timeout: u8,
     pub en_passant_target: Option<Square>,
-    // Not technically necessary but probably much faster to remember
-    pub state: State,
 }
 
 impl UnRestoreable {
