@@ -4,6 +4,7 @@ use crate::{
     castle,
     castling::{self, CastleSide},
     game::Game,
+    get_pieces_mut,
     movegen::{
         moves::Move,
         pieces::piece::{PieceColor, PieceType},
@@ -40,11 +41,11 @@ impl Game {
                     .expect("Couldn't find piece to move!");
 
                 if let Some(enemy) = capture {
-                    let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
+                    let pieces = get_pieces_mut!(self, enemy, &color.opponent());
                     remove_piece!(self, pieces, tobb, *to);
                 }
 
-                let pieces = self.get_pieces_mut(&piece, &color) as *mut BitBoard;
+                let pieces = get_pieces_mut!(self, &piece, &color);
                 remove_piece!(self, pieces, frombb, *from);
                 add_piece!(self, pieces, tobb, *to, piece, color);
 
@@ -95,7 +96,7 @@ impl Game {
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                let pieces = get_pieces_mut!(self, &PieceType::Pawn, &color);
                 remove_piece!(self, pieces, frombb, from);
                 add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
             }
@@ -120,13 +121,12 @@ impl Game {
                     .expect("Can't find pawn behind en_passant_target!");
                 let en_passant_bb = BitBoard::from_square(en_passant_sq);
 
-                let pieces =
-                    self.get_pieces_mut(&PieceType::Pawn, &color.opponent()) as *mut BitBoard;
+                let pieces = get_pieces_mut!(self, &PieceType::Pawn, &color.opponent());
                 remove_piece!(self, pieces, en_passant_bb, en_passant_sq);
 
                 let frombb = BitBoard::from_square(from);
                 let tobb = BitBoard::from_square(to);
-                let pieces = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                let pieces = get_pieces_mut!(self, &PieceType::Pawn, &color);
                 remove_piece!(self, pieces, frombb, from);
                 add_piece!(self, pieces, tobb, to, PieceType::Pawn, color);
             }
@@ -152,16 +152,16 @@ impl Game {
                 let tobb = BitBoard::from_square(to);
 
                 if let Some(enemy) = capture {
-                    let pieces = self.get_pieces_mut(enemy, &color.opponent()) as *mut BitBoard;
+                    let pieces = get_pieces_mut!(self, enemy, &color.opponent());
                     remove_piece!(self, pieces, tobb, to);
                 }
 
                 // Remove pawn from original square
-                let pawns = self.get_pieces_mut(&PieceType::Pawn, &color) as *mut BitBoard;
+                let pawns = get_pieces_mut!(self, &PieceType::Pawn, &color);
                 remove_piece!(self, pawns, frombb, from);
 
                 // Add promoted piece to new square
-                let promoted_pieces = self.get_pieces_mut(piece, &color) as *mut BitBoard;
+                let promoted_pieces = get_pieces_mut!(self, piece, &color);
                 add_piece!(self, promoted_pieces, tobb, to, *piece, color);
             }
             Move::Castle { side } => match &self.turn {
@@ -172,8 +172,8 @@ impl Game {
                     match side {
                         CastleSide::Queenside => castle!(
                             self,
-                            &mut self.white_kings as *mut BitBoard,
-                            &mut self.white_rooks as *mut BitBoard,
+                            &mut self.white_kings,
+                            &mut self.white_rooks,
                             castling::WHITE_CASTLE_QUEENSIDE_KING_FROM_BB,
                             castling::WHITE_CASTLE_QUEENSIDE_KING_FROM,
                             castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB,
@@ -186,8 +186,8 @@ impl Game {
                         ),
                         CastleSide::Kingside => castle!(
                             self,
-                            &mut self.white_kings as *mut BitBoard,
-                            &mut self.white_rooks as *mut BitBoard,
+                            &mut self.white_kings,
+                            &mut self.white_rooks,
                             castling::WHITE_CASTLE_KINGSIDE_KING_FROM_BB,
                             castling::WHITE_CASTLE_KINGSIDE_KING_FROM,
                             castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB,
@@ -207,8 +207,8 @@ impl Game {
                     match side {
                         CastleSide::Queenside => castle!(
                             self,
-                            &mut self.black_kings as *mut BitBoard,
-                            &mut self.black_rooks as *mut BitBoard,
+                            &mut self.black_kings,
+                            &mut self.black_rooks,
                             castling::BLACK_CASTLE_QUEENSIDE_KING_FROM_BB,
                             castling::BLACK_CASTLE_QUEENSIDE_KING_FROM,
                             castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB,
@@ -221,8 +221,8 @@ impl Game {
                         ),
                         CastleSide::Kingside => castle!(
                             self,
-                            &mut self.black_kings as *mut BitBoard,
-                            &mut self.black_rooks as *mut BitBoard,
+                            &mut self.black_kings,
+                            &mut self.black_rooks,
                             castling::BLACK_CASTLE_KINGSIDE_KING_FROM_BB,
                             castling::BLACK_CASTLE_KINGSIDE_KING_FROM,
                             castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB,
