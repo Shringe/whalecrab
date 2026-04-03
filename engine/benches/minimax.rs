@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use criterion::{BenchmarkId, Criterion, Throughput};
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::position::game::Game;
@@ -7,7 +9,7 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Engine against self with minimax");
     let mut sample_engine = Engine::default();
 
-    for depth in 0..=5 {
+    for depth in 1..=4 {
         sample_engine.nodes_searched = 0;
         let _ = sample_engine.minimax(depth);
         let sample = sample_engine.nodes_searched;
@@ -34,7 +36,7 @@ fn bench(c: &mut Criterion) {
 
 criterion::criterion_group! {
     name = benches;
-    config = common::configured_criterion().sample_size(10);
+    config = common::configured_criterion().sample_size(10).measurement_time(Duration::from_secs(20));
     targets = bench
 }
 criterion::criterion_main!(benches);

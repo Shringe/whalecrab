@@ -44,6 +44,11 @@ impl PackedUnRestoreable {
     const EN_PASSANT_SENTINEL: u16 = 8;
     const HALF_MOVE_OFFSET: u16 = 8;
 
+    /// This is not meant to be unpacked.
+    /// If ever unpacked this will default to zeros because of en_passant_bits branching.
+    #[allow(clippy::unusual_byte_groupings)]
+    const UN_INITIALIZED: PackedUnRestoreable = PackedUnRestoreable(0b0000_1111_00000000);
+
     fn unpack(self, turn: PieceColor) -> UnRestoreable {
         let castling_rights =
             CastlingRights::from_int((self.0 & PackedUnRestoreable::CASTLING_MASK) as u8);
@@ -74,22 +79,64 @@ impl PackedUnRestoreable {
 }
 
 #[derive(Clone)]
-pub(crate) struct PositionHistory(Vec<PackedUnRestoreable>);
+pub(crate) struct PositionHistory {
+    history: [PackedUnRestoreable; PositionHistory::MAX_SIZE as usize],
+    len: u8,
+}
 
 impl PositionHistory {
+    const MAX_SIZE: u8 = u8::MAX;
+
     pub(crate) const fn new() -> PositionHistory {
-        PositionHistory(Vec::new())
+        PositionHistory {
+            history: [PackedUnRestoreable::UN_INITIALIZED; PositionHistory::MAX_SIZE as usize],
+            len: 0,
+        }
     }
 
     /// Packs and stores `unrestoreable` for the given `turn`
     pub(crate) fn push(&mut self, unrestoreable: UnRestoreable) {
-        self.0.push(unrestoreable.pack());
+        #[cfg(debug_assertions)]
+        {
+            self.history[self.len as usize] = unrestoreable.pack();
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            unsafe { *self.history.get_unchecked_mut(self.len as usize) = unrestoreable.pack() };
+        }
+
+        self.len += 1;
     }
 
     /// Pops and unpacks the last stored position for the given `turn`.
     /// `turn` must be the active player at the time the position was pushed.
     pub(crate) fn pop(&mut self, turn: PieceColor) -> Option<UnRestoreable> {
-        self.0.pop().map(|packed| packed.unpack(turn))
+        if self.len == 0 {
+            return None;
+        }
+
+        self.len -= 1;
+
+        #[cfg(debug_assertions)]
+        {
+            let out = std::mem::replace(
+                &mut self.history[self.len as usize],
+                PackedUnRestoreable::UN_INITIALIZED,
+            );
+            assert_ne!(
+                out,
+                PackedUnRestoreable::UN_INITIALIZED,
+                "Tried to restore an uninitialized or invalid position!"
+            );
+            Some(out.unpack(turn))
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            let out = unsafe { self.history.get_unchecked(self.len as usize) };
+            Some(out.unpack(turn))
+        }
     }
 }
 
