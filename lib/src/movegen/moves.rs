@@ -2,10 +2,10 @@ use std::{fmt, str::FromStr};
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    castling::{self, CastleSide},
     file::File,
-    position::game::Game,
     movegen::pieces::piece::{PieceColor, PieceType},
+    position::castling::{self, CastleSide},
+    position::game::Game,
     rank::Rank,
     square::{Square, SquareParseError},
 };

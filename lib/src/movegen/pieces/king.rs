@@ -1,12 +1,12 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    castling,
     file::File,
-    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::PieceColor,
     },
+    position::castling,
+    position::game::Game,
     square::Square,
 };
 

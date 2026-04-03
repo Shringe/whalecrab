@@ -7,7 +7,6 @@ use std::{
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    castling::CastlingRights,
     file::File,
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
@@ -15,7 +14,8 @@ use crate::{
         moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
     },
-    piece_table::PieceTable,
+    position::castling::CastlingRights,
+    position::piece_table::PieceTable,
     rank::Rank,
     square::Square,
 };

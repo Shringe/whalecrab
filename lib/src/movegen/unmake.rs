@@ -1,13 +1,12 @@
 use crate::{
     add_piece,
     bitboard::BitBoard,
-    castle,
-    castling::{self, CastleSide},
-    get_pieces_mut,
+    castle, get_pieces_mut,
     movegen::{
         moves::Move,
         pieces::piece::{PieceColor, PieceType},
     },
+    position::castling::{self, CastleSide},
     position::game::Game,
     rank::Rank,
     remove_piece,
