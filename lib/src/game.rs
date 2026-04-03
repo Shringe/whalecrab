@@ -9,6 +9,8 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::CastlingRights,
     file::File,
+    get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
+    get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
         moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
@@ -158,125 +160,31 @@ impl fmt::Debug for Game {
 
 impl Game {
     // Piece getters
-    pub fn get_attacks_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
-        match color {
-            PieceColor::White => &mut self.white_attacks,
-            PieceColor::Black => &mut self.black_attacks,
-        }
-    }
     pub fn get_attacks(&self, color: &PieceColor) -> &BitBoard {
-        match color {
-            PieceColor::White => &self.white_attacks,
-            PieceColor::Black => &self.black_attacks,
-        }
+        get_attacks!(self, color)
     }
-    pub fn get_check_rays_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
-        match color {
-            PieceColor::White => &mut self.white_check_rays,
-            PieceColor::Black => &mut self.black_check_rays,
-        }
+    pub fn get_attacks_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        get_attacks_mut!(self, color)
     }
     pub fn get_check_rays(&self, color: &PieceColor) -> &BitBoard {
-        match color {
-            PieceColor::White => &self.white_check_rays,
-            PieceColor::Black => &self.black_check_rays,
-        }
+        get_check_rays!(self, color)
     }
-    pub fn get_occupied_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
-        match color {
-            PieceColor::White => &mut self.white_occupied,
-            PieceColor::Black => &mut self.black_occupied,
-        }
+    pub fn get_check_rays_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        get_check_rays_mut!(self, color)
     }
     pub fn get_occupied(&self, color: &PieceColor) -> &BitBoard {
-        match color {
-            PieceColor::White => &self.white_occupied,
-            PieceColor::Black => &self.black_occupied,
-        }
+        get_occupied!(self, color)
+    }
+    pub fn get_occupied_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        get_occupied_mut!(self, color)
     }
     /// Gets the bitboard of a colored piece
     pub fn get_pieces(&self, piece: &PieceType, color: &PieceColor) -> &BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => &self.white_pawns,
-                PieceType::Knight => &self.white_knights,
-                PieceType::Bishop => &self.white_bishops,
-                PieceType::Rook => &self.white_rooks,
-                PieceType::Queen => &self.white_queens,
-                PieceType::King => &self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => &self.black_pawns,
-                PieceType::Knight => &self.black_knights,
-                PieceType::Bishop => &self.black_bishops,
-                PieceType::Rook => &self.black_rooks,
-                PieceType::Queen => &self.black_queens,
-                PieceType::King => &self.black_kings,
-            },
-        }
+        get_pieces!(self, piece, color)
     }
     /// Gets the bitboard of a colored piece
     pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &PieceColor) -> &mut BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => &mut self.white_pawns,
-                PieceType::Knight => &mut self.white_knights,
-                PieceType::Bishop => &mut self.white_bishops,
-                PieceType::Rook => &mut self.white_rooks,
-                PieceType::Queen => &mut self.white_queens,
-                PieceType::King => &mut self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => &mut self.black_pawns,
-                PieceType::Knight => &mut self.black_knights,
-                PieceType::Bishop => &mut self.black_bishops,
-                PieceType::Rook => &mut self.black_rooks,
-                PieceType::Queen => &mut self.black_queens,
-                PieceType::King => &mut self.black_kings,
-            },
-        }
-    }
-
-    // Piece setters
-    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &PieceColor, new: BitBoard) {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => self.white_pawns = new,
-                PieceType::Knight => self.white_knights = new,
-                PieceType::Bishop => self.white_bishops = new,
-                PieceType::Rook => self.white_rooks = new,
-                PieceType::Queen => self.white_queens = new,
-                PieceType::King => self.white_kings = new,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => self.black_pawns = new,
-                PieceType::Knight => self.black_knights = new,
-                PieceType::Bishop => self.black_bishops = new,
-                PieceType::Rook => self.black_rooks = new,
-                PieceType::Queen => self.black_queens = new,
-                PieceType::King => self.black_kings = new,
-            },
-        }
-    }
-    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &PieceColor) -> BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => self.white_pawns,
-                PieceType::Knight => self.white_knights,
-                PieceType::Bishop => self.white_bishops,
-                PieceType::Rook => self.white_rooks,
-                PieceType::Queen => self.white_queens,
-                PieceType::King => self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => self.black_pawns,
-                PieceType::Knight => self.black_knights,
-                PieceType::Bishop => self.black_bishops,
-                PieceType::Rook => self.black_rooks,
-                PieceType::Queen => self.black_queens,
-                PieceType::King => self.black_kings,
-            },
-        }
+        get_pieces_mut!(self, piece, color)
     }
 
     // Constructors
@@ -337,7 +245,7 @@ impl Game {
         for (rank, row) in rows.rev().enumerate() {
             let mut file = 0;
             for c in row.chars() {
-                let sq = BitBoard::from_rank_file(Rank::from_index(rank), File::from_index(file));
+                let sqbb = BitBoard::from_rank_file(Rank::from_index(rank), File::from_index(file));
                 let colored_piece = match c {
                     'p' => Some((PieceType::Pawn, PieceColor::Black)),
                     'n' => Some((PieceType::Knight, PieceColor::Black)),
@@ -355,12 +263,8 @@ impl Game {
                 };
 
                 if let Some((piece, color)) = colored_piece {
-                    game.set_occupied_bitboard(
-                        &piece,
-                        &color,
-                        game.get_occupied_bitboard(&piece, &color) | sq,
-                    );
-
+                    let pieces = game.get_pieces_mut(&piece, &color);
+                    *pieces |= sqbb;
                     file += 1;
                 } else {
                     file += c.to_digit(10)? as usize;
@@ -1095,14 +999,24 @@ mod tests {
     fn get_occupied_bitboards() {
         let game = Game::default();
 
-        let white_pawns = game.get_occupied_bitboard(&PieceType::Pawn, &PieceColor::White);
+        let white_pawns = {
+            let this = &game;
+            let piece: &PieceType = &PieceType::Pawn;
+            let color: &PieceColor = &PieceColor::White;
+            *this.get_pieces(piece, color)
+        };
         assert_eq!(white_pawns, game.white_pawns);
         assert!(BitBoard::from_square(Square::A2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::H2) & white_pawns != EMPTY);
         assert!(BitBoard::from_square(Square::A3) & white_pawns == EMPTY);
         assert!(BitBoard::from_square(Square::E4) & white_pawns == EMPTY);
 
-        let black_rooks = game.get_occupied_bitboard(&PieceType::Rook, &PieceColor::Black);
+        let black_rooks = {
+            let this = &game;
+            let piece: &PieceType = &PieceType::Rook;
+            let color: &PieceColor = &PieceColor::Black;
+            *this.get_pieces(piece, color)
+        };
         assert_eq!(black_rooks, game.black_rooks);
         assert!(BitBoard::from_square(Square::A8) & black_rooks != EMPTY);
         assert!(BitBoard::from_square(Square::H8) & black_rooks != EMPTY);
