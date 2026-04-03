@@ -2,7 +2,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling,
     file::File,
-    game::Game,
+    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::PieceColor,

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
-use crate::game::Game;
+use crate::position::game::Game;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::rank::Rank;

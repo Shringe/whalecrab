@@ -1,6 +1,6 @@
 use criterion::{BenchmarkId, Criterion, Throughput};
 use whalecrab_engine::engine::Engine;
-use whalecrab_lib::game::Game;
+use whalecrab_lib::position::game::Game;
 mod common;
 
 fn bench(c: &mut Criterion) {

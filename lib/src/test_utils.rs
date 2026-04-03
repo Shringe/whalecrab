@@ -1,8 +1,8 @@
 use std::any::type_name;
 use std::fmt::Display;
 
-use crate::game::Game;
 use crate::movegen::moves::Move;
+use crate::position::game::Game;
 
 /// Formats the items in the vector neatly with their native display methods
 #[track_caller]
@@ -104,7 +104,7 @@ pub fn shouldnt_generate(moves: &Vec<Move>, m: &Move) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{game::STARTING_FEN, square::Square};
+    use crate::{position::game::STARTING_FEN, square::Square};
 
     use super::*;
 

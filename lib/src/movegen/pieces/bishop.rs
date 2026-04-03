@@ -1,5 +1,5 @@
 use crate::{
-    game::Game,
+    position::game::Game,
     movegen::moves::{Move, targets_to_moves},
     square::{Direction, Square},
 };

@@ -4,7 +4,7 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     castling::{self, CastleSide},
     file::File,
-    game::Game,
+    position::game::Game,
     movegen::pieces::piece::{PieceColor, PieceType},
     rank::Rank,
     square::{Square, SquareParseError},
@@ -260,7 +260,7 @@ impl Move {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{game::Game, test_utils::should_generate};
+    use crate::{position::game::Game, test_utils::should_generate};
 
     #[test]
     fn should_be_promotion() {

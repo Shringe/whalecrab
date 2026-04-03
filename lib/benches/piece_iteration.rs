@@ -4,7 +4,7 @@ use std::hint::black_box;
 use criterion::Criterion;
 use whalecrab_lib::{
     bitboard::BitBoard,
-    game::Game,
+    position::game::Game,
     movegen::pieces::piece::{PieceColor, PieceType},
     square::Square,
 };

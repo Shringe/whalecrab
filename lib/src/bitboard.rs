@@ -198,7 +198,7 @@ impl Iterator for BitBoard {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::Game;
+    use crate::position::game::Game;
 
     use super::*;
 

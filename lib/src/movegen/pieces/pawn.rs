@@ -1,7 +1,7 @@
 use crate::{
     bitboard::BitBoard,
     file::File,
-    game::Game,
+    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::{PieceColor, PieceMoveInfo},

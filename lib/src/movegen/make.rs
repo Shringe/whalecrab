@@ -3,12 +3,12 @@ use crate::{
     bitboard::BitBoard,
     castle,
     castling::{self, CastleSide},
-    game::Game,
     get_pieces_mut,
     movegen::{
         moves::Move,
         pieces::piece::{PieceColor, PieceType},
     },
+    position::game::Game,
     rank::Rank,
     remove_piece,
     square::Square,
@@ -251,7 +251,7 @@ mod tests {
     use super::*;
     use crate::castling::CastleSide;
     use crate::file::File;
-    use crate::game::Game;
+    use crate::position::game::Game;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 
     #[test]

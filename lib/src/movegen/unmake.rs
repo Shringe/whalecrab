@@ -3,12 +3,12 @@ use crate::{
     bitboard::BitBoard,
     castle,
     castling::{self, CastleSide},
-    game::Game,
     get_pieces_mut,
     movegen::{
         moves::Move,
         pieces::piece::{PieceColor, PieceType},
     },
+    position::game::Game,
     rank::Rank,
     remove_piece,
     square::Square,
@@ -215,7 +215,7 @@ impl Game {
 mod tests {
     use super::*;
     use crate::file::File;
-    use crate::game::State;
+    use crate::position::game::State;
     use crate::square::Square;
     use crate::test_utils::compare_games;
 

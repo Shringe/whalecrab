@@ -2,7 +2,7 @@ use std::{io::Stdin, str::FromStr, time::Duration};
 
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::{
-    game::Game,
+    position::game::Game,
     movegen::{moves::Move, pieces::piece::PieceColor},
 };
 

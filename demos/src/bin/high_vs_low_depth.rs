@@ -1,5 +1,5 @@
 use whalecrab_engine::engine::Engine;
-use whalecrab_lib::{game::State, movegen::pieces::piece::PieceColor};
+use whalecrab_lib::{movegen::pieces::piece::PieceColor, position::game::State};
 
 fn main() {
     let mut engine = Engine::default();

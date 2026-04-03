@@ -22,7 +22,7 @@ use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
-    game::Game,
+    position::game::Game,
     movegen::moves::{Move, moves_to_targets_vec},
     rank::Rank,
     square::Square,

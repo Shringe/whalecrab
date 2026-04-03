@@ -719,10 +719,10 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use crate::bitboard::{BitBoard, EMPTY};
-    use crate::game::Game;
-    use crate::game::{STARTING_FEN, State};
     use crate::movegen::moves::Move;
     use crate::movegen::pieces::piece::{PieceColor, PieceType};
+    use crate::position::game::Game;
+    use crate::position::game::{STARTING_FEN, State};
     use crate::square::Square;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
 

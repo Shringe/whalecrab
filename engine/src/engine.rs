@@ -8,8 +8,8 @@ use crate::{
 };
 use whalecrab_lib::{
     file::File,
-    game::{Game, State},
     movegen::{moves::Move, pieces::piece::PieceColor},
+    position::game::{Game, State},
     square::Square,
 };
 

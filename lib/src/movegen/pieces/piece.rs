@@ -1,7 +1,7 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    game::Game,
     movegen::moves::Move,
+    position::game::Game,
     rank::Rank,
     square::Square,
 };
@@ -209,8 +209,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        game::State,
         movegen::moves::moves_to_targets_vec,
+        position::game::State,
         square::Square,
         test_utils::{format_pretty_list, should_generate, shouldnt_generate},
     };
