@@ -17,7 +17,7 @@ use crate::{
     position::{
         castling::CastlingRights,
         piece_table::PieceTable,
-        previous::{PackedUnRestoreable, UnRestoreable},
+        previous::{PositionHistory, UnRestoreable},
     },
     rank::Rank,
     square::Square,
@@ -66,7 +66,7 @@ pub struct Game {
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
 
-    position_history: Vec<PackedUnRestoreable>,
+    position_history: PositionHistory,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
@@ -135,7 +135,7 @@ impl Default for Game {
             white_occupied: EMPTY,
             black_occupied: EMPTY,
             occupied: EMPTY,
-            position_history: Vec::new(),
+            position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
         };
@@ -214,7 +214,7 @@ impl Game {
             white_occupied: EMPTY,
             black_occupied: EMPTY,
             occupied: EMPTY,
-            position_history: Vec::new(),
+            position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
         }
@@ -390,9 +390,8 @@ impl Game {
     pub(crate) fn restore_position(&mut self) {
         let last_position = self
             .position_history
-            .pop()
-            .expect("Tried to unmake a move, but the required information is not present")
-            .unpack(self.turn);
+            .pop(self.turn)
+            .expect("Tried to unmake a move, but the required information is not present");
         self.castling_rights = last_position.castling_rights;
         self.half_move_timeout = last_position.half_move_timeout;
         self.en_passant_target = last_position.en_passant_target;
@@ -406,8 +405,7 @@ impl Game {
             castling_rights: self.castling_rights,
             half_move_timeout: self.half_move_timeout,
             en_passant_target: self.en_passant_target,
-        }
-        .pack();
+        };
         self.position_history.push(last_position);
     }
 

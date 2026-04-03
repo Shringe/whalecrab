@@ -13,7 +13,7 @@ pub(crate) struct UnRestoreable {
 }
 
 impl UnRestoreable {
-    pub(crate) fn pack(self) -> PackedUnRestoreable {
+    fn pack(self) -> PackedUnRestoreable {
         // Only the file is stored; rank is inferred from turn in unpack
         let en_passant_bits: u16 = match self.en_passant_target {
             Some(sq) => sq.get_file() as u16,
@@ -35,7 +35,7 @@ impl UnRestoreable {
 /// [4..7]  en_passant_target (4 bits, 0-7 = File, 8 = None)
 /// [8..15] half_move_timeout (8 bits)
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(crate) struct PackedUnRestoreable(u16);
+struct PackedUnRestoreable(u16);
 
 impl PackedUnRestoreable {
     const CASTLING_MASK: u16 = 0xF;
@@ -44,7 +44,7 @@ impl PackedUnRestoreable {
     const EN_PASSANT_SENTINEL: u16 = 8;
     const HALF_MOVE_OFFSET: u16 = 8;
 
-    pub(crate) fn unpack(self, turn: PieceColor) -> UnRestoreable {
+    fn unpack(self, turn: PieceColor) -> UnRestoreable {
         let castling_rights =
             CastlingRights::from_int((self.0 & PackedUnRestoreable::CASTLING_MASK) as u8);
         let half_move_timeout = (self.0 >> PackedUnRestoreable::HALF_MOVE_OFFSET) as u8;
@@ -70,6 +70,26 @@ impl PackedUnRestoreable {
             half_move_timeout,
             en_passant_target,
         }
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct PositionHistory(Vec<PackedUnRestoreable>);
+
+impl PositionHistory {
+    pub(crate) const fn new() -> PositionHistory {
+        PositionHistory(Vec::new())
+    }
+
+    /// Packs and stores `unrestoreable` for the given `turn`
+    pub(crate) fn push(&mut self, unrestoreable: UnRestoreable) {
+        self.0.push(unrestoreable.pack());
+    }
+
+    /// Pops and unpacks the last stored position for the given `turn`.
+    /// `turn` must be the active player at the time the position was pushed.
+    pub(crate) fn pop(&mut self, turn: PieceColor) -> Option<UnRestoreable> {
+        self.0.pop().map(|packed| packed.unpack(turn))
     }
 }
 
