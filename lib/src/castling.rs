@@ -72,82 +72,83 @@ pub enum CastleSide {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
-pub struct CastlingRights {
-    white_queenside: bool,
-    white_kingside: bool,
-    black_queenside: bool,
-    black_kingside: bool,
-}
+pub struct CastlingRights(u8);
 
 impl Default for CastlingRights {
     fn default() -> Self {
-        Self {
-            white_queenside: true,
-            white_kingside: true,
-            black_queenside: true,
-            black_kingside: true,
-        }
+        Self(
+            Self::WHITE_QUEENSIDE
+                | Self::WHITE_KINGSIDE
+                | Self::BLACK_QUEENSIDE
+                | Self::BLACK_KINGSIDE,
+        )
     }
 }
 
 impl CastlingRights {
+    const WHITE_QUEENSIDE: u8 = 0b0001;
+    const WHITE_KINGSIDE: u8 = 0b0010;
+    const BLACK_QUEENSIDE: u8 = 0b0100;
+    const BLACK_KINGSIDE: u8 = 0b1000;
+
     pub fn empty() -> Self {
-        Self {
-            white_queenside: false,
-            white_kingside: false,
-            black_queenside: false,
-            black_kingside: false,
-        }
+        Self(0)
     }
 
     pub fn from_fen(castling_fen: &str) -> Self {
-        Self {
-            white_queenside: castling_fen.contains('Q'),
-            white_kingside: castling_fen.contains('K'),
-            black_queenside: castling_fen.contains('q'),
-            black_kingside: castling_fen.contains('k'),
+        let mut out = 0;
+        if castling_fen.contains('Q') {
+            out |= Self::WHITE_QUEENSIDE;
         }
+        if castling_fen.contains('K') {
+            out |= Self::WHITE_KINGSIDE;
+        }
+        if castling_fen.contains('q') {
+            out |= Self::BLACK_QUEENSIDE;
+        }
+        if castling_fen.contains('k') {
+            out |= Self::BLACK_KINGSIDE;
+        }
+        Self(out)
     }
 
-    pub fn white_queenside(&self) -> bool {
-        self.white_queenside
+    pub fn white_queenside(self) -> bool {
+        self.0 & Self::WHITE_QUEENSIDE != 0
     }
 
-    pub fn white_kingside(&self) -> bool {
-        self.white_kingside
+    pub fn white_kingside(self) -> bool {
+        self.0 & Self::WHITE_KINGSIDE != 0
     }
 
-    pub fn black_queenside(&self) -> bool {
-        self.black_queenside
+    pub fn black_queenside(self) -> bool {
+        self.0 & Self::BLACK_QUEENSIDE != 0
     }
 
-    pub fn black_kingside(&self) -> bool {
-        self.black_kingside
+    pub fn black_kingside(self) -> bool {
+        self.0 & Self::BLACK_KINGSIDE != 0
     }
 
     pub(crate) fn revoke_white(&mut self) {
-        self.revoke_white_queenside();
-        self.revoke_white_kingside();
+        self.0 &= !(Self::WHITE_QUEENSIDE | Self::WHITE_KINGSIDE);
     }
 
     pub(crate) fn revoke_black(&mut self) {
-        self.revoke_black_queenside();
-        self.revoke_black_kingside();
+        self.0 &= !(Self::BLACK_QUEENSIDE | Self::BLACK_KINGSIDE);
     }
 
     pub(crate) fn revoke_white_queenside(&mut self) {
-        self.white_queenside = false;
+        self.0 &= !Self::WHITE_QUEENSIDE;
     }
 
     pub(crate) fn revoke_white_kingside(&mut self) {
-        self.white_kingside = false;
+        self.0 &= !Self::WHITE_KINGSIDE;
     }
 
     pub(crate) fn revoke_black_queenside(&mut self) {
-        self.black_queenside = false;
+        self.0 &= !Self::BLACK_QUEENSIDE;
     }
 
     pub(crate) fn revoke_black_kingside(&mut self) {
-        self.black_kingside = false;
+        self.0 &= !Self::BLACK_KINGSIDE;
     }
 }
