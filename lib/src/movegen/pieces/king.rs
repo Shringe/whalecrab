@@ -39,24 +39,24 @@ impl Square {
         let occupied = game.occupied;
         match game.turn {
             PieceColor::White => {
-                if game.castling_rights.white_queenside
+                if game.castling_rights.white_queenside()
                     && occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::WHITE_CASTLE_QUEENSIDE_KING_TO_BB;
                 }
-                if game.castling_rights.white_kingside
+                if game.castling_rights.white_kingside()
                     && occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::WHITE_CASTLE_KINGSIDE_KING_TO_BB;
                 }
             }
             PieceColor::Black => {
-                if game.castling_rights.black_queenside
+                if game.castling_rights.black_queenside()
                     && occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::BLACK_CASTLE_QUEENSIDE_KING_TO_BB;
                 }
-                if game.castling_rights.black_kingside
+                if game.castling_rights.black_kingside()
                     && occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
                 {
                     moveinfo.targets |= castling::BLACK_CASTLE_KINGSIDE_KING_TO_BB;

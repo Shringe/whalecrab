@@ -93,22 +93,30 @@ impl Move {
     /// Infers the type of move from only the starting and destination square
     pub fn infer(from: Square, to: Square, game: &Game) -> Self {
         match (&game.turn, from, to) {
-            (PieceColor::White, Square::E1, Square::C1) if game.castling_rights.white_queenside => {
+            (PieceColor::White, Square::E1, Square::C1)
+                if game.castling_rights.white_queenside() =>
+            {
                 Move::Castle {
                     side: CastleSide::Queenside,
                 }
             }
-            (PieceColor::White, Square::E1, Square::G1) if game.castling_rights.white_kingside => {
+            (PieceColor::White, Square::E1, Square::G1)
+                if game.castling_rights.white_kingside() =>
+            {
                 Move::Castle {
                     side: CastleSide::Kingside,
                 }
             }
-            (PieceColor::Black, Square::E8, Square::C8) if game.castling_rights.black_queenside => {
+            (PieceColor::Black, Square::E8, Square::C8)
+                if game.castling_rights.black_queenside() =>
+            {
                 Move::Castle {
                     side: CastleSide::Queenside,
                 }
             }
-            (PieceColor::Black, Square::E8, Square::G8) if game.castling_rights.black_kingside => {
+            (PieceColor::Black, Square::E8, Square::G8)
+                if game.castling_rights.black_kingside() =>
+            {
                 Move::Castle {
                     side: CastleSide::Kingside,
                 }

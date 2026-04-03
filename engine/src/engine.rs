@@ -153,19 +153,19 @@ impl Engine {
         let mut score = Score::default();
         let value = 2;
 
-        if self.game.castling_rights.white_queenside {
+        if self.game.castling_rights.white_queenside() {
             score += Score::new(value);
         }
 
-        if self.game.castling_rights.white_kingside {
+        if self.game.castling_rights.white_kingside() {
             score += Score::new(value);
         }
 
-        if self.game.castling_rights.black_queenside {
+        if self.game.castling_rights.black_queenside() {
             score -= Score::new(value);
         }
 
-        if self.game.castling_rights.black_kingside {
+        if self.game.castling_rights.black_kingside() {
             score -= Score::new(value);
         }
 

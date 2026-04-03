@@ -50,35 +50,41 @@ impl Game {
                 add_piece!(self, pieces, tobb, *to, piece, color);
 
                 // Revoking appropriate castling rights
+                macro_rules! revoke_castling_rights {
+                    ($sq:expr) => {
+                        match $sq {
+                            castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM => {
+                                self.castling_rights.revoke_black_kingside()
+                            }
+                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM => {
+                                self.castling_rights.revoke_black_queenside()
+                            }
+                            castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM => {
+                                self.castling_rights.revoke_white_kingside()
+                            }
+                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM => {
+                                self.castling_rights.revoke_white_queenside()
+                            }
+                            _ => {}
+                        }
+                    };
+                }
+
                 match piece {
                     PieceType::King => match color {
                         PieceColor::White => {
-                            self.castling_rights.white_kingside = false;
-                            self.castling_rights.white_queenside = false;
+                            self.castling_rights.revoke_white();
                         }
                         PieceColor::Black => {
-                            self.castling_rights.black_kingside = false;
-                            self.castling_rights.black_queenside = false;
+                            self.castling_rights.revoke_black();
                         }
                     },
-                    PieceType::Rook => match *from {
-                        Square::A1 => self.castling_rights.white_queenside = false,
-                        Square::H1 => self.castling_rights.white_kingside = false,
-                        Square::A8 => self.castling_rights.black_queenside = false,
-                        Square::H8 => self.castling_rights.black_kingside = false,
-                        _ => {}
-                    },
+                    PieceType::Rook => revoke_castling_rights!(*from),
                     _ => {}
                 }
 
                 if *capture == Some(PieceType::Rook) {
-                    match *to {
-                        Square::A1 => self.castling_rights.white_queenside = false,
-                        Square::H1 => self.castling_rights.white_kingside = false,
-                        Square::A8 => self.castling_rights.black_queenside = false,
-                        Square::H8 => self.castling_rights.black_kingside = false,
-                        _ => {}
-                    }
+                    revoke_castling_rights!(*to);
                 }
             }
             Move::CreateEnPassant { at } => {
@@ -166,8 +172,7 @@ impl Game {
             }
             Move::Castle { side } => match &self.turn {
                 PieceColor::White => {
-                    self.castling_rights.white_queenside = false;
-                    self.castling_rights.white_kingside = false;
+                    self.castling_rights.revoke_white();
 
                     match side {
                         CastleSide::Queenside => castle!(
@@ -201,8 +206,7 @@ impl Game {
                     }
                 }
                 PieceColor::Black => {
-                    self.castling_rights.black_queenside = false;
-                    self.castling_rights.black_kingside = false;
+                    self.castling_rights.revoke_black();
 
                     match side {
                         CastleSide::Queenside => castle!(

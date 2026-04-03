@@ -73,10 +73,21 @@ pub enum CastleSide {
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct CastlingRights {
-    pub white_queenside: bool,
-    pub white_kingside: bool,
-    pub black_queenside: bool,
-    pub black_kingside: bool,
+    white_queenside: bool,
+    white_kingside: bool,
+    black_queenside: bool,
+    black_kingside: bool,
+}
+
+impl Default for CastlingRights {
+    fn default() -> Self {
+        Self {
+            white_queenside: true,
+            white_kingside: true,
+            black_queenside: true,
+            black_kingside: true,
+        }
+    }
 }
 
 impl CastlingRights {
@@ -88,15 +99,55 @@ impl CastlingRights {
             black_kingside: false,
         }
     }
-}
 
-impl Default for CastlingRights {
-    fn default() -> Self {
+    pub fn from_fen(castling_fen: &str) -> Self {
         Self {
-            white_queenside: true,
-            white_kingside: true,
-            black_queenside: true,
-            black_kingside: true,
+            white_queenside: castling_fen.contains('Q'),
+            white_kingside: castling_fen.contains('K'),
+            black_queenside: castling_fen.contains('q'),
+            black_kingside: castling_fen.contains('k'),
         }
+    }
+
+    pub fn white_queenside(&self) -> bool {
+        self.white_queenside
+    }
+
+    pub fn white_kingside(&self) -> bool {
+        self.white_kingside
+    }
+
+    pub fn black_queenside(&self) -> bool {
+        self.black_queenside
+    }
+
+    pub fn black_kingside(&self) -> bool {
+        self.black_kingside
+    }
+
+    pub(crate) fn revoke_white(&mut self) {
+        self.revoke_white_queenside();
+        self.revoke_white_kingside();
+    }
+
+    pub(crate) fn revoke_black(&mut self) {
+        self.revoke_black_queenside();
+        self.revoke_black_kingside();
+    }
+
+    pub(crate) fn revoke_white_queenside(&mut self) {
+        self.white_queenside = false;
+    }
+
+    pub(crate) fn revoke_white_kingside(&mut self) {
+        self.white_kingside = false;
+    }
+
+    pub(crate) fn revoke_black_queenside(&mut self) {
+        self.black_queenside = false;
+    }
+
+    pub(crate) fn revoke_black_kingside(&mut self) {
+        self.black_kingside = false;
     }
 }

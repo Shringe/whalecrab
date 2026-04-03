@@ -279,12 +279,7 @@ impl Game {
         };
 
         if castling_fen != "-" {
-            game.castling_rights = CastlingRights {
-                white_queenside: castling_fen.contains('Q'),
-                white_kingside: castling_fen.contains('K'),
-                black_queenside: castling_fen.contains('q'),
-                black_kingside: castling_fen.contains('k'),
-            }
+            game.castling_rights = CastlingRights::from_fen(castling_fen);
         }
 
         if let Ok(sq) = Square::from_str(en_passant_fen) {
@@ -366,16 +361,16 @@ impl Game {
 
         fen.push(' ');
         let mut castling = String::new();
-        if self.castling_rights.white_kingside {
+        if self.castling_rights.white_kingside() {
             castling.push('K');
         }
-        if self.castling_rights.white_queenside {
+        if self.castling_rights.white_queenside() {
             castling.push('Q');
         }
-        if self.castling_rights.black_kingside {
+        if self.castling_rights.black_kingside() {
             castling.push('k');
         }
-        if self.castling_rights.black_queenside {
+        if self.castling_rights.black_queenside() {
             castling.push('q');
         }
 
