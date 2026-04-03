@@ -51,8 +51,8 @@ pub struct Game {
     pub en_passant_target: Option<Square>,
     pub turn: PieceColor,
 
-    pub half_move_timeout: usize,
-    pub full_move_clock: usize,
+    pub half_move_timeout: u8,
+    pub full_move_clock: u16,
     pub state: State,
     pub seen_positions: HashMap<u64, u8>,
     pub hash: u64,
