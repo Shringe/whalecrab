@@ -1084,7 +1084,6 @@ name = "whalecrab_lib"
 version = "1.4.0"
 dependencies = [
  "criterion",
- "paste",
 ]
 
 [[package]]

@@ -20,27 +20,6 @@ use crate::{
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-macro_rules! color_field_getters {
-    ($field_name:ident, $return_type:ty) => {
-        paste::paste! {
-            pub fn [<get_ $field_name _mut>](&mut self, color: &crate::movegen::pieces::piece::PieceColor) -> &mut $return_type {
-                match color {
-                    crate::movegen::pieces::piece::PieceColor::White => &mut self.[<white_ $field_name>],
-                    crate::movegen::pieces::piece::PieceColor::Black => &mut self.[<black_ $field_name>],
-                }
-            }
-
-            pub fn [<get_ $field_name>](&self, color: &crate::movegen::pieces::piece::PieceColor) -> &$return_type {
-                match color {
-                    crate::movegen::pieces::piece::PieceColor::White => &self.[<white_ $field_name>],
-                    crate::movegen::pieces::piece::PieceColor::Black => &self.[<black_ $field_name>],
-                }
-            }
-        }
-    };
-}
-pub(crate) use color_field_getters;
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
     InProgress,
@@ -178,17 +157,129 @@ impl fmt::Debug for Game {
 }
 
 impl Game {
-    color_field_getters!(attacks, BitBoard);
-    color_field_getters!(check_rays, BitBoard);
-    color_field_getters!(occupied, BitBoard);
-
-    /// Initalizes the game. This should only be called inside of constructors
-    fn initialize(&mut self) {
-        self.populate_piece_table();
-        self.refresh();
-        self.seen_positions.insert(self.hash, 1);
+    // Piece getters
+    pub fn get_attacks_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        match color {
+            PieceColor::White => &mut self.white_attacks,
+            PieceColor::Black => &mut self.black_attacks,
+        }
+    }
+    pub fn get_attacks(&self, color: &PieceColor) -> &BitBoard {
+        match color {
+            PieceColor::White => &self.white_attacks,
+            PieceColor::Black => &self.black_attacks,
+        }
+    }
+    pub fn get_check_rays_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        match color {
+            PieceColor::White => &mut self.white_check_rays,
+            PieceColor::Black => &mut self.black_check_rays,
+        }
+    }
+    pub fn get_check_rays(&self, color: &PieceColor) -> &BitBoard {
+        match color {
+            PieceColor::White => &self.white_check_rays,
+            PieceColor::Black => &self.black_check_rays,
+        }
+    }
+    pub fn get_occupied_mut(&mut self, color: &PieceColor) -> &mut BitBoard {
+        match color {
+            PieceColor::White => &mut self.white_occupied,
+            PieceColor::Black => &mut self.black_occupied,
+        }
+    }
+    pub fn get_occupied(&self, color: &PieceColor) -> &BitBoard {
+        match color {
+            PieceColor::White => &self.white_occupied,
+            PieceColor::Black => &self.black_occupied,
+        }
+    }
+    /// Gets the bitboard of a colored piece
+    pub fn get_pieces(&self, piece: &PieceType, color: &PieceColor) -> &BitBoard {
+        match color {
+            PieceColor::White => match piece {
+                PieceType::Pawn => &self.white_pawns,
+                PieceType::Knight => &self.white_knights,
+                PieceType::Bishop => &self.white_bishops,
+                PieceType::Rook => &self.white_rooks,
+                PieceType::Queen => &self.white_queens,
+                PieceType::King => &self.white_kings,
+            },
+            PieceColor::Black => match piece {
+                PieceType::Pawn => &self.black_pawns,
+                PieceType::Knight => &self.black_knights,
+                PieceType::Bishop => &self.black_bishops,
+                PieceType::Rook => &self.black_rooks,
+                PieceType::Queen => &self.black_queens,
+                PieceType::King => &self.black_kings,
+            },
+        }
+    }
+    /// Gets the bitboard of a colored piece
+    pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &PieceColor) -> &mut BitBoard {
+        match color {
+            PieceColor::White => match piece {
+                PieceType::Pawn => &mut self.white_pawns,
+                PieceType::Knight => &mut self.white_knights,
+                PieceType::Bishop => &mut self.white_bishops,
+                PieceType::Rook => &mut self.white_rooks,
+                PieceType::Queen => &mut self.white_queens,
+                PieceType::King => &mut self.white_kings,
+            },
+            PieceColor::Black => match piece {
+                PieceType::Pawn => &mut self.black_pawns,
+                PieceType::Knight => &mut self.black_knights,
+                PieceType::Bishop => &mut self.black_bishops,
+                PieceType::Rook => &mut self.black_rooks,
+                PieceType::Queen => &mut self.black_queens,
+                PieceType::King => &mut self.black_kings,
+            },
+        }
     }
 
+    // Piece setters
+    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &PieceColor, new: BitBoard) {
+        match color {
+            PieceColor::White => match piece {
+                PieceType::Pawn => self.white_pawns = new,
+                PieceType::Knight => self.white_knights = new,
+                PieceType::Bishop => self.white_bishops = new,
+                PieceType::Rook => self.white_rooks = new,
+                PieceType::Queen => self.white_queens = new,
+                PieceType::King => self.white_kings = new,
+            },
+            PieceColor::Black => match piece {
+                PieceType::Pawn => self.black_pawns = new,
+                PieceType::Knight => self.black_knights = new,
+                PieceType::Bishop => self.black_bishops = new,
+                PieceType::Rook => self.black_rooks = new,
+                PieceType::Queen => self.black_queens = new,
+                PieceType::King => self.black_kings = new,
+            },
+        }
+    }
+    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &PieceColor) -> BitBoard {
+        match color {
+            PieceColor::White => match piece {
+                PieceType::Pawn => self.white_pawns,
+                PieceType::Knight => self.white_knights,
+                PieceType::Bishop => self.white_bishops,
+                PieceType::Rook => self.white_rooks,
+                PieceType::Queen => self.white_queens,
+                PieceType::King => self.white_kings,
+            },
+            PieceColor::Black => match piece {
+                PieceType::Pawn => self.black_pawns,
+                PieceType::Knight => self.black_knights,
+                PieceType::Bishop => self.black_bishops,
+                PieceType::Rook => self.black_rooks,
+                PieceType::Queen => self.black_queens,
+                PieceType::King => self.black_kings,
+            },
+        }
+    }
+
+    // Constructors
     pub fn empty() -> Self {
         Self {
             white_pawns: EMPTY,
@@ -229,13 +320,6 @@ impl Game {
     }
 
     /// Takes a fen string, parses and converts it into a game.
-    /// Currently takes into account the following:
-    /// - [x] Piece Placement
-    /// - [x] Active Color
-    /// - [x] Castling Rights
-    /// - [x] En Passant Target
-    /// - [ ] Halfmove Clock
-    /// - [ ] Fullmove Number
     pub fn from_fen(fen: &str) -> Option<Self> {
         // Example Fen:
         // r1bqkbnr/ppp1pppp/2n5/1B1P4/8/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3
@@ -404,56 +488,14 @@ impl Game {
             fen.push('-');
         }
 
-        // Placeholder as the Halfmove and Fullmove clock are not implemented
         fen.push_str(format!(" {} {}", self.half_move_timeout, self.full_move_clock).as_str());
 
         fen
     }
 
-    pub fn set_occupied_bitboard(&mut self, piece: &PieceType, color: &PieceColor, new: BitBoard) {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => self.white_pawns = new,
-                PieceType::Knight => self.white_knights = new,
-                PieceType::Bishop => self.white_bishops = new,
-                PieceType::Rook => self.white_rooks = new,
-                PieceType::Queen => self.white_queens = new,
-                PieceType::King => self.white_kings = new,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => self.black_pawns = new,
-                PieceType::Knight => self.black_knights = new,
-                PieceType::Bishop => self.black_bishops = new,
-                PieceType::Rook => self.black_rooks = new,
-                PieceType::Queen => self.black_queens = new,
-                PieceType::King => self.black_kings = new,
-            },
-        }
-    }
-
-    pub fn get_occupied_bitboard(&self, piece: &PieceType, color: &PieceColor) -> BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => self.white_pawns,
-                PieceType::Knight => self.white_knights,
-                PieceType::Bishop => self.white_bishops,
-                PieceType::Rook => self.white_rooks,
-                PieceType::Queen => self.white_queens,
-                PieceType::King => self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => self.black_pawns,
-                PieceType::Knight => self.black_knights,
-                PieceType::Bishop => self.black_bishops,
-                PieceType::Rook => self.black_rooks,
-                PieceType::Queen => self.black_queens,
-                PieceType::King => self.black_kings,
-            },
-        }
-    }
-
+    // Move generation related
     /// Restores the essential data from the previous position
-    pub fn restore_position(&mut self) {
+    pub(crate) fn restore_position(&mut self) {
         let last_position = self
             .position_history
             .pop()
@@ -465,7 +507,7 @@ impl Game {
     }
 
     /// Captures essential position information to be restored later
-    pub fn capture_position(&mut self) {
+    pub(crate) fn capture_position(&mut self) {
         let last_position = UnRestoreable {
             castling_rights: self.castling_rights,
             half_move_timeout: self.half_move_timeout,
@@ -473,6 +515,83 @@ impl Game {
             state: self.state,
         };
         self.position_history.push(last_position);
+    }
+
+    /// Finishes a turn and determines game state is possible
+    pub(crate) fn next_turn(&mut self, last_move: &Move) {
+        // Handle en_passant
+        self.en_passant_target = match last_move {
+            Move::CreateEnPassant { at } => match self.turn {
+                PieceColor::White => Some(Square::make_square(Rank::Third, *at)),
+                PieceColor::Black => Some(Square::make_square(Rank::Sixth, *at)),
+            },
+            _ => None,
+        };
+
+        // Update position state
+        self.turn = self.turn.opponent();
+        if self.turn == PieceColor::White {
+            self.full_move_clock += 1;
+        }
+        self.refresh();
+
+        // Half move timeout
+        let should_reset_half_move_timeout = match last_move {
+            Move::Normal { to, capture, .. } => {
+                capture.is_some() || matches!(self.piece_lookup(*to), Some((PieceType::Pawn, _)))
+            }
+            Move::CreateEnPassant { .. } => true,
+            Move::CaptureEnPassant { .. } => true,
+            Move::Promotion { .. } => true,
+            Move::Castle { .. } => false,
+        };
+
+        if should_reset_half_move_timeout {
+            self.half_move_timeout = 0;
+        } else {
+            self.half_move_timeout += 1;
+        }
+
+        if self.half_move_timeout == 50 {
+            self.state = State::Timeout;
+        }
+
+        // Repetition
+        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
+            if *times_seen == 2 {
+                self.state = State::Repetition;
+            }
+            *times_seen += 1;
+        } else {
+            self.seen_positions.insert(self.hash, 1);
+        }
+    }
+
+    /// Reverses turn color and full_move_clock to the last turn
+    pub(crate) fn previous_turn(&mut self) {
+        // Repetition
+        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
+            if *times_seen == 1 {
+                self.seen_positions.remove(&self.hash);
+            } else {
+                *times_seen -= 1;
+            }
+        }
+
+        self.turn = self.turn.opponent();
+
+        self.refresh();
+        if self.turn == PieceColor::Black {
+            self.full_move_clock -= 1;
+        }
+    }
+
+    // Game initializers
+    /// Initalizes the game. This should only be called inside of constructors
+    fn initialize(&mut self) {
+        self.populate_piece_table();
+        self.refresh();
+        self.seen_positions.insert(self.hash, 1);
     }
 
     /// Recalculates certain cached values regarding the position
@@ -609,6 +728,7 @@ impl Game {
         }
     }
 
+    // Game/state queries
     /// Checks if the current player's king is in check
     pub fn is_in_check(&self) -> bool {
         match self.turn {
@@ -639,119 +759,6 @@ impl Game {
         }
 
         attackers
-    }
-
-    /// Finishes a turn and determines game state is possible
-    pub fn next_turn(&mut self, last_move: &Move) {
-        // Handle en_passant
-        self.en_passant_target = match last_move {
-            Move::CreateEnPassant { at } => match self.turn {
-                PieceColor::White => Some(Square::make_square(Rank::Third, *at)),
-                PieceColor::Black => Some(Square::make_square(Rank::Sixth, *at)),
-            },
-            _ => None,
-        };
-
-        // Update position state
-        self.turn = self.turn.opponent();
-        if self.turn == PieceColor::White {
-            self.full_move_clock += 1;
-        }
-        self.refresh();
-
-        // Half move timeout
-        let should_reset_half_move_timeout = match last_move {
-            Move::Normal { to, capture, .. } => {
-                capture.is_some() || matches!(self.piece_lookup(*to), Some((PieceType::Pawn, _)))
-            }
-            Move::CreateEnPassant { .. } => true,
-            Move::CaptureEnPassant { .. } => true,
-            Move::Promotion { .. } => true,
-            Move::Castle { .. } => false,
-        };
-
-        if should_reset_half_move_timeout {
-            self.half_move_timeout = 0;
-        } else {
-            self.half_move_timeout += 1;
-        }
-
-        if self.half_move_timeout == 50 {
-            self.state = State::Timeout;
-        }
-
-        // Repetition
-        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
-            if *times_seen == 2 {
-                self.state = State::Repetition;
-            }
-            *times_seen += 1;
-        } else {
-            self.seen_positions.insert(self.hash, 1);
-        }
-    }
-
-    /// Reverses turn color and full_move_clock to the last turn
-    pub fn previous_turn(&mut self) {
-        // Repetition
-        if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
-            if *times_seen == 1 {
-                self.seen_positions.remove(&self.hash);
-            } else {
-                *times_seen -= 1;
-            }
-        }
-
-        self.turn = self.turn.opponent();
-
-        self.refresh();
-        if self.turn == PieceColor::Black {
-            self.full_move_clock -= 1;
-        }
-    }
-
-    /// Gets the bitboard of a colored piece
-    pub fn get_pieces(&self, piece: &PieceType, color: &PieceColor) -> &BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => &self.white_pawns,
-                PieceType::Knight => &self.white_knights,
-                PieceType::Bishop => &self.white_bishops,
-                PieceType::Rook => &self.white_rooks,
-                PieceType::Queen => &self.white_queens,
-                PieceType::King => &self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => &self.black_pawns,
-                PieceType::Knight => &self.black_knights,
-                PieceType::Bishop => &self.black_bishops,
-                PieceType::Rook => &self.black_rooks,
-                PieceType::Queen => &self.black_queens,
-                PieceType::King => &self.black_kings,
-            },
-        }
-    }
-
-    /// Gets the bitboard of a colored piece
-    pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &PieceColor) -> &mut BitBoard {
-        match color {
-            PieceColor::White => match piece {
-                PieceType::Pawn => &mut self.white_pawns,
-                PieceType::Knight => &mut self.white_knights,
-                PieceType::Bishop => &mut self.white_bishops,
-                PieceType::Rook => &mut self.white_rooks,
-                PieceType::Queen => &mut self.white_queens,
-                PieceType::King => &mut self.white_kings,
-            },
-            PieceColor::Black => match piece {
-                PieceType::Pawn => &mut self.black_pawns,
-                PieceType::Knight => &mut self.black_knights,
-                PieceType::Bishop => &mut self.black_bishops,
-                PieceType::Rook => &mut self.black_rooks,
-                PieceType::Queen => &mut self.black_queens,
-                PieceType::King => &mut self.black_kings,
-            },
-        }
     }
 
     /// Determines color of standing piece.
