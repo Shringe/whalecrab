@@ -112,6 +112,14 @@ impl CastlingRights {
         Self(out)
     }
 
+    pub(crate) const fn from_int(val: u8) -> CastlingRights {
+        CastlingRights(val)
+    }
+
+    pub(crate) const fn to_int(self) -> u8 {
+        self.0
+    }
+
     pub fn white_queenside(self) -> bool {
         self.0 & Self::WHITE_QUEENSIDE != 0
     }

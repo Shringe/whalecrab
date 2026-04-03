@@ -30,6 +30,12 @@ pub const ALL_FILES: [File; NUM_FILES] = [
 ];
 
 impl File {
+    /// # Safety
+    /// This function should only be called with a value known to be from 0-7
+    pub const unsafe fn from_int_unchecked(val: u8) -> File {
+        unsafe { std::mem::transmute::<u8, File>(val) }
+    }
+
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     #[inline]
     pub fn from_index(i: usize) -> File {

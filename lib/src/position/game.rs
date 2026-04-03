@@ -14,7 +14,11 @@ use crate::{
         moves::Move,
         pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
     },
-    position::{castling::CastlingRights, piece_table::PieceTable, previous::UnRestoreable},
+    position::{
+        castling::CastlingRights,
+        piece_table::PieceTable,
+        previous::{PackedUnRestoreable, UnRestoreable},
+    },
     rank::Rank,
     square::Square,
 };
@@ -62,7 +66,7 @@ pub struct Game {
     pub black_occupied: BitBoard,
     pub occupied: BitBoard,
 
-    pub position_history: Vec<UnRestoreable>,
+    position_history: Vec<PackedUnRestoreable>,
     pub white_attacks: BitBoard,
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
@@ -387,7 +391,8 @@ impl Game {
         let last_position = self
             .position_history
             .pop()
-            .expect("Tried to unmake a move, but the required information is not present");
+            .expect("Tried to unmake a move, but the required information is not present")
+            .unpack(self.turn);
         self.castling_rights = last_position.castling_rights;
         self.half_move_timeout = last_position.half_move_timeout;
         self.en_passant_target = last_position.en_passant_target;
@@ -401,7 +406,8 @@ impl Game {
             castling_rights: self.castling_rights,
             half_move_timeout: self.half_move_timeout,
             en_passant_target: self.en_passant_target,
-        };
+        }
+        .pack();
         self.position_history.push(last_position);
     }
 
