@@ -17,11 +17,11 @@ impl UnRestoreable {
         // Only the file is stored; rank is inferred from turn in unpack
         let en_passant_bits: u16 = match self.en_passant_target {
             Some(sq) => sq.get_file() as u16,
-            None => 8,
+            None => PackedUnRestoreable::EN_PASSANT_SENTINEL,
         };
 
         PackedUnRestoreable(
-            (self.castling_rights.to_int() as u16) << PackedUnRestoreable::CASTLING_OFFSET
+            (self.castling_rights.to_int() as u16)
                 | en_passant_bits << PackedUnRestoreable::EN_PASSANT_OFFSET
                 | (self.half_move_timeout as u16) << PackedUnRestoreable::HALF_MOVE_OFFSET,
         )
@@ -38,26 +38,32 @@ impl UnRestoreable {
 pub(crate) struct PackedUnRestoreable(u16);
 
 impl PackedUnRestoreable {
-    const CASTLING_OFFSET: u16 = 0;
+    const CASTLING_MASK: u16 = 0xF;
     const EN_PASSANT_OFFSET: u16 = 4;
+    const EN_PASSANT_MASK: u16 = 0xF;
+    const EN_PASSANT_SENTINEL: u16 = 8;
     const HALF_MOVE_OFFSET: u16 = 8;
 
     pub(crate) fn unpack(self, turn: PieceColor) -> UnRestoreable {
-        let castling_rights = CastlingRights::from_int((self.0 & 0xF) as u8);
+        let castling_rights =
+            CastlingRights::from_int((self.0 & PackedUnRestoreable::CASTLING_MASK) as u8);
+        let half_move_timeout = (self.0 >> PackedUnRestoreable::HALF_MOVE_OFFSET) as u8;
 
-        let en_passant_bits = (self.0 >> PackedUnRestoreable::EN_PASSANT_OFFSET) & 0xF;
-        let en_passant_target = if en_passant_bits == 8 {
-            None
-        } else {
+        let en_passant_bits = (self.0 >> PackedUnRestoreable::EN_PASSANT_OFFSET)
+            & PackedUnRestoreable::EN_PASSANT_MASK;
+
+        let en_passant_target = if en_passant_bits < PackedUnRestoreable::EN_PASSANT_SENTINEL {
             let rank = match turn {
                 PieceColor::White => Rank::Third,
                 PieceColor::Black => Rank::Sixth,
             };
+
+            // # Safety: en_passant_bits is checked to be below 8 above
             let file = unsafe { File::from_int_unchecked(en_passant_bits as u8) };
             Some(Square::make_square(rank, file))
+        } else {
+            None
         };
-
-        let half_move_timeout = (self.0 >> PackedUnRestoreable::HALF_MOVE_OFFSET) as u8;
 
         UnRestoreable {
             castling_rights,
