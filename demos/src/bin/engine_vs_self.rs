@@ -1,10 +1,10 @@
-use whalecrab_engine::engine::Engine;
+use whalecrab_engine::{engine::Engine, timers::infinite::Infinite};
 
 fn main() {
     let mut engine = Engine::default();
 
     for _ in 0..100 {
-        let m = engine.minimax(2).unwrap();
+        let m = engine.minimax(&Infinite, 2).best_move.unwrap();
         println!("Chose to play: {}", m);
         engine.game.play(&m);
     }

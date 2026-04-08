@@ -1,6 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use crate::{
+    move_result::SearchResult,
     piece_eval::{material_value, square_value},
     platform_timer,
     score::Score,
@@ -287,17 +288,8 @@ impl Engine {
         min
     }
 
-    /// Continues searching until the depth is reached
-    pub fn minimax(&mut self, depth: u16) -> Option<Move> {
-        self.minimax_with_duration(depth, &Infinite).0
-    }
-
-    /// Continues searching until either the depth or duration is reached
-    pub fn minimax_with_duration<T: MoveTimer>(
-        &mut self,
-        depth: u16,
-        timer: &T,
-    ) -> (Option<Move>, bool) {
+    /// Continues searching at the given depth until the search finishes or the timer is over
+    pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
         let moves = order_moves(self.game.legal_moves());
         let mut best_move = None;
 
@@ -318,10 +310,15 @@ impl Engine {
                     }
 
                     if timer.over() {
-                        return (best_move, true);
+                        break;
                     }
                 }
-                (best_move, false)
+                SearchResult {
+                    best_move,
+                    score: best_score,
+                    depth,
+                    nodes: 0
+                }
             }};
         }
 
@@ -331,26 +328,29 @@ impl Engine {
         }
     }
 
-    /// The engine will continue searching deeper and deeper depths until the duration has passed,
-    /// at which point it will return the best move found so far.
-    pub fn iterative_deepening(&mut self, duration: &Duration) -> Option<Move> {
-        let timer = platform_timer!(*duration);
-        self.iterative_deepening_with_timer(&timer)
-    }
-
-    pub fn iterative_deepening_with_timer<T: MoveTimer>(&mut self, timer: &T) -> Option<Move> {
+    /// Same as `search` but you can use your own timer
+    pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u16) -> SearchResult {
         let mut depth = 0;
-        let mut best_move_so_far = None;
+        let mut best_result = SearchResult::default();
 
         loop {
-            let (best_move, ran_out_of_time) = self.minimax_with_duration(depth, timer);
-
-            if ran_out_of_time {
-                return best_move_so_far;
+            let result = self.minimax(timer, depth);
+            if result.best_move.is_none() || timer.over() {
+                return best_result; // timer.over() means incomplete search
+            } else if depth == max_depth {
+                return result;
             }
-
-            best_move_so_far = best_move;
+            best_result = result;
             depth += 1;
+        }
+    }
+
+    /// Searches for the best move in the position until the depth is reached or the duration is up
+    pub fn search(&mut self, duration: Duration, max_depth: u16) -> SearchResult {
+        if duration == Duration::MAX {
+            self.search_with_timer(&Infinite, max_depth)
+        } else {
+            self.search_with_timer(&platform_timer!(duration), max_depth)
         }
     }
 }
@@ -383,7 +383,7 @@ mod tests {
         let timer = make_timer(duration);
         let now = Instant::now();
         assert!(!timer.over());
-        let _ = engine.iterative_deepening_with_timer(&timer);
+        let _ = engine.search_with_timer(&timer, u16::MAX);
         assert!(timer.over());
         let elapsed = now.elapsed();
 
@@ -434,7 +434,7 @@ mod tests {
     fn iterative_deepening_finds_a_move() {
         let mut engine = Engine::default();
         let duration = Duration::from_millis(200);
-        let best_move = engine.iterative_deepening(&duration);
+        let best_move = engine.search(duration, u16::MAX).best_move;
         assert!(best_move.is_some());
     }
 
@@ -467,7 +467,10 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let looking_for = Move::infer(Square::C1, Square::G5, &engine.game);
-        let result = engine.minimax(2).expect("No moves found");
+        let result = engine
+            .minimax(&Infinite, 2)
+            .best_move
+            .expect("No moves found");
         println!("State: {:?}", engine.game.state);
         assert_eq!(result, looking_for);
     }
@@ -477,7 +480,10 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let black_queens_before = engine.game.black_queens.popcnt();
-        let result = engine.minimax(2).expect("No moves found");
+        let result = engine
+            .minimax(&Infinite, 2)
+            .best_move
+            .expect("No moves found");
         engine.game.play(&result);
         assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
@@ -489,7 +495,7 @@ mod tests {
         let white_moves = engine.game.legal_moves();
         for m in white_moves {
             engine.game.play(&m);
-            let result = engine.minimax(0).unwrap();
+            let result = engine.minimax(&Infinite, 0).best_move.unwrap();
             assert!(
                 matches!(
                     result,
@@ -513,7 +519,7 @@ mod tests {
         for m in black_moves {
             engine.game.play(&m);
             let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
-            let result = engine.minimax(1).unwrap();
+            let result = engine.minimax(&Infinite, 1).best_move.unwrap();
             assert_eq!(result, looking_for);
             engine.game.unplay(&m);
         }
@@ -535,7 +541,7 @@ mod tests {
             assert!(
                 speedup_factor >= min_speedup_factor,
                 "Grading #{} was only {:.2}x faster than initial, but should be at least {:.1}x faster. \
-                Initial: {:?}, Current: {:?}",
+            Initial: {:?}, Current: {:?}",
                 i,
                 speedup_factor,
                 min_speedup_factor,
@@ -551,7 +557,7 @@ mod tests {
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
         let _ = engine.game.legal_moves();
-        let _ = engine.minimax(2);
+        let _ = engine.minimax(&Infinite, 2).best_move;
         assert_eq!(before, engine.game);
     }
 
@@ -571,7 +577,7 @@ mod tests {
         let fen = "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29";
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
-        let _ = engine.minimax(3);
+        let _ = engine.minimax(&Infinite, 3).best_move;
         let after = engine.game;
         assert_eq!(after, before);
     }
@@ -581,7 +587,7 @@ mod tests {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
         let mut engine = Engine::from_fen(fen).unwrap();
         let moves = engine.game.legal_moves();
-        let engine_move = engine.minimax(2);
+        let engine_move = engine.minimax(&Infinite, 2).best_move;
         assert!(!moves.is_empty());
         assert!(engine_move.is_some())
     }
@@ -597,7 +603,7 @@ mod tests {
             let m = Move::infer(from, to, &engine.game);
             engine.game.play(&m);
             let moves = engine.game.legal_moves();
-            let engine_move = engine.minimax(2);
+            let engine_move = engine.minimax(&Infinite, 2).best_move;
             assert_eq!(engine.game.state, State::InProgress);
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())

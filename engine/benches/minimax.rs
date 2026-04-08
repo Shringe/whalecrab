@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use criterion::{BenchmarkId, Criterion, Throughput};
-use whalecrab_engine::engine::Engine;
+use whalecrab_engine::{engine::Engine, timers::infinite::Infinite};
 use whalecrab_lib::position::game::Game;
 mod common;
 
@@ -11,14 +11,14 @@ fn bench(c: &mut Criterion) {
 
     for depth in 1..=4 {
         sample_engine.nodes_searched = 0;
-        let _ = sample_engine.minimax(depth);
+        let _ = sample_engine.minimax(&Infinite, depth);
         let sample = sample_engine.nodes_searched;
         group.throughput(Throughput::Elements(sample));
 
         let mut engine = Engine::default();
         group.bench_with_input(BenchmarkId::from_parameter(depth), &depth, |b, &depth| {
             b.iter(|| {
-                if let Some(m) = engine.minimax(depth) {
+                if let Some(m) = engine.minimax(&Infinite, depth).best_move {
                     engine.game.play(&m);
                 } else {
                     // Reset the board if no moves to play

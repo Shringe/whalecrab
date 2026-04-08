@@ -2,8 +2,8 @@ use std::{io::Stdin, str::FromStr, time::Duration};
 
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::{
-    position::game::Game,
     movegen::{moves::Move, pieces::piece::PieceColor},
+    position::game::Game,
 };
 
 use crate::{command::UciCommand, log};
@@ -161,7 +161,8 @@ impl UciInterface {
             } => {
                 let movetime = self.determine_movetime(movetime, wtime, btime);
 
-                let best_move = match self.engine.iterative_deepening(&movetime) {
+                let result = self.engine.search(movetime, self.depth);
+                let best_move = match result.best_move {
                     Some(m) => m,
                     None => {
                         log!("No self.engine move found. Maybe the game is finished?");

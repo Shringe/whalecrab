@@ -1,5 +1,5 @@
 use rand::Rng;
-use whalecrab_engine::engine::Engine;
+use whalecrab_engine::{engine::Engine, timers::infinite::Infinite};
 use whalecrab_lib::movegen::pieces::piece::PieceColor;
 
 fn main() {
@@ -8,7 +8,7 @@ fn main() {
 
     for _ in 0..100 {
         let m = match engine.game.turn {
-            PieceColor::White => engine.minimax(2),
+            PieceColor::White => engine.minimax(&Infinite, 2).best_move,
             PieceColor::Black => {
                 let moves = engine.game.legal_moves();
                 if moves.is_empty() {

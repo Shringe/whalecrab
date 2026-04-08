@@ -12,7 +12,7 @@ fn bench(c: &mut Criterion) {
         let duration = Duration::from_secs(seconds);
 
         sample_engine.nodes_searched = 0;
-        let _ = sample_engine.iterative_deepening(&duration);
+        let _ = sample_engine.search(duration, u16::MAX);
         let sample = sample_engine.nodes_searched;
         group.throughput(Throughput::Elements(sample));
 
@@ -20,7 +20,7 @@ fn bench(c: &mut Criterion) {
         group.bench_function(
             format!("Iterative deepening for {} seconds", seconds),
             |b| {
-                b.iter(|| engine.iterative_deepening(&duration));
+                b.iter(|| engine.search(duration, u16::MAX));
             },
         );
 

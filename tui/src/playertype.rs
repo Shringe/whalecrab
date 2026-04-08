@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlayerType {
     Human,
     Engine { search_time: Duration },

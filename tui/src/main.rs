@@ -22,8 +22,8 @@ use whalecrab_lib::movegen::pieces::piece::PieceColor;
 use whalecrab_lib::{
     bitboard::BitBoard,
     file::File,
-    position::game::Game,
     movegen::moves::{Move, moves_to_targets_vec},
+    position::game::Game,
     rank::Rank,
     square::Square,
 };
@@ -93,12 +93,12 @@ impl App {
     fn handle_engine_players(&mut self) -> Option<bool> {
         if self.focus == Focus::Board {
             let player = match self.engine.game.turn {
-                PieceColor::White => &self.player_white,
-                PieceColor::Black => &self.player_black,
+                PieceColor::White => self.player_white,
+                PieceColor::Black => self.player_black,
             };
 
             if let PlayerType::Engine { search_time } = player {
-                let m = self.engine.iterative_deepening(search_time)?;
+                let m = self.engine.search(search_time, u16::MAX).best_move?;
                 self.play_move(&m);
                 return Some(true);
             }
@@ -239,7 +239,10 @@ impl App {
         self.score = self.engine.grade_position();
         self.fen.input = self.engine.game.to_fen();
         if self.engine_suggestions {
-            self.engine_suggestion = self.engine.iterative_deepening(&self.engine_search_time);
+            self.engine_suggestion = self
+                .engine
+                .search(self.engine_search_time, u16::MAX)
+                .best_move;
         }
     }
 
