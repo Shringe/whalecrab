@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use crate::{
-    move_result::SearchResult,
+    move_result::{SearchInfo, SearchResult},
     piece_eval::{material_value, square_value},
     platform_timer,
     score::Score,
@@ -27,7 +27,6 @@ macro_rules! search_move {
         #[cfg(debug_assertions)]
         let during = $self.game.clone();
 
-        $self.nodes_searched += 1;
         let score = $self.$method($($args),*);
         $self.game.unplay($move);
 
@@ -62,7 +61,6 @@ pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
     transposition_table: HashMap<u64, TranspositionTableEntry>,
-    pub nodes_searched: u64,
 }
 
 impl Engine {
@@ -70,7 +68,6 @@ impl Engine {
         Engine {
             game,
             transposition_table: HashMap::new(),
-            nodes_searched: 0,
         }
     }
 
@@ -236,45 +233,46 @@ impl Engine {
         beta: Score,
         depth: u16,
         timer: &T,
-    ) -> (Score, u16) {
+    ) -> SearchInfo {
         if depth == 0 || timer.over() {
-            return (self.grade_position(), depth);
+            return SearchInfo {
+                score: self.grade_position(),
+                depth,
+                nodes: 1,
+            };
         }
 
         let existing = self.transposition_table.get(&self.game.hash);
         let better_than_existing = existing.is_none_or(|e| depth > e.depth);
 
-        let mut best_score = Score::MIN;
-        let mut best_move = None;
-        let mut max_depth_reached = depth;
+        let mut result = SearchResult::new(Score::MIN, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
-            let (score, depth_reached) =
-                search_move!(self, &m, mini(alpha, beta, depth - 1, timer));
-            if score > best_score {
-                best_score = score;
-                best_move = Some(m);
-                if score > alpha {
-                    alpha = score;
+            let node = search_move!(self, &m, mini(alpha, beta, depth - 1, timer));
+            result += &node;
+
+            if node.score > result.info.score {
+                result.info.score = node.score;
+                result.best_move = Some(m);
+                if node.score > alpha {
+                    alpha = node.score;
                 }
             }
 
-            if depth_reached > max_depth_reached {
-                max_depth_reached = depth_reached;
-            }
-
-            if score >= beta {
+            if node.score >= beta {
                 break;
             }
         }
 
         if better_than_existing {
-            let entry = TranspositionTableEntry { best_move, depth };
-
+            let entry = TranspositionTableEntry {
+                best_move: result.best_move,
+                depth,
+            };
             self.transposition_table.insert(self.game.hash, entry);
         }
 
-        (best_score, max_depth_reached)
+        result.info
     }
 
     fn mini<T: MoveTimer>(
@@ -283,84 +281,83 @@ impl Engine {
         mut beta: Score,
         depth: u16,
         timer: &T,
-    ) -> (Score, u16) {
+    ) -> SearchInfo {
         if depth == 0 || timer.over() {
-            return (self.grade_position(), depth);
+            return SearchInfo {
+                score: self.grade_position(),
+                depth,
+                nodes: 1,
+            };
         }
 
         let existing = self.transposition_table.get(&self.game.hash);
         let better_than_existing = existing.is_none_or(|e| depth > e.depth);
 
-        let mut best_score = Score::MAX;
-        let mut best_move = None;
-        let mut max_depth_reached = depth;
+        let mut result = SearchResult::new(Score::MAX, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
-            let (score, depth_reached) =
-                search_move!(self, &m, maxi(alpha, beta, depth - 1, timer));
-            if score < best_score {
-                best_score = score;
-                best_move = Some(m);
-                if score < beta {
-                    beta = score;
+            let node = search_move!(self, &m, maxi(alpha, beta, depth - 1, timer));
+            result += &node;
+
+            if node.score < result.info.score {
+                result.info.score = node.score;
+                result.best_move = Some(m);
+                if node.score < beta {
+                    beta = node.score;
                 }
             }
 
-            if depth_reached > max_depth_reached {
-                max_depth_reached = depth_reached;
-            }
-
-            if score <= alpha {
+            if node.score <= alpha {
                 break;
             }
         }
 
         if better_than_existing {
-            let entry = TranspositionTableEntry { best_move, depth };
-
+            let entry = TranspositionTableEntry {
+                best_move: result.best_move,
+                depth,
+            };
             self.transposition_table.insert(self.game.hash, entry);
         }
 
-        (best_score, max_depth_reached)
+        result.info
     }
 
     /// Continues searching at the given depth until the search finishes or the timer is over
     pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
-        let moves = order_moves(self.game.legal_moves(), &None);
-        let mut best_move = None;
-
         let mut alpha = Score::MIN;
         let mut beta = Score::MAX;
-        let mut max_depth_reached = 0;
 
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
-                let mut best_score = $best_score;
-                for m in moves {
-                    let (score, depth_reached) = search_move!(self, &m, $search(alpha, beta, depth, timer));
-                    // let (score, depth_reached) = search_move!(self, &m, $search(alpha, beta, depth, &Infinite));
-                    if score $cmp best_score {
-                        best_score = score;
-                        best_move = Some(m);
-                        if score $cmp $prune {
-                            $prune = score;
-                        }
-                    }
+                let existing = self.transposition_table.get(&self.game.hash);
+                let better_than_existing = existing.is_none_or(|e| depth > e.depth);
 
-                    if depth_reached > max_depth_reached {
-                        max_depth_reached = depth_reached;
+                let mut result = SearchResult::new($best_score, 0);
+
+                for m in order_moves(self.game.legal_moves(), &existing) {
+                    let node = search_move!(self, &m, $search(alpha, beta, depth, timer));
+                    result += &node;
+
+                    if node.score $cmp result.info.score {
+                        result.info.score = node.score;
+                        result.best_move = Some(m);
+                        if node.score $cmp $prune {
+                            $prune = node.score;
+                        }
                     }
 
                     if timer.over() {
                         break;
                     }
                 }
-                SearchResult {
-                    best_move,
-                    score: best_score,
-                    depth: max_depth_reached,
-                    nodes: 0
+
+                if better_than_existing {
+                    let entry = TranspositionTableEntry { best_move: result.best_move, depth };
+                    self.transposition_table.insert(self.game.hash, entry);
                 }
+
+                result
             }};
         }
 
@@ -373,18 +370,26 @@ impl Engine {
     /// Same as `search` but you can use your own timer
     pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u16) -> SearchResult {
         let mut depth = 0;
-        let mut best_result = SearchResult::default();
+        let mut result = SearchResult::default();
 
         loop {
-            let result = self.minimax(timer, depth);
-            if result.best_move.is_none() || timer.over() {
-                return best_result; // timer.over() means incomplete search
-            } else if depth == max_depth {
-                return result;
+            let node = self.minimax(timer, depth);
+            result += &node;
+
+            if node.best_move.is_none() || timer.over() {
+                break;
             }
-            best_result = result;
+
+            result.best_move = node.best_move;
+            result.info.score = node.info.score;
+
+            if depth == max_depth {
+                break;
+            }
             depth += 1;
         }
+
+        result
     }
 
     /// Searches for the best move in the position until the depth is reached or the duration is up

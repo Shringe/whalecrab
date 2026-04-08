@@ -18,19 +18,18 @@ fn format_header(title: &str) -> String {
 
 fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Iterative deepening");
-    let mut sample_engine = Engine::default();
+    let mut engine = Engine::default();
 
     for seconds in 1..=10 {
         let duration = Duration::from_secs(seconds);
 
-        sample_engine.nodes_searched = 0;
-        let result = sample_engine.search(duration, u16::MAX);
-        let sample = sample_engine.nodes_searched;
-        group.throughput(Throughput::Elements(sample));
+        let result = engine.search(duration, u16::MAX);
+        group.throughput(Throughput::Elements(result.info.nodes));
 
         println!("{}", format_header(&format!(" {} seconds ", seconds)));
-        println!("Nodes searched:   {}", sample);
-        println!("Depth reached:    {}", result.depth);
+        println!("Nodes searched:   {}", result.info.nodes);
+        println!("Depth reached:    {}", result.info.depth);
+        println!("Final score:      {}", result.info.score);
         println!("{}", format_header(""));
     }
 

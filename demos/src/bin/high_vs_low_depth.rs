@@ -31,7 +31,6 @@ fn main() {
     }
 
     println!("=========================");
-    println!("Nodes searched: {}", engine.nodes_searched);
     println!("Final state: {:?}", engine.game.state);
     println!("Final score: {}", engine.grade_position());
     println!("Final fen: {}", engine.game.to_fen());

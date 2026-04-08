@@ -10,9 +10,8 @@ fn bench(c: &mut Criterion) {
     let mut sample_engine = Engine::default();
 
     for depth in 1..=4 {
-        sample_engine.nodes_searched = 0;
-        let _ = sample_engine.minimax(&Infinite, depth);
-        let sample = sample_engine.nodes_searched;
+        let result = sample_engine.minimax(&Infinite, depth);
+        let sample = result.info.nodes;
         group.throughput(Throughput::Elements(sample));
 
         let mut engine = Engine::default();
@@ -26,9 +25,6 @@ fn bench(c: &mut Criterion) {
                 }
             });
         });
-
-        println!("Num nodes from starting position: {}", sample);
-        println!("Total Nodes Searched: {}", engine.nodes_searched);
     }
 
     group.finish();

@@ -520,14 +520,9 @@ impl App {
     state: {:?}
     evaluation: {}
     turn: {:?}
-    nodes_searched: {}
     position_hash: {}
 ",
-            self.engine.game.state,
-            self.score,
-            self.engine.game.turn,
-            self.engine.nodes_searched,
-            self.engine.game.hash,
+            self.engine.game.state, self.score, self.engine.game.turn, self.engine.game.hash,
         ));
 
         debug_text.push_str(&format!(
