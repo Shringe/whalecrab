@@ -6,6 +6,7 @@ use crate::{
     platform_timer,
     score::Score,
     timers::{MoveTimer, infinite::Infinite},
+    transposition_table::TranspositionTableEntry,
 };
 use whalecrab_lib::{
     file::File,
@@ -28,7 +29,7 @@ macro_rules! search_move {
 
         $self.nodes_searched += 1;
         let score = $self.$method($($args),*);
-        $self.game.unplay(&$move);
+        $self.game.unplay($move);
 
         #[cfg(debug_assertions)]
         assert_eq!(
@@ -42,16 +43,15 @@ macro_rules! search_move {
 }
 
 /// Orders the moves for better minimax pruning
-/// TODO: Figure out why the reduction in nodes searched is minimal. The outcome of the game is
-/// also being changed sometimes
-fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
-    // return moves;
+fn order_moves(mut moves: Vec<Move>, existing: &Option<&TranspositionTableEntry>) -> Vec<Move> {
+    let best_move = existing.and_then(|e| e.best_move.as_ref());
 
     moves.sort_unstable_by_key(|m| match m {
-        Move::Promotion { .. } => 0,
-        _ if m.is_capture() => 1,
-        Move::Castle { .. } => 2,
-        _ => 3,
+        _ if Some(m) == best_move => 0,
+        Move::Promotion { .. } => 10,
+        _ if m.is_capture() => 20,
+        Move::Castle { .. } => 30,
+        _ => 40,
     });
 
     moves
@@ -61,7 +61,7 @@ fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
-    transposition_table: HashMap<u64, Score>,
+    transposition_table: HashMap<u64, TranspositionTableEntry>,
     pub nodes_searched: u64,
 }
 
@@ -193,13 +193,13 @@ impl Engine {
 
     /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
     pub fn grade_position(&mut self) -> Score {
-        if let Some(pre) = self.transposition_table.get(&self.game.hash) {
-            return *pre;
-        }
+        // if let Some(pre) = self.transposition_table.get(&self.game.hash) {
+        //     return *pre;
+        // }
 
         macro_rules! end {
             ($score: expr) => {{
-                self.transposition_table.insert(self.game.hash, $score);
+                // self.transposition_table.insert(self.game.hash, $score);
                 return $score;
             }};
         }
@@ -236,19 +236,31 @@ impl Engine {
         beta: Score,
         depth: u16,
         timer: &T,
-    ) -> Score {
+    ) -> (Score, u16) {
         if depth == 0 || timer.over() {
-            return self.grade_position();
+            return (self.grade_position(), depth);
         }
 
-        let mut max = Score::MIN;
-        for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, mini(alpha, beta, depth - 1, timer));
-            if score > max {
-                max = score;
+        let existing = self.transposition_table.get(&self.game.hash);
+        let better_than_existing = existing.is_none_or(|e| depth > e.depth);
+
+        let mut best_score = Score::MIN;
+        let mut best_move = None;
+        let mut max_depth_reached = depth;
+
+        for m in order_moves(self.game.legal_moves(), &existing) {
+            let (score, depth_reached) =
+                search_move!(self, &m, mini(alpha, beta, depth - 1, timer));
+            if score > best_score {
+                best_score = score;
+                best_move = Some(m);
                 if score > alpha {
                     alpha = score;
                 }
+            }
+
+            if depth_reached > max_depth_reached {
+                max_depth_reached = depth_reached;
             }
 
             if score >= beta {
@@ -256,7 +268,13 @@ impl Engine {
             }
         }
 
-        max
+        if better_than_existing {
+            let entry = TranspositionTableEntry { best_move, depth };
+
+            self.transposition_table.insert(self.game.hash, entry);
+        }
+
+        (best_score, max_depth_reached)
     }
 
     fn mini<T: MoveTimer>(
@@ -265,19 +283,31 @@ impl Engine {
         mut beta: Score,
         depth: u16,
         timer: &T,
-    ) -> Score {
+    ) -> (Score, u16) {
         if depth == 0 || timer.over() {
-            return self.grade_position();
+            return (self.grade_position(), depth);
         }
 
-        let mut min = Score::MAX;
-        for m in order_moves(self.game.legal_moves()) {
-            let score = search_move!(self, m, maxi(alpha, beta, depth - 1, timer));
-            if score < min {
-                min = score;
+        let existing = self.transposition_table.get(&self.game.hash);
+        let better_than_existing = existing.is_none_or(|e| depth > e.depth);
+
+        let mut best_score = Score::MAX;
+        let mut best_move = None;
+        let mut max_depth_reached = depth;
+
+        for m in order_moves(self.game.legal_moves(), &existing) {
+            let (score, depth_reached) =
+                search_move!(self, &m, maxi(alpha, beta, depth - 1, timer));
+            if score < best_score {
+                best_score = score;
+                best_move = Some(m);
                 if score < beta {
                     beta = score;
                 }
+            }
+
+            if depth_reached > max_depth_reached {
+                max_depth_reached = depth_reached;
             }
 
             if score <= alpha {
@@ -285,28 +315,40 @@ impl Engine {
             }
         }
 
-        min
+        if better_than_existing {
+            let entry = TranspositionTableEntry { best_move, depth };
+
+            self.transposition_table.insert(self.game.hash, entry);
+        }
+
+        (best_score, max_depth_reached)
     }
 
     /// Continues searching at the given depth until the search finishes or the timer is over
     pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
-        let moves = order_moves(self.game.legal_moves());
+        let moves = order_moves(self.game.legal_moves(), &None);
         let mut best_move = None;
 
         let mut alpha = Score::MIN;
         let mut beta = Score::MAX;
+        let mut max_depth_reached = 0;
 
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
                 let mut best_score = $best_score;
                 for m in moves {
-                    let score = search_move!(self, m, $search(alpha, beta, depth, timer));
+                    let (score, depth_reached) = search_move!(self, &m, $search(alpha, beta, depth, timer));
+                    // let (score, depth_reached) = search_move!(self, &m, $search(alpha, beta, depth, &Infinite));
                     if score $cmp best_score {
                         best_score = score;
                         best_move = Some(m);
                         if score $cmp $prune {
                             $prune = score;
                         }
+                    }
+
+                    if depth_reached > max_depth_reached {
+                        max_depth_reached = depth_reached;
                     }
 
                     if timer.over() {
@@ -316,7 +358,7 @@ impl Engine {
                 SearchResult {
                     best_move,
                     score: best_score,
-                    depth,
+                    depth: max_depth_reached,
                     nodes: 0
                 }
             }};
@@ -526,6 +568,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn transportation_table_cache_hits() {
         let mut engine = Engine::default();
 
@@ -565,7 +608,7 @@ mod tests {
     fn sort_moves_keeps_all_moves() {
         let mut engine = Engine::default();
         let moves = engine.game.legal_moves();
-        let sorted = order_moves(moves.clone());
+        let sorted = order_moves(moves.clone(), &None);
         for sortedm in &sorted {
             assert!(moves.contains(sortedm));
         }

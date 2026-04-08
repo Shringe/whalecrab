@@ -1,7 +1,7 @@
 use std::fmt;
 use whalecrab_lib::implement_operations;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
+#[derive(Debug, Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Score(i32);
 
 implement_operations!(Score, Self, i32, [Add, AddAssign, Sub, SubAssign]);
