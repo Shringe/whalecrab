@@ -80,7 +80,7 @@ const PAWN_MID: [i32; 64] = [
 ];
 
 /// Gets the pieces value, for example, a pawn is 1.0. Does not consider turn.
-pub const fn material_value(piece_type: &PieceType) -> Score {
+pub const fn material_value(piece_type: PieceType) -> Score {
     let value = match piece_type {
         PieceType::Pawn => 100,
         PieceType::Knight => 300,
@@ -94,7 +94,7 @@ pub const fn material_value(piece_type: &PieceType) -> Score {
 }
 
 /// Gets the positional value of a piece using a very basic piece-square table
-pub const fn square_value(piece_type: &PieceType, sq: &Square, color: &PieceColor) -> Score {
+pub const fn square_value(piece_type: PieceType, sq: Square, color: PieceColor) -> Score {
     let table = match piece_type {
         PieceType::Pawn => &PAWN_MID,
         PieceType::Knight => &KNIGHT_MID,
@@ -140,8 +140,8 @@ mod tests {
             (PieceType::King, Square::D4),
         ] {
             assert_eq!(
-                square_value(&piece, &sq, &PieceColor::White),
-                square_value(&piece, &sq.flip_side(), &PieceColor::Black),
+                square_value(piece, sq, PieceColor::White),
+                square_value(piece, sq.flip_side(), PieceColor::Black),
                 "Failed for {:?} at {:?}",
                 piece,
                 sq

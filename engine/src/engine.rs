@@ -55,17 +55,17 @@ fn score_move(m: &Move, best: Option<&Move>) -> Score {
             piece,
             capture: Some(capture),
             ..
-        } => Score::new(-5000) - material_value(piece) - material_value(capture),
+        } => Score::new(-5000) - material_value(*piece) - material_value(*capture),
         Move::Promotion {
             piece,
             capture: None,
             ..
-        } => Score::new(-5000) - material_value(piece),
-        Move::CaptureEnPassant { .. } => Score::new(-2000) - material_value(&PieceType::Pawn),
+        } => Score::new(-5000) - material_value(*piece),
+        Move::CaptureEnPassant { .. } => Score::new(-2000) - material_value(PieceType::Pawn),
         Move::Normal {
             capture: Some(capture),
             ..
-        } => Score::new(-2000) - material_value(capture),
+        } => Score::new(-2000) - material_value(*capture),
         Move::Castle { .. } => Score::new(-500),
         _ => Score::new(0),
     }
@@ -121,13 +121,13 @@ impl Engine {
 
             match color {
                 PieceColor::White => {
-                    score += material_value(&piece);
-                    score += square_value(&piece, &sq, &color);
+                    score += material_value(piece);
+                    score += square_value(piece, sq, color);
                 }
 
                 PieceColor::Black => {
-                    score -= material_value(&piece);
-                    score -= square_value(&piece, &sq, &color);
+                    score -= material_value(piece);
+                    score -= square_value(piece, sq, color);
                 }
             }
         }
