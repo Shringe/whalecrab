@@ -18,7 +18,7 @@ impl Score {
     pub const MAX: Score = Score(i32::MAX);
     pub const MIN: Score = Score(i32::MIN);
 
-    pub fn new(value: i32) -> Self {
+    pub const fn new(value: i32) -> Self {
         Self(value)
     }
 }

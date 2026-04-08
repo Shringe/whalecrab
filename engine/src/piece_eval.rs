@@ -80,7 +80,7 @@ const PAWN_MID: [i32; 64] = [
 ];
 
 /// Gets the pieces value, for example, a pawn is 1.0. Does not consider turn.
-pub fn material_value(piece_type: &PieceType) -> Score {
+pub const fn material_value(piece_type: &PieceType) -> Score {
     let value = match piece_type {
         PieceType::Pawn => 100,
         PieceType::Knight => 300,
@@ -94,14 +94,14 @@ pub fn material_value(piece_type: &PieceType) -> Score {
 }
 
 /// Gets the positional value of a piece using a very basic piece-square table
-pub fn square_value(piece_type: &PieceType, sq: &Square, color: &PieceColor) -> Score {
+pub const fn square_value(piece_type: &PieceType, sq: &Square, color: &PieceColor) -> Score {
     let table = match piece_type {
-        PieceType::Pawn => PAWN_MID,
-        PieceType::Knight => KNIGHT_MID,
-        PieceType::Bishop => BISHOP_MID,
-        PieceType::Rook => ROOK_MID,
-        PieceType::Queen => QUEEN_MID,
-        PieceType::King => KING_MID,
+        PieceType::Pawn => &PAWN_MID,
+        PieceType::Knight => &KNIGHT_MID,
+        PieceType::Bishop => &BISHOP_MID,
+        PieceType::Rook => &ROOK_MID,
+        PieceType::Queen => &QUEEN_MID,
+        PieceType::King => &KING_MID,
     };
 
     let idx = match color {
@@ -109,7 +109,7 @@ pub fn square_value(piece_type: &PieceType, sq: &Square, color: &PieceColor) -> 
         PieceColor::Black => sq.flip_side().to_int(),
     };
 
-    let value = *table.get(idx as usize).unwrap();
+    let value = table[idx as usize];
     Score::new(value)
 }
 

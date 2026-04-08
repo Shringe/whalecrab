@@ -3,9 +3,9 @@ use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
-use crate::position::game::Game;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
+use crate::position::game::Game;
 use crate::rank::Rank;
 
 pub enum Direction {
@@ -160,7 +160,7 @@ impl Square {
     }
 
     /// Flips the side of the square for the opposite color
-    pub fn flip_side(&self) -> Square {
+    pub const fn flip_side(&self) -> Square {
         Square::new(self.0 ^ 56)
     }
 

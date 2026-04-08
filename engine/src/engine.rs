@@ -10,7 +10,10 @@ use crate::{
 };
 use whalecrab_lib::{
     file::File,
-    movegen::{moves::Move, pieces::piece::PieceColor},
+    movegen::{
+        moves::Move,
+        pieces::piece::{PieceColor, PieceType},
+    },
     position::game::{Game, State},
     square::Square,
 };
@@ -41,17 +44,38 @@ macro_rules! search_move {
     }};
 }
 
+/// Scores a move. This can be used for move ordering
+fn score_move(m: &Move, best: Option<&Move>) -> Score {
+    if Some(m) == best {
+        return Score::MIN;
+    }
+
+    match m {
+        Move::Promotion {
+            piece,
+            capture: Some(capture),
+            ..
+        } => Score::new(-5000) - material_value(piece) - material_value(capture),
+        Move::Promotion {
+            piece,
+            capture: None,
+            ..
+        } => Score::new(-5000) - material_value(piece),
+        Move::CaptureEnPassant { .. } => Score::new(-2000) - material_value(&PieceType::Pawn),
+        Move::Normal {
+            capture: Some(capture),
+            ..
+        } => Score::new(-2000) - material_value(capture),
+        Move::Castle { .. } => Score::new(-500),
+        _ => Score::new(0),
+    }
+}
+
 /// Orders the moves for better minimax pruning
 fn order_moves(mut moves: Vec<Move>, existing: &Option<&TranspositionTableEntry>) -> Vec<Move> {
     let best_move = existing.and_then(|e| e.best_move.as_ref());
 
-    moves.sort_unstable_by_key(|m| match m {
-        _ if Some(m) == best_move => 0,
-        Move::Promotion { .. } => 10,
-        _ if m.is_capture() => 20,
-        Move::Castle { .. } => 30,
-        _ => 40,
-    });
+    moves.sort_unstable_by_key(|m| score_move(m, best_move));
 
     moves
 }
