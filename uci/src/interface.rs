@@ -169,7 +169,14 @@ impl UciInterface {
                 btime,
                 ..
             } => {
+                log!(
+                    "Movetime {:?} || wtime {:?} || btime {:?}",
+                    movetime,
+                    wtime,
+                    btime
+                );
                 let movetime = self.determine_movetime(movetime, wtime, btime);
+                log!("Engine will target {:?} move duration", movetime);
 
                 let result = self.engine.search(movetime, self.depth);
                 let best_move = match result.best_move {

@@ -46,8 +46,8 @@ pub struct Rdtsc {
 impl Rdtsc {
     pub fn now(duration: Duration) -> Rdtsc {
         let freq = tsc_frequency();
-        let duration_cycles = (duration.as_nanos() as u64 * freq) / CALIBRATION_PRECISION;
-        let deadline = unsafe { _rdtsc() }.wrapping_add(duration_cycles);
+        let duration_cycles = (duration.as_nanos() * freq as u128) / CALIBRATION_PRECISION as u128;
+        let deadline = unsafe { _rdtsc() }.wrapping_add(duration_cycles as u64);
         Rdtsc { deadline }
     }
 }
