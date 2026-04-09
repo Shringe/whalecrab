@@ -884,14 +884,12 @@ impl Game {
 
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-
         macro_rules! push_moves {
-            ($piece:expr, $board:expr) => {
+            ($moves:expr, $piece:expr, $board:expr) => {
                 for sq in $board {
                     let moveinfo = $piece.psuedo_legal_targets_fast(self, &sq);
                     for t in moveinfo.targets {
-                        moves.push(Move::infer(sq, t, self));
+                        $moves.push(Move::infer(sq, t, self));
                     }
                 }
             };
@@ -899,24 +897,40 @@ impl Game {
 
         match self.turn {
             PieceColor::White => {
+                let maximum_move_count = self.white_pawns.popcnt() as usize * 4
+                    + self.white_knights.popcnt() as usize * 8
+                    + self.white_bishops.popcnt() as usize * 13
+                    + self.white_rooks.popcnt() as usize * 14
+                    + self.white_queens.popcnt() as usize * 27
+                    + self.white_kings.popcnt() as usize * 8;
+                let capacity = maximum_move_count / 2;
+                let mut moves = Vec::with_capacity(capacity);
                 self.generate_psuedo_legal_white_pawn_moves(&mut moves);
-                push_moves!(PieceType::Knight, self.white_knights);
-                push_moves!(PieceType::Bishop, self.white_bishops);
-                push_moves!(PieceType::Rook, self.white_rooks);
-                push_moves!(PieceType::Queen, self.white_queens);
-                push_moves!(PieceType::King, self.white_kings);
+                push_moves!(moves, PieceType::Knight, self.white_knights);
+                push_moves!(moves, PieceType::Bishop, self.white_bishops);
+                push_moves!(moves, PieceType::Rook, self.white_rooks);
+                push_moves!(moves, PieceType::Queen, self.white_queens);
+                push_moves!(moves, PieceType::King, self.white_kings);
+                moves
             }
             PieceColor::Black => {
+                let maximum_move_count = self.black_pawns.popcnt() as usize * 4
+                    + self.black_knights.popcnt() as usize * 8
+                    + self.black_bishops.popcnt() as usize * 13
+                    + self.black_rooks.popcnt() as usize * 14
+                    + self.black_queens.popcnt() as usize * 27
+                    + self.black_kings.popcnt() as usize * 8;
+                let capacity = maximum_move_count / 2;
+                let mut moves = Vec::with_capacity(capacity);
                 self.generate_psuedo_legal_black_pawn_moves(&mut moves);
-                push_moves!(PieceType::Knight, self.black_knights);
-                push_moves!(PieceType::Bishop, self.black_bishops);
-                push_moves!(PieceType::Rook, self.black_rooks);
-                push_moves!(PieceType::Queen, self.black_queens);
-                push_moves!(PieceType::King, self.black_kings);
+                push_moves!(moves, PieceType::Knight, self.black_knights);
+                push_moves!(moves, PieceType::Bishop, self.black_bishops);
+                push_moves!(moves, PieceType::Rook, self.black_rooks);
+                push_moves!(moves, PieceType::Queen, self.black_queens);
+                push_moves!(moves, PieceType::King, self.black_kings);
+                moves
             }
         }
-
-        moves
     }
 
     /// Hands over pregenerated legal moves on the first call, and generates legal moves
