@@ -9,5 +9,5 @@ pub const CYAN: &str = "\x1b[36m";
 
 /// Colors a piece of text
 pub fn color(text: &str, color: &str) -> String {
-    format!("{color}text{FINISH}")
+    format!("{color}{text}{FINISH}")
 }

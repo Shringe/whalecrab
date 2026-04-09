@@ -5,6 +5,9 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+use crate::logging::ansi;
+
+static MAIN_ANSI_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static MAIN_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static SENT_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static RECEIVED_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
@@ -62,6 +65,7 @@ impl Drop for Logger {
             (MAIN_WRITER.get(), "main.log"),
             (SENT_WRITER.get(), "sent.log"),
             (RECEIVED_WRITER.get(), "received.log"),
+            (MAIN_ANSI_WRITER.get(), "main.ans"),
         ] {
             if let Some(w) = writer
                 && let Ok(mut w) = w.lock()
@@ -101,6 +105,7 @@ impl Logger {
         init_writer(&MAIN_WRITER, "main.log");
         init_writer(&SENT_WRITER, "sent.log");
         init_writer(&RECEIVED_WRITER, "received.log");
+        init_writer(&MAIN_ANSI_WRITER, "main.ans");
 
         log!("Initialized logger at {}", dir.display());
         Self
@@ -115,24 +120,27 @@ impl Logger {
         }
     }
 
-    fn log_with_prefix(prefix: &str, msg: &str, extra: Option<&OnceLock<Mutex<BufWriter<File>>>>) {
-        let prefixed = format!("{}: {}", prefix, msg);
-        eprint!("{}", prefixed);
-        Self::write_to(&MAIN_WRITER, &prefixed);
-        if let Some(e) = extra {
-            Self::write_to(e, msg);
-        }
+    fn log_with_prefix(prefix: &str, prefix_color: &str, msg: &str) {
+        let text_prefix = prefix;
+        let ansi_prefix = ansi::color(prefix, prefix_color);
+        let text_prefixed = format!("{}: {}", text_prefix, msg);
+        let ansi_prefixed = format!("{}: {}", ansi_prefix, msg);
+        eprint!("{}", ansi_prefixed);
+        Self::write_to(&MAIN_WRITER, &text_prefixed);
+        Self::write_to(&MAIN_ANSI_WRITER, &ansi_prefixed);
     }
 
     pub fn log(msg: &str) {
-        Self::log_with_prefix("LOGGER", msg, None);
+        Self::log_with_prefix("Logger", ansi::GREEN, msg);
     }
 
     pub fn received(msg: &str) {
-        Self::log_with_prefix("RECEIVED", msg, Some(&RECEIVED_WRITER));
+        Self::log_with_prefix("Received", ansi::CYAN, msg);
+        Self::write_to(&RECEIVED_WRITER, msg);
     }
 
     pub fn sent(msg: &str) {
-        Self::log_with_prefix("SENT", msg, Some(&SENT_WRITER));
+        Self::log_with_prefix("Sent", ansi::MAGENTA, msg);
+        Self::write_to(&SENT_WRITER, msg);
     }
 }
