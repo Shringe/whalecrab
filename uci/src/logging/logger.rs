@@ -12,21 +12,21 @@ static RECEIVED_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)*) => {
-        $crate::logger::Logger::log(&(format!($($arg)*) + "\n"))
+        $crate::logging::logger::Logger::log(&(format!($($arg)*) + "\n"))
     };
 }
 
 #[macro_export]
 macro_rules! received {
     ($($arg:tt)*) => {
-        $crate::logger::Logger::received(&(format!($($arg)*) + "\n"))
+        $crate::logging::logger::Logger::received(&(format!($($arg)*) + "\n"))
     };
 }
 
 #[macro_export]
 macro_rules! sent {
     ($($arg:tt)*) => {
-        $crate::logger::Logger::sent(&(format!($($arg)*) + "\n"))
+        $crate::logging::logger::Logger::sent(&(format!($($arg)*) + "\n"))
     };
 }
 
