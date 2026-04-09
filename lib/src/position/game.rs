@@ -668,19 +668,33 @@ impl Game {
     }
 
     fn generate_psuedo_legal_white_pawn_moves(&self, moves: &mut Vec<Move>) {
-        let pawns = self.white_pawns;
-        let twice_destination = Rank::Fourth;
-        let promotion_destination = Rank::Eighth;
+        let twice_mask = Rank::Fourth.mask();
+        let promotion_mask = Rank::Eighth.mask();
         let unoccupied = !self.occupied;
 
-        let once = (pawns << 8) & unoccupied;
-        let twice = (once << 8) & unoccupied & twice_destination.mask();
-        let promotions = once & promotion_destination.mask();
+        let once = (self.white_pawns << 8) & unoccupied;
+        let twice = (once << 8) & unoccupied & twice_mask;
+        let promotions = once & promotion_mask;
 
-        let capture_right = (pawns << 9) & (self.black_occupied & !File::A.mask());
-        let capture_left = (pawns << 7) & (self.black_occupied & !File::H.mask());
+        let capture_right = (self.white_pawns << 9) & (self.black_occupied & !File::A.mask());
+        let capture_left = (self.white_pawns << 7) & (self.black_occupied & !File::H.mask());
 
-        for to in once & !promotion_destination.mask() {
+        macro_rules! get_piece {
+            ($sq:expr) => {
+                Some(
+                    if cfg!(debug_assertions) {
+                        self.piece_lookup($sq).unwrap()
+                    } else {
+                        // Should be safe because with pawn move generation we know for sure
+                        // whether or not we can capture ahead of time using bit manipulation
+                        unsafe { self.piece_lookup($sq).unwrap_unchecked() }
+                    }
+                    .0,
+                )
+            };
+        }
+
+        for to in once ^ promotions {
             let from = to - 8;
             let m = Move::Normal {
                 from,
@@ -706,43 +720,43 @@ impl Game {
             moves.push(m);
         }
 
-        for to in capture_right & !promotion_destination.mask() {
+        for to in capture_right & !promotion_mask {
             let from = to - 9;
             moves.push(Move::Normal {
                 from,
                 to,
-                capture: Some(self.piece_lookup(to).unwrap().0),
+                capture: get_piece!(to),
             });
         }
 
-        for to in capture_left & !promotion_destination.mask() {
+        for to in capture_left & !promotion_mask {
             let from = to - 7;
             moves.push(Move::Normal {
                 from,
                 to,
-                capture: Some(self.piece_lookup(to).unwrap().0),
+                capture: get_piece!(to),
             });
         }
 
-        for to in capture_right & promotion_destination.mask() {
+        for to in capture_right & promotion_mask {
             let from = to - 9;
 
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
                 piece: PieceType::Queen,
-                capture: Some(self.piece_lookup(to).unwrap().0),
+                capture: get_piece!(to),
             };
             moves.push(m);
         }
 
-        for to in capture_left & promotion_destination.mask() {
+        for to in capture_left & promotion_mask {
             let from = to - 7;
             moves.push(Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
                 piece: PieceType::Queen,
-                capture: Some(self.piece_lookup(to).unwrap().0),
+                capture: get_piece!(to),
             });
         }
 
@@ -751,12 +765,12 @@ impl Game {
             let right = target - 9;
             let leftbb = BitBoard::from_square(left) & !File::A.mask();
             let rightbb = BitBoard::from_square(right) & !File::H.mask();
-            if pawns.has_square(leftbb) {
+            if self.white_pawns.has_square(leftbb) {
                 moves.push(Move::CaptureEnPassant {
                     from: left.get_file(),
                 })
             }
-            if pawns.has_square(rightbb) {
+            if self.white_pawns.has_square(rightbb) {
                 moves.push(Move::CaptureEnPassant {
                     from: right.get_file(),
                 });
@@ -765,10 +779,105 @@ impl Game {
     }
 
     fn generate_psuedo_legal_black_pawn_moves(&self, moves: &mut Vec<Move>) {
-        for sq in self.black_pawns {
-            let moveinfo = PieceType::Pawn.psuedo_legal_targets_fast(self, &sq);
-            for t in moveinfo.targets {
-                moves.push(Move::infer(sq, t, self));
+        let twice_mask = Rank::Fifth.mask();
+        let promotion_mask = Rank::First.mask();
+        let unoccupied = !self.occupied;
+
+        let once = (self.black_pawns >> 8) & unoccupied;
+        let twice = (once >> 8) & unoccupied & twice_mask;
+        let promotions = once & promotion_mask;
+
+        let capture_right = (self.black_pawns >> 9) & (self.white_occupied & !File::H.mask());
+        let capture_left = (self.black_pawns >> 7) & (self.white_occupied & !File::A.mask());
+
+        macro_rules! get_piece {
+            ($sq:expr) => {
+                Some(
+                    if cfg!(debug_assertions) {
+                        self.piece_lookup($sq).unwrap()
+                    } else {
+                        unsafe { self.piece_lookup($sq).unwrap_unchecked() }
+                    }
+                    .0,
+                )
+            };
+        }
+
+        for to in once ^ promotions {
+            let from = to + 8;
+            moves.push(Move::Normal {
+                from,
+                to,
+                capture: None,
+            });
+        }
+
+        for sq in twice {
+            moves.push(Move::CreateEnPassant { at: sq.get_file() });
+        }
+
+        for sq in promotions {
+            let file = sq.get_file();
+            moves.push(Move::Promotion {
+                from: file,
+                to: file,
+                piece: PieceType::Queen,
+                capture: None,
+            });
+        }
+
+        for to in capture_right & !promotion_mask {
+            let from = to + 9;
+            moves.push(Move::Normal {
+                from,
+                to,
+                capture: get_piece!(to),
+            });
+        }
+
+        for to in capture_left & !promotion_mask {
+            let from = to + 7;
+            moves.push(Move::Normal {
+                from,
+                to,
+                capture: get_piece!(to),
+            });
+        }
+
+        for to in capture_right & promotion_mask {
+            let from = to + 9;
+            moves.push(Move::Promotion {
+                from: from.get_file(),
+                to: to.get_file(),
+                piece: PieceType::Queen,
+                capture: get_piece!(to),
+            });
+        }
+
+        for to in capture_left & promotion_mask {
+            let from = to + 7;
+            moves.push(Move::Promotion {
+                from: from.get_file(),
+                to: to.get_file(),
+                piece: PieceType::Queen,
+                capture: get_piece!(to),
+            });
+        }
+
+        if let Some(target) = self.en_passant_target {
+            let left = target + 7;
+            let right = target + 9;
+            let leftbb = BitBoard::from_square(left) & !File::H.mask();
+            let rightbb = BitBoard::from_square(right) & !File::A.mask();
+            if self.black_pawns.has_square(leftbb) {
+                moves.push(Move::CaptureEnPassant {
+                    from: left.get_file(),
+                });
+            }
+            if self.black_pawns.has_square(rightbb) {
+                moves.push(Move::CaptureEnPassant {
+                    from: right.get_file(),
+                });
             }
         }
     }
@@ -1173,7 +1282,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_grouped_pawn_moves_equals_individual_pawn_moves() {
+    fn generate_grouped_white_pawn_moves_equals_individual_pawn_moves() {
         let game = Game::default();
         let mut individual = Vec::new();
         for sq in game.white_pawns {
@@ -1186,6 +1295,34 @@ mod tests {
 
         let mut grouped = Vec::new();
         game.generate_psuedo_legal_white_pawn_moves(&mut grouped);
+
+        println!(
+            "\nGrouped: {}\nIndividual: {}",
+            format_pretty_list(&grouped),
+            format_pretty_list(&individual)
+        );
+
+        for m in &individual {
+            should_generate(&grouped, m);
+        }
+        assert_eq!(grouped.len(), individual.len());
+    }
+
+    #[test]
+    fn generate_grouped_black_pawn_moves_equals_individual_pawn_moves() {
+        let mut game = Game::default();
+        game.play(&Move::infer(Square::E2, Square::E4, &game));
+        let mut individual = Vec::new();
+        for sq in game.black_pawns {
+            let moveinfo = PieceType::Pawn.psuedo_legal_targets_fast(&game, &sq);
+            for t in moveinfo.targets {
+                let m = Move::infer(sq, t, &game);
+                individual.push(m);
+            }
+        }
+
+        let mut grouped = Vec::new();
+        game.generate_psuedo_legal_black_pawn_moves(&mut grouped);
 
         println!(
             "\nGrouped: {}\nIndividual: {}",
