@@ -1,6 +1,6 @@
 [package]
 name = "whalecrab_engine"
-version = "0.0.1"
+edition.version = true
 edition.workspace = true
 
 [[bench]]
