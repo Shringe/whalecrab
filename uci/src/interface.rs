@@ -131,30 +131,33 @@ impl UciInterface {
             },
 
             UciCommand::Position { fen, uci_moves } => {
+                log!("Received position: {fen}");
                 let engine = &mut self.engine;
 
                 // Reset to starting position
                 let game = match Game::from_fen(&fen) {
                     Some(g) => g,
                     None => {
-                        log!("Failed to parse fen. Defaulting to starting position");
+                        log!("Failed to parse fen {fen}. Defaulting to starting position");
                         Game::default()
                     }
                 };
                 engine.with_new_game(game);
 
                 // Play all moves in sequence
-                log!("{:#?}", uci_moves);
-                for uci_move in uci_moves.split(' ') {
-                    let move_to_play = match Move::from_uci(uci_move, &engine.game) {
-                        Ok(m) => m,
-                        Err(e) => {
-                            log!("Failed to parse uci move '{}': {:?}", uci_move, e);
-                            return (out, UciHandleAction::Continue);
-                        }
-                    };
-                    log!("Playing move: {}", move_to_play);
-                    engine.game.play(&move_to_play);
+                log!("Playing moves: {:#?}", uci_moves);
+                if !uci_moves.is_empty() {
+                    for uci_move in uci_moves.split(' ') {
+                        let move_to_play = match Move::from_uci(uci_move, &engine.game) {
+                            Ok(m) => m,
+                            Err(e) => {
+                                log!("Failed to parse uci move '{}': {:?}", uci_move, e);
+                                return (out, UciHandleAction::Continue);
+                            }
+                        };
+                        log!("Playing move: {}", move_to_play);
+                        engine.game.play(&move_to_play);
+                    }
                 }
                 log!("Final position FEN: {}", engine.game.to_fen());
                 log!("Game state: {:?}", engine.game.state);
@@ -278,10 +281,14 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn takes_queen_from_fen() {
-    //     let fen = "k7/ppn5/8/8/3K1Q2/8/8/R7 b - - 0 1";
-    //     let mut uci = UciInterface::default();
-    //     uci.handle(uci!("position {fen} moves"));
-    // }
+    #[test]
+    fn takes_queen_from_fen() {
+        let fen = "k7/ppn5/8/8/3K1Q2/8/8/R7 b - - 0 1";
+        let mut uci = UciInterface::default();
+        uci.handle(uci!("position fen {fen}"));
+        uci.handle(uci!("go movetime 100"));
+        let actual = uci.engine.game.to_fen();
+        let expected = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
+        assert_eq!(actual, expected);
+    }
 }

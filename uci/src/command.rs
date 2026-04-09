@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr, time::Duration};
 
-use whalecrab_lib::position::game::STARTING_FEN;
+use whalecrab_lib::position::{self, game::STARTING_FEN};
 
 /// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
@@ -67,15 +67,14 @@ impl FromStr for UciCommand {
             "quit" => Ok(Self::Quit),
             "isready" => Ok(Self::IsReady),
             "position" => {
-                let split: Vec<&str> = line.splitn(4, ' ').collect();
-                let len = split.len();
-                if len < 3 {
-                    return Err(UciError::ParseMove(line.to_string()));
-                }
+                let remaining = line.split_once("position ").unwrap_or(("", line)).1;
+                let (position, moves) = remaining.split_once(" moves ").unwrap_or((remaining, ""));
 
-                let fen = split[1];
-                let fen = if fen == "startpos" { STARTING_FEN } else { fen };
-                let moves = if len == 3 { "" } else { split[3] };
+                let fen = if let Some(fen) = position.strip_prefix("fen ") {
+                    fen
+                } else {
+                    STARTING_FEN
+                };
 
                 Ok(Self::Position {
                     fen: fen.to_string(),
@@ -190,9 +189,8 @@ mod tests {
 
     #[test]
     fn position_no_moves() {
-        let fen = "startpos";
         let moves = "";
-        let cmd = uci!("position {fen} moves");
+        let cmd = uci!("position startpos moves");
 
         match cmd {
             UciCommand::Position { fen, uci_moves } => {
@@ -308,6 +306,16 @@ mod tests {
             btime: None,
             winc: Some(Duration::from_millis(50)),
             binc: None,
+        };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn position_fen_with_spaces() {
+        let fen = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
+        let expected = fen;
+        let UciCommand::Position { fen: actual, .. } = uci!("position fen {fen}") else {
+            panic!("Wrong cmd returned")
         };
         assert_eq!(actual, expected);
     }
