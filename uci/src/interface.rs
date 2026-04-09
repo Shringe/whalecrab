@@ -3,7 +3,7 @@ use std::{io::Stdin, str::FromStr, time::Duration};
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::{
     movegen::{moves::Move, pieces::piece::PieceColor},
-    position::game::Game,
+    position::game::{Game, STARTING_FEN},
 };
 
 use crate::{command::UciCommand, log, received, sent};
@@ -130,11 +130,18 @@ impl UciInterface {
                 }
             },
 
-            UciCommand::Position { uci_moves } => {
+            UciCommand::Position { fen, uci_moves } => {
                 let engine = &mut self.engine;
 
                 // Reset to starting position
-                engine.with_new_game(Game::default());
+                let game = match Game::from_fen(&fen) {
+                    Some(g) => g,
+                    None => {
+                        log!("Failed to parse fen. Defaulting to starting position");
+                        Game::default()
+                    }
+                };
+                engine.with_new_game(game);
 
                 // Play all moves in sequence
                 log!("{:#?}", uci_moves);
@@ -207,24 +214,10 @@ impl UciInterface {
 
 #[cfg(test)]
 mod test {
-    use std::time::Instant;
-
-    use whalecrab_lib::square::Square;
-
     use super::*;
-
-    /// Creates a UciCommand from a formatted string. Unwraps parsing errors.
-    /// ```rust
-    /// let mut uci = UciInterface::default();
-    /// let _ = uci.handle(uci!("uci"));
-    /// let _ = uci.handle(uci!("go movetime {}", 5000));
-    /// ```
-    macro_rules! uci {
-        ($($arg:tt)*) => {{
-            let s = format!($($arg)*);
-            UciCommand::from_str(s.as_str()).expect(format!("Failed to parse uci!({})", s).as_str())
-        }};
-    }
+    use crate::uci;
+    use std::time::Instant;
+    use whalecrab_lib::square::Square;
 
     #[test]
     fn determine_movetime() {
@@ -284,4 +277,11 @@ mod test {
             uci.handle(uci!("position startpos moves {}", mv));
         }
     }
+
+    // #[test]
+    // fn takes_queen_from_fen() {
+    //     let fen = "k7/ppn5/8/8/3K1Q2/8/8/R7 b - - 0 1";
+    //     let mut uci = UciInterface::default();
+    //     uci.handle(uci!("position {fen} moves"));
+    // }
 }

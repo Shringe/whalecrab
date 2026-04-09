@@ -1,6 +1,8 @@
 mod command;
 mod interface;
 mod logging;
+#[cfg(test)]
+mod test_utils;
 
 use std::io;
 

@@ -1,14 +1,20 @@
 use std::{fmt, str::FromStr, time::Duration};
 
+use whalecrab_lib::position::game::STARTING_FEN;
+
 /// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
 /// https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf
+#[derive(Debug)]
 pub enum UciCommand {
     UciNewGame,
     Uci,
     Quit,
     IsReady,
+    /// The position to set up on the internal board. The engine should start with the given fen,
+    /// then play all of the uci moves.
     Position {
+        fen: String,
         uci_moves: String,
     },
     Go {
@@ -61,12 +67,18 @@ impl FromStr for UciCommand {
             "quit" => Ok(Self::Quit),
             "isready" => Ok(Self::IsReady),
             "position" => {
-                let moves = match line.split_once("moves ") {
-                    Some(moves) => moves.1,
-                    None => return Err(UciError::ParseMove(line.to_string())),
-                };
+                let split: Vec<&str> = line.splitn(4, ' ').collect();
+                let len = split.len();
+                if len < 3 {
+                    return Err(UciError::ParseMove(line.to_string()));
+                }
+
+                let fen = split[1];
+                let fen = if fen == "startpos" { STARTING_FEN } else { fen };
+                let moves = if len == 3 { "" } else { split[3] };
 
                 Ok(Self::Position {
+                    fen: fen.to_string(),
                     uci_moves: moves.to_string(),
                 })
             }
@@ -113,6 +125,8 @@ impl FromStr for UciCommand {
 
 #[cfg(test)]
 mod tests {
+    use crate::uci;
+
     use super::*;
     use std::time::Duration;
 
@@ -144,16 +158,50 @@ mod tests {
 
     #[test]
     fn position() {
-        let cmd = UciCommand::from_str("position startpos moves e2e4 e7e5").unwrap();
-        assert!(matches!(cmd, UciCommand::Position { uci_moves } if uci_moves == "e2e4 e7e5"));
+        let fen = "startpos";
+        let moves = "e2e4 e7e5";
+        let cmd = uci!("position {fen} moves {moves}");
+
+        match cmd {
+            UciCommand::Position { fen, uci_moves } => {
+                assert_eq!(moves, uci_moves, "Incorrect moves returned: {}", uci_moves);
+                assert_ne!(
+                    fen, "startpos",
+                    "startpos was not converted to a real fen: {}",
+                    fen
+                );
+                assert_eq!(
+                    fen, STARTING_FEN,
+                    "Did not convert startpos to correct fen: {}",
+                    fen
+                );
+            }
+            _ => panic!("Wrong uci command received {:?}", cmd),
+        }
     }
 
     #[test]
     fn position_no_moves() {
-        assert!(matches!(
-            UciCommand::from_str("position startpos"),
-            Err(UciError::ParseMove(_))
-        ));
+        let fen = "startpos";
+        let moves = "";
+        let cmd = uci!("position {fen} moves");
+
+        match cmd {
+            UciCommand::Position { fen, uci_moves } => {
+                assert_eq!(moves, uci_moves, "Incorrect moves returned: {}", uci_moves);
+                assert_ne!(
+                    fen, "startpos",
+                    "startpos was not converted to a real fen: {}",
+                    fen
+                );
+                assert_eq!(
+                    fen, STARTING_FEN,
+                    "Did not convert startpos to correct fen: {}",
+                    fen
+                );
+            }
+            _ => panic!("Wrong uci command received {:?}", cmd),
+        }
     }
 
     #[test]
