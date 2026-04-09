@@ -667,6 +667,15 @@ impl Game {
         self.piece_table.get(sq)
     }
 
+    fn generate_psuedo_legal_knight_moves(&self, moves: &mut Vec<Move>, board: BitBoard) {
+        for sq in board {
+            let moveinfo = PieceType::Knight.psuedo_legal_targets_fast(self, &sq);
+            for t in moveinfo.targets {
+                moves.push(Move::infer(sq, t, self));
+            }
+        }
+    }
+
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
@@ -685,7 +694,7 @@ impl Game {
         match self.turn {
             PieceColor::White => {
                 push_moves!(PieceType::Pawn, self.white_pawns);
-                push_moves!(PieceType::Knight, self.white_knights);
+                self.generate_psuedo_legal_knight_moves(&mut moves, self.white_knights);
                 push_moves!(PieceType::Bishop, self.white_bishops);
                 push_moves!(PieceType::Rook, self.white_rooks);
                 push_moves!(PieceType::Queen, self.white_queens);
@@ -693,7 +702,7 @@ impl Game {
             }
             PieceColor::Black => {
                 push_moves!(PieceType::Pawn, self.black_pawns);
-                push_moves!(PieceType::Knight, self.black_knights);
+                self.generate_psuedo_legal_knight_moves(&mut moves, self.black_knights);
                 push_moves!(PieceType::Bishop, self.black_bishops);
                 push_moves!(PieceType::Rook, self.black_rooks);
                 push_moves!(PieceType::Queen, self.black_queens);
