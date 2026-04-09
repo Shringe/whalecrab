@@ -670,15 +670,34 @@ impl Game {
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
-        let color = &self.turn;
-        let occupied = self.get_occupied(color);
 
-        for sq in *occupied {
-            if let Some((piece, _)) = self.piece_lookup(sq) {
-                let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
-                for t in moveinfo.targets {
-                    moves.push(Move::infer(sq, t, self));
+        macro_rules! push_moves {
+            ($piece:expr, $board:expr) => {
+                for sq in $board {
+                    let moveinfo = $piece.psuedo_legal_targets_fast(self, &sq);
+                    for t in moveinfo.targets {
+                        moves.push(Move::infer(sq, t, self));
+                    }
                 }
+            };
+        }
+
+        match self.turn {
+            PieceColor::White => {
+                push_moves!(PieceType::Pawn, self.white_pawns);
+                push_moves!(PieceType::Knight, self.white_knights);
+                push_moves!(PieceType::Bishop, self.white_bishops);
+                push_moves!(PieceType::Rook, self.white_rooks);
+                push_moves!(PieceType::Queen, self.white_queens);
+                push_moves!(PieceType::King, self.white_kings);
+            }
+            PieceColor::Black => {
+                push_moves!(PieceType::Pawn, self.black_pawns);
+                push_moves!(PieceType::Knight, self.black_knights);
+                push_moves!(PieceType::Bishop, self.black_bishops);
+                push_moves!(PieceType::Rook, self.black_rooks);
+                push_moves!(PieceType::Queen, self.black_queens);
+                push_moves!(PieceType::King, self.black_kings);
             }
         }
 
