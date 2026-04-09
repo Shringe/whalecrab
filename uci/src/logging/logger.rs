@@ -51,10 +51,37 @@ pub struct Logger;
 impl Default for Logger {
     fn default() -> Self {
         #[cfg(debug_assertions)]
-        let path = "/tmp/whalecrab_uci_debug";
+        let base = Path::new("/tmp/whalecrab_uci_debug");
         #[cfg(not(debug_assertions))]
-        let path = "/tmp/whalecrab_uci";
-        Self::init(path)
+        let base = Path::new("/tmp/whalecrab_uci");
+
+        if !base.exists()
+            && let Err(e) = fs::create_dir(base)
+        {
+            eprintln!("Can't create log directory: {}", e);
+            return Self;
+        }
+
+        for slot in u8::MIN..=u8::MAX {
+            let path = base.join(slot.to_string());
+            if path.exists() {
+                continue;
+            }
+            eprintln!("Found slot for logger: {}", path.display());
+            let slot_above = slot.wrapping_add(1);
+            let above = base.join(slot_above.to_string());
+            let _ = fs::remove_dir_all(&above);
+            let _ = fs::create_dir(&path);
+            return Self::init(path);
+        }
+
+        let msg = "Failed to find an open slot for logger";
+        if cfg!(debug_assertions) {
+            panic!("{}", msg);
+        } else {
+            eprintln!("{}", msg);
+            Self::init("/dev/null")
+        }
     }
 }
 
@@ -83,13 +110,6 @@ impl Logger {
     pub fn init<P: AsRef<Path>>(dir: P) -> Self {
         let dir: &Path = dir.as_ref();
 
-        if !dir.exists()
-            && let Err(e) = fs::create_dir(dir)
-        {
-            eprintln!("Can't create log directory: {}", e);
-            return Self;
-        }
-
         let init_writer = |writer: &OnceLock<Mutex<BufWriter<File>>>, filename: &str| {
             let path = dir.join(filename);
             match File::create(&path) {
@@ -114,9 +134,9 @@ impl Logger {
     fn write_to(writer: &OnceLock<Mutex<BufWriter<File>>>, msg: &str) {
         if let Some(w) = writer.get()
             && let Ok(mut w) = w.lock()
-            && let Err(e) = w.write_all(msg.as_bytes())
         {
-            eprintln!("Couldn't write to log buffer: {}", e);
+            let _ = w.write_all(msg.as_bytes());
+            let _ = w.flush();
         }
     }
 
