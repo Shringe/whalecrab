@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr, time::Duration};
 
-/// Enum of supported uci commands to recieve.
+/// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
 /// https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf
 pub enum UciCommand {
@@ -48,7 +48,7 @@ impl fmt::Display for UciError {
 impl FromStr for UciCommand {
     type Err = UciError;
 
-    /// Parses Self from a line of recieved uci
+    /// Parses Self from a line of received uci
     fn from_str(line: &str) -> Result<Self, UciError> {
         let cmd = match line.split_once(' ') {
             Some(split) => split.0,

@@ -6,7 +6,7 @@ use whalecrab_lib::{
     position::game::Game,
 };
 
-use crate::{command::UciCommand, log};
+use crate::{command::UciCommand, log, received, sent};
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
@@ -43,7 +43,7 @@ impl UciInterface {
         for line in stdin.lines() {
             let line = match line {
                 Ok(line) => {
-                    log!("Recieved: {}", line);
+                    received!("{}", line);
                     line
                 }
                 Err(e) => {
@@ -62,7 +62,7 @@ impl UciInterface {
 
             let (responses, action) = self.handle(cmd);
             for msg in &responses {
-                log!("Sent: {}", msg);
+                sent!("{}", msg);
             }
             for msg in &responses {
                 println!("{}", msg);
