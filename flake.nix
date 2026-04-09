@@ -57,6 +57,7 @@
               rust-analyzer
               gnuplot
               clippy
+              cutechess
             ];
           };
         }
