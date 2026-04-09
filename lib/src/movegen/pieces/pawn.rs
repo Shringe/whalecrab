@@ -170,7 +170,7 @@ mod tests {
         }
 
         assert_eq!(game.turn, PieceColor::White);
-        let moves = looking_for.from(&game).pawn_psuedo_legal_moves(&game);
+        let moves = looking_for.from(game.turn).pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. {}",
@@ -206,7 +206,7 @@ mod tests {
         }
 
         assert_eq!(game.turn, PieceColor::Black);
-        let moves = looking_for.from(&game).pawn_psuedo_legal_moves(&game);
+        let moves = looking_for.from(game.turn).pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&looking_for),
             "Black pawn can't see target. Available moves: {:?}",
@@ -239,7 +239,7 @@ mod tests {
         }
 
         assert_eq!(game.turn, PieceColor::White);
-        let moves = looking_for.from(&game).pawn_psuedo_legal_moves(&game);
+        let moves = looking_for.from(game.turn).pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",

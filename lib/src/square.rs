@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
+use crate::implement_operations;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::position::game::Game;
@@ -52,6 +53,8 @@ impl fmt::Display for SquareParseError {
 
 #[derive(Debug, PartialEq, Clone, Copy, Hash)]
 pub struct Square(u8);
+
+implement_operations!(Square, Self, u8, [Add, Sub]);
 
 impl Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

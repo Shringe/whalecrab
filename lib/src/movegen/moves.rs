@@ -207,22 +207,22 @@ impl Move {
     }
 
     /// Returns the source square of the move. Consumes self
-    pub fn from(self, game: &Game) -> Square {
+    pub fn from(self, color: PieceColor) -> Square {
         match self {
             Move::Normal { from, .. } => from,
-            Move::CreateEnPassant { at } => match game.turn {
+            Move::CreateEnPassant { at } => match color {
                 PieceColor::White => Square::make_square(Rank::Second, at),
                 PieceColor::Black => Square::make_square(Rank::Seventh, at),
             },
-            Move::CaptureEnPassant { from } => match game.turn {
+            Move::CaptureEnPassant { from } => match color {
                 PieceColor::White => Square::make_square(Rank::Fifth, from),
                 PieceColor::Black => Square::make_square(Rank::Fourth, from),
             },
-            Move::Promotion { from, .. } => match game.turn {
+            Move::Promotion { from, .. } => match color {
                 PieceColor::White => Square::make_square(Rank::Seventh, from),
                 PieceColor::Black => Square::make_square(Rank::Second, from),
             },
-            Move::Castle { .. } => match game.turn {
+            Move::Castle { .. } => match color {
                 PieceColor::White => Square::E1,
                 PieceColor::Black => Square::E8,
             },
@@ -242,7 +242,7 @@ impl Move {
     pub fn to_uci(&self, game: &Game) -> String {
         format!(
             "{}{}",
-            self.from(game).to_string().to_lowercase(),
+            self.from(game.turn).to_string().to_lowercase(),
             self.to(game).to_string().to_lowercase()
         )
     }

@@ -54,7 +54,7 @@ fn bench(c: &mut Criterion) {
     c.bench_function("Move inference / Constructing all moves", |b| {
         b.iter(|| {
             for m in &moves {
-                Move::infer(m.from(&game), m.to(&game), &game);
+                Move::infer(m.from(game.turn), m.to(&game), &game);
             }
         })
     });

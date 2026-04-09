@@ -46,7 +46,7 @@ mod tests {
         ] {
             let m = Move::infer(from, to, &game);
             if matches!(game.piece_lookup(from), Some((PieceType::Bishop, _))) {
-                let moves = m.from(&game).bishop_psuedo_legal_moves(&game);
+                let moves = m.from(game.turn).bishop_psuedo_legal_moves(&game);
                 assert!(
                     moves.contains(&m),
                     "The move {} not be found naturally! Available {}",

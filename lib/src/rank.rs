@@ -1,5 +1,7 @@
 use std::fmt::{self};
 
+use crate::bitboard::BitBoard;
+
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 #[repr(u8)]
@@ -54,6 +56,12 @@ impl Rank {
         }
     }
 
+    /// Creates a bitboard with the entire rank set
+    #[inline]
+    pub const fn mask(self) -> BitBoard {
+        BitBoard::new(0xFF << (self as u8 * 8))
+    }
+
     /// Go one rank down.  If impossible, wrap around.
     #[inline]
     pub fn down(&self) -> Rank {
@@ -70,5 +78,18 @@ impl Rank {
     #[inline]
     pub fn to_index(&self) -> usize {
         *self as usize
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn rank_mask() {
+        let rank = Rank::Seventh;
+        let expected = BitBoard::INITIAL_BLACK_PAWN;
+        let actual = rank.mask();
+        assert_eq!(actual, expected);
     }
 }

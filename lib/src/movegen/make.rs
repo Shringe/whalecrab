@@ -18,14 +18,23 @@ impl Game {
     pub fn play(&mut self, m: &Move) {
         #[cfg(debug_assertions)]
         {
-            let from = m.from(self);
-            let (piece, color) = self
-                .piece_lookup(from)
-                .expect("Tried to move nonexistant piece");
+            let from = m.from(self.turn);
+            let (piece, color) = self.piece_lookup(from).unwrap_or_else(|| {
+                panic!(
+                    "Tried to move nonexistant piece with {} at {}",
+                    m,
+                    self.to_fen()
+                )
+            });
             assert_eq!(
-                color, self.turn,
-                "{:?} tried to move {:?}'s {:?} with {}",
-                self.turn, color, piece, m
+                color,
+                self.turn,
+                "{:?} tried to move {:?}'s {:?} with {} at {}",
+                self.turn,
+                color,
+                piece,
+                m,
+                self.to_fen()
             );
         }
 
@@ -338,7 +347,7 @@ mod tests {
             piece: PieceType::Queen,
             capture: Some(PieceType::Rook),
         };
-        let looking_for_from = looking_for.from(&game);
+        let looking_for_from = looking_for.from(game.turn);
 
         for (from, to) in [
             (Square::H2, Square::H4),
@@ -355,7 +364,7 @@ mod tests {
         }
 
         assert_eq!(game.turn, PieceColor::White);
-        let moves = looking_for.from(&game).pawn_psuedo_legal_moves(&game);
+        let moves = looking_for.from(game.turn).pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&looking_for),
             "White pawn can't see target. Available moves: {:?}",
@@ -415,16 +424,24 @@ mod tests {
         game.play(&king);
         let after_king = game.clone();
 
-        assert!(pawn.from(&original).in_bitboard(&original.white_pawns));
+        assert!(pawn.from(original.turn).in_bitboard(&original.white_pawns));
         assert!(!pawn.to(&original).in_bitboard(&original.white_pawns));
-        assert!(!pawn.from(&after_pawn).in_bitboard(&after_pawn.white_pawns));
+        assert!(
+            !pawn
+                .from(after_pawn.turn)
+                .in_bitboard(&after_pawn.white_pawns)
+        );
         assert!(pawn.to(&after_pawn).in_bitboard(&after_pawn.white_pawns));
 
-        assert!(knight.from(&original).in_bitboard(&original.black_knights));
+        assert!(
+            knight
+                .from(original.turn)
+                .in_bitboard(&original.black_knights)
+        );
         assert!(!knight.to(&original).in_bitboard(&original.black_knights));
         assert!(
             !knight
-                .from(&after_knight)
+                .from(after_knight.turn)
                 .in_bitboard(&after_knight.black_knights)
         );
         assert!(
@@ -433,9 +450,13 @@ mod tests {
                 .in_bitboard(&after_knight.black_knights)
         );
 
-        assert!(king.from(&original).in_bitboard(&original.white_kings));
+        assert!(king.from(original.turn).in_bitboard(&original.white_kings));
         assert!(!king.to(&original).in_bitboard(&original.white_kings));
-        assert!(!king.from(&after_king).in_bitboard(&after_king.white_kings));
+        assert!(
+            !king
+                .from(after_king.turn)
+                .in_bitboard(&after_king.white_kings)
+        );
         assert!(king.to(&after_king).in_bitboard(&after_king.white_kings));
     }
 
@@ -461,7 +482,7 @@ mod tests {
             "White never moved"
         );
         assert!(
-            !capture.from(&game).in_bitboard(&game.white_pawns),
+            !capture.from(game.turn).in_bitboard(&game.white_pawns),
             "White moved but failed to capture"
         );
         assert!(
@@ -522,11 +543,11 @@ mod tests {
 
         assert_eq!(game.turn, PieceColor::Black);
         assert!(
-            capture.from(&game).in_bitboard(&game.black_pawns),
+            capture.from(game.turn).in_bitboard(&game.black_pawns),
             "Black pawn not in position"
         );
 
-        let moves = capture.from(&game).pawn_psuedo_legal_moves(&game);
+        let moves = capture.from(game.turn).pawn_psuedo_legal_moves(&game);
         assert!(
             moves.contains(&capture),
             "Black pawn doesn't see en passant target. {}",

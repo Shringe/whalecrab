@@ -155,7 +155,7 @@ impl Game {
         let king_attackers = self.attackers(king);
 
         for m in psuedo_legal {
-            let from = m.from(self);
+            let from = m.from(self.turn);
             let to = m.to(self);
             let frombb = BitBoard::from_square(from);
             let tobb = BitBoard::from_square(to);
@@ -311,7 +311,7 @@ mod tests {
 
         for m in legal_moves {
             assert_eq!(
-                m.from(&game),
+                m.from(game.turn),
                 king,
                 "Tried to move piece other than queen while double check. {}",
                 m
@@ -325,7 +325,7 @@ mod tests {
         let mut illegal_moves = HashMap::new();
         for (i, to_play) in game_turns.iter().enumerate() {
             let to_play = Move::infer(to_play.0, to_play.1, &game);
-            let to_play_from = to_play.from(&game);
+            let to_play_from = to_play.from(game.turn);
             let fen = game.to_fen();
             let psuedo_legal_moves = game.generate_all_psuedo_legal_moves();
             let legal_moves = game.legal_moves();
