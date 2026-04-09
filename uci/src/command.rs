@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr, time::Duration};
 
-use whalecrab_lib::position::{self, game::STARTING_FEN};
+use whalecrab_lib::position::game::STARTING_FEN;
 
 /// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
