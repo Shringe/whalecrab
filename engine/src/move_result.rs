@@ -1,4 +1,4 @@
-use std::ops::AddAssign;
+use std::{fmt, ops::AddAssign};
 
 use whalecrab_lib::movegen::moves::Move;
 
@@ -44,6 +44,16 @@ impl AddAssign<&SearchInfo> for SearchInfo {
     }
 }
 
+impl fmt::Display for SearchInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "score: {}\ndepth: {}\nnodes: {}",
+            self.score, self.depth, self.nodes
+        )
+    }
+}
+
 #[derive(Default)]
 pub struct SearchResult {
     pub best_move: Option<Move>,
@@ -68,5 +78,11 @@ impl AddAssign<&SearchInfo> for SearchResult {
 impl AddAssign<&SearchResult> for SearchResult {
     fn add_assign(&mut self, rhs: &SearchResult) {
         self.info += &rhs.info;
+    }
+}
+
+impl fmt::Display for SearchResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Best: {:?}\n{}", self.best_move, self.info)
     }
 }

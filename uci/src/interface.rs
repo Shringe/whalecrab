@@ -179,6 +179,10 @@ impl UciInterface {
                 log!("Engine will target {:?} move duration", movetime);
 
                 let result = self.engine.search(movetime, self.depth);
+                log!("Search result");
+                for line in result.to_string().lines() {
+                    log!(" -- {}", line);
+                }
                 let best_move = match result.best_move {
                     Some(m) => m,
                     None => {
@@ -189,7 +193,6 @@ impl UciInterface {
                 };
 
                 let best_move_uci = best_move.to_uci(&self.engine.game);
-                log!("Playing self.engine move: {}", best_move);
                 log!("Fen before playing the move: {}", self.engine.game.to_fen());
                 uci_send!("bestmove {}", best_move_uci);
                 self.engine.game.play(&best_move);
