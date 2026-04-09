@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::{BufWriter, Write},
-    path::{Path, PathBuf},
+    path::Path,
     sync::{Mutex, OnceLock},
 };
 
