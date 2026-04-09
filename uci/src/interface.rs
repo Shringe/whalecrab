@@ -3,7 +3,7 @@ use std::{io::Stdin, str::FromStr, time::Duration};
 use whalecrab_engine::engine::Engine;
 use whalecrab_lib::{
     movegen::{moves::Move, pieces::piece::PieceColor},
-    position::game::{Game, STARTING_FEN},
+    position::game::Game,
 };
 
 use crate::{command::UciCommand, log, received, sent};

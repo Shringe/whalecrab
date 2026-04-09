@@ -5,7 +5,7 @@ use whalecrab_lib::position::game::STARTING_FEN;
 /// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
 /// https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum UciCommand {
     UciNewGame,
     Uci,
@@ -83,10 +83,9 @@ impl FromStr for UciCommand {
                 })
             }
             "go" => {
-                // TODO: if durations are 0ms, they should be mapped to None
                 let tokens: Vec<&str> = line.split(' ').collect();
 
-                let parse_token = |key: &str| -> Option<Duration> {
+                let parse_token = |key: &str| {
                     tokens
                         .windows(2)
                         .find(|w| w[0] == key)
@@ -94,12 +93,21 @@ impl FromStr for UciCommand {
                         .map(Duration::from_millis)
                 };
 
+                let parse_inc = |key: &str| {
+                    let inc = parse_token(key);
+                    if inc == Some(Duration::ZERO) {
+                        None
+                    } else {
+                        inc
+                    }
+                };
+
                 Ok(Self::Go {
                     movetime: parse_token("movetime"),
                     wtime: parse_token("wtime"),
                     btime: parse_token("btime"),
-                    winc: parse_token("winc"),
-                    binc: parse_token("binc"),
+                    winc: parse_inc("winc"),
+                    binc: parse_inc("binc"),
                 })
             }
             "setoption" => {
@@ -289,5 +297,18 @@ mod tests {
             UciCommand::from_str("setoption"),
             Err(UciError::ParseOptionName(_))
         ));
+    }
+
+    #[test]
+    fn zero_increment_is_no_increment() {
+        let actual = uci!("go winc 50 binc 0");
+        let expected = UciCommand::Go {
+            movetime: None,
+            wtime: None,
+            btime: None,
+            winc: Some(Duration::from_millis(50)),
+            binc: None,
+        };
+        assert_eq!(actual, expected);
     }
 }
