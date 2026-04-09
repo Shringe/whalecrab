@@ -131,7 +131,7 @@ impl Logger {
     }
 
     pub fn log(msg: &str) {
-        Self::log_with_prefix("Logger", ansi::GREEN, msg);
+        Self::log_with_prefix("Logger", ansi::YELLOW, msg);
     }
 
     pub fn received(msg: &str) {
