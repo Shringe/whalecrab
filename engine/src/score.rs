@@ -1,10 +1,18 @@
 use std::fmt;
-use whalecrab_lib::implement_operations;
+use whalecrab_lib::{implement_operations, movegen::pieces::piece::PieceColor};
 
-#[derive(Debug, Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Score(i32);
 
-implement_operations!(Score, Self, i32, [Add, AddAssign, Sub, SubAssign]);
+implement_operations!(Score, Self, [Eq, Ord, Neg]);
+implement_operations!(
+    Score,
+    Self,
+    i32,
+    [
+        Add, AddAssign, Sub, SubAssign, Mul, PartialEq, PartialOrd, Div
+    ]
+);
 
 impl fmt::Display for Score {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -20,6 +28,17 @@ impl Score {
 
     pub const fn new(value: i32) -> Self {
         Self(value)
+    }
+
+    pub fn for_color(self, color: PieceColor) -> Self {
+        match color {
+            PieceColor::White => self,
+            PieceColor::Black => -self,
+        }
+    }
+
+    pub const fn to_int(self) -> i32 {
+        self.0
     }
 }
 

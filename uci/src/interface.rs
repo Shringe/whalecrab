@@ -1,6 +1,6 @@
-use std::{io::Stdin, str::FromStr, time::Duration};
+use std::{io::Stdin, ops::MulAssign, str::FromStr, time::Duration};
 
-use whalecrab_engine::engine::Engine;
+use whalecrab_engine::{engine::Engine, score::Score};
 use whalecrab_lib::{
     movegen::{moves::Move, pieces::piece::PieceColor},
     position::game::Game,
@@ -22,6 +22,8 @@ pub struct UciInterface {
     pub engine: Engine,
     pub depth: u16,
     pub duration: Duration,
+    /// The last score the engine came up with
+    last_score: Score,
 }
 
 impl Default for UciInterface {
@@ -33,6 +35,7 @@ impl Default for UciInterface {
             duration: Duration::from_millis(30),
             #[cfg(not(debug_assertions))]
             duration: Duration::from_secs(3),
+            last_score: Score::default(),
         }
     }
 }
@@ -132,23 +135,20 @@ impl UciInterface {
 
             UciCommand::Position { fen, uci_moves } => {
                 log!("Received position: {fen}");
-                let engine = &mut self.engine;
 
-                // Reset to starting position
-                let game = match Game::from_fen(&fen) {
+                let mut game = match Game::from_fen(&fen) {
                     Some(g) => g,
                     None => {
                         log!("Failed to parse fen {fen}. Defaulting to starting position");
                         Game::default()
                     }
                 };
-                engine.with_new_game(game);
 
                 // Play all moves in sequence
                 log!("Playing moves: {:#?}", uci_moves);
                 if !uci_moves.is_empty() {
                     for uci_move in uci_moves.split(' ') {
-                        let move_to_play = match Move::from_uci(uci_move, &engine.game) {
+                        let move_to_play = match Move::from_uci(uci_move, &self.engine.game) {
                             Ok(m) => m,
                             Err(e) => {
                                 log!("Failed to parse uci move '{}': {:?}", uci_move, e);
@@ -156,11 +156,13 @@ impl UciInterface {
                             }
                         };
                         log!("Playing move: {}", move_to_play);
-                        engine.game.play(&move_to_play);
+                        game.play(&move_to_play);
                     }
                 }
-                log!("Final position FEN: {}", engine.game.to_fen());
-                log!("Game state: {:?}", engine.game.state);
+                log!("Final position FEN: {}", game.to_fen());
+                log!("Game state: {:?}", game.state);
+
+                self.engine.with_new_game(game);
             }
 
             UciCommand::Go {
@@ -183,6 +185,7 @@ impl UciInterface {
                 for line in result.to_string().lines() {
                     log!(" -- {}", line);
                 }
+
                 let best_move = match result.best_move {
                     Some(m) => m,
                     None => {
@@ -195,7 +198,7 @@ impl UciInterface {
                 let best_move_uci = best_move.to_uci(&self.engine.game);
                 log!("Fen before playing the move: {}", self.engine.game.to_fen());
                 uci_send!("bestmove {}", best_move_uci);
-                self.engine.game.play(&best_move);
+                self.last_score = result.info.score;
             }
         }
 
@@ -212,18 +215,46 @@ impl UciInterface {
         if let Some(movetime) = movetime {
             // In "time per move" time controls, taking more than the specified movetime may cause the
             // engine to lose on time, so we allocate some overhead.
-            return movetime.mul_f32(0.9);
+            return movetime.mul_f64(0.9);
         }
 
-        let remaining = match self.engine.game.turn {
-            PieceColor::White => wtime,
-            PieceColor::Black => btime,
+        let (ours, opponents) = match self.engine.game.turn {
+            PieceColor::White => (wtime, btime),
+            PieceColor::Black => (btime, wtime),
         };
 
-        match remaining {
-            Some(remaining) => remaining / 30,
-            None => self.duration,
-        }
+        let Some(ours) = ours else {
+            return self.duration;
+        };
+
+        let expected_moves_remaining = 30;
+
+        let mut allocation = ours / expected_moves_remaining;
+
+        // If we're losing, allocate more time
+        let score = self.last_score.for_color(self.engine.game.turn);
+        let score_multiplier = if score == 0 {
+            1.0
+        } else if score > 0 {
+            0.8
+        } else {
+            (1.0 + (score / 500).to_int() as f64).min(2.0)
+        };
+
+        // If we are up on time, allocate more time
+        let time_multiplier = if let Some(opponents) = opponents
+            && opponents > Duration::ZERO
+        {
+            let ratio = ours.as_secs_f64() / opponents.as_secs_f64();
+            ratio.sqrt().clamp(0.5, 2.0)
+        } else {
+            1.0
+        };
+
+        allocation = allocation.mul_f64(score_multiplier);
+        allocation = allocation.mul_f64(time_multiplier);
+
+        allocation.min(ours.mul_f64(0.9))
     }
 }
 

@@ -1,15 +1,17 @@
 use crate::file::{ALL_FILES, File};
+use crate::implement_operations;
 use crate::rank::{ALL_RANKS, Rank};
-use crate::{implement_operation, implement_operations, square::*};
+use crate::square::Square;
 use std::fmt;
 
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value through BitBoard.to_int(), but you are probably better off
 /// using the implemented operators to work with this object.
-#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Default, Hash)]
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Clone, Copy, Default, Hash)]
 pub struct BitBoard(u64);
 
-implement_operation!(BitBoard, Not);
+implement_operations!(BitBoard, Self, [Not, Eq, Ord]);
 implement_operations!(
     BitBoard,
     Self,
@@ -23,7 +25,9 @@ implement_operations!(
         BitXorAssign,
         Mul,
         Shl,
-        Shr
+        Shr,
+        PartialEq,
+        PartialOrd
     ]
 );
 

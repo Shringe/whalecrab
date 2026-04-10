@@ -30,11 +30,49 @@ macro_rules! implement_operation {
             }
         }
     };
-    ($struct:ident, Not) => {
-        impl std::ops::Not for $struct {
+    ($struct:ident, $trait:ident, $method:ident, $op:tt, unary) => {
+        impl std::ops::$trait for $struct {
             type Output = $struct;
-            fn not(self) -> $struct {
-                $struct(!self.0)
+            fn $method(self) -> $struct {
+                $struct($op self.0)
+            }
+        }
+    };
+    ($struct:ident, Eq) => {
+        impl std::cmp::Eq for $struct {}
+    };
+    ($struct:ident, PartialEq, Self) => {
+        impl std::cmp::PartialEq for $struct {
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+    };
+    ($struct:ident, PartialEq, $type:ident) => {
+        impl std::cmp::PartialEq<$type> for $struct {
+            fn eq(&self, other: &$type) -> bool {
+                self.0 == *other
+            }
+        }
+    };
+    ($struct:ident, Ord) => {
+        impl std::cmp::Ord for $struct {
+            fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                self.0.cmp(&other.0)
+            }
+        }
+    };
+    ($struct:ident, PartialOrd, Self) => {
+        impl std::cmp::PartialOrd for $struct {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+    };
+    ($struct:ident, PartialOrd, $type:ident) => {
+        impl std::cmp::PartialOrd<$type> for $struct {
+            fn partial_cmp(&self, other: &$type) -> Option<std::cmp::Ordering> {
+                Some(self.0.cmp(other))
             }
         }
     };
@@ -147,5 +185,23 @@ macro_rules! implement_operations {
     };
     (@single $struct:ident, $type:ident, ShrAssign) => {
         $crate::implement_operation!($struct, ShrAssign, shr_assign, >>=, $type, assign);
+    };
+    (@single $struct:ident, $type:ident, Not) => {
+        $crate::implement_operation!($struct, Not, not, !, unary);
+    };
+    (@single $struct:ident, $type:ident, Neg) => {
+        $crate::implement_operation!($struct, Neg, neg, -, unary);
+    };
+    (@single $struct:ident, $type:ident, PartialEq) => {
+        $crate::implement_operation!($struct, PartialEq, $type);
+    };
+    (@single $struct:ident, $type:ident, Eq) => {
+        $crate::implement_operation!($struct, Eq);
+    };
+    (@single $struct:ident, $type:ident, PartialOrd) => {
+        $crate::implement_operation!($struct, PartialOrd, $type);
+    };
+    (@single $struct:ident, $type:ident, Ord) => {
+        $crate::implement_operation!($struct, Ord);
     };
 }
