@@ -7,7 +7,7 @@ mod test_utils;
 use std::io;
 
 use crate::interface::UciInterface;
-use crate::logging::logger::Logger;
+use crate::logging::Logger;
 
 #[cfg(debug_assertions)]
 fn replay_mode() {
