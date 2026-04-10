@@ -99,13 +99,27 @@ pub struct Logger;
 
 impl Default for Logger {
     fn default() -> Self {
+        let parent = Path::new("/tmp/whalecrab");
+        if !parent.exists() {
+            if let Err(e) = fs::create_dir(parent) {
+                eprintln!("Can't create log parent directory: {}", e);
+                return Self;
+            }
+            // Relax permissions so other users can write into parent
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = fs::set_permissions(parent, fs::Permissions::from_mode(0o777));
+            }
+        }
+
         #[cfg(debug_assertions)]
-        let base = Path::new("/tmp/whalecrab_uci_debug");
+        let base = parent.join("debug");
         #[cfg(not(debug_assertions))]
-        let base = Path::new("/tmp/whalecrab_uci");
+        let base = parent.join("release");
 
         if !base.exists()
-            && let Err(e) = fs::create_dir(base)
+            && let Err(e) = fs::create_dir(&base)
         {
             eprintln!("Can't create log directory: {}", e);
             return Self;
