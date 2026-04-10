@@ -38,6 +38,12 @@ pub const ALL_RANKS: [Rank; NUM_RANKS] = [
 ];
 
 impl Rank {
+    /// # Safety
+    /// This function should only be called with a value known to be from 0-7
+    pub const unsafe fn from_int_unchecked(val: u8) -> Rank {
+        unsafe { std::mem::transmute::<u8, Rank>(val) }
+    }
+
     /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
     /// around.
     #[inline]

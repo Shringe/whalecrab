@@ -990,6 +990,7 @@ impl Game {
             PieceColor::Black => {
                 let num_pawns = self.black_pawns.popcnt() as usize;
                 let maximum_move_count = num_pawns * 4
+                    + self.black_knights.popcnt() as usize * 8
                     + self.black_bishops.popcnt() as usize * 13
                     + self.black_rooks.popcnt() as usize * 14
                     + self.black_queens.popcnt() as usize * 27
@@ -1035,8 +1036,12 @@ impl Game {
 
 #[inline(always)]
 unsafe fn push_move_unchecked(moves: &mut Vec<Move>, m: Move, counter: &mut usize) {
-    debug_assert!(moves.len() < moves.capacity());
-    debug_assert!(*counter < moves.capacity());
+    debug_assert!(
+        *counter < moves.capacity(),
+        "{:?}, {:?}",
+        counter,
+        moves.capacity()
+    );
     debug_assert_ne!(*counter, usize::MAX);
     unsafe {
         moves.as_mut_ptr().add(*counter).write(m);

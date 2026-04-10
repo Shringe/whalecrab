@@ -157,11 +157,11 @@ impl Square {
     }
 
     pub fn get_rank(&self) -> Rank {
-        Rank::from_index((self.0 >> 3) as usize)
+        unsafe { Rank::from_int_unchecked(self.0 >> 3) }
     }
 
     pub fn get_file(&self) -> File {
-        File::from_index((self.0 & 7) as usize)
+        unsafe { File::from_int_unchecked(self.0 & 7) }
     }
 
     pub fn make_square(rank: Rank, file: File) -> Square {
