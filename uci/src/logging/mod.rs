@@ -121,6 +121,16 @@ impl Default for Logger {
             let above = base.join(slot_above.to_string());
             let _ = fs::remove_dir_all(&above);
             let _ = fs::create_dir(&path);
+
+            #[cfg(unix)]
+            {
+                let last = base.join("last");
+                if last.exists() {
+                    let _ = fs::remove_file(&last);
+                }
+                let _ = std::os::unix::fs::symlink(&path, &last);
+            }
+
             return Self::init(path);
         }
 
