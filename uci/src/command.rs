@@ -36,8 +36,8 @@ pub enum UciCommand {
     Position {
         /// The fen to a position. Currently will return the starting fen if the GUI says "startpos" instead of a specific fen
         fen: String,
-        /// A string such as "e2e4 e7e5 ..."
-        uci_moves: String,
+        /// A vector of strings such as vec!["e2e4", "e7e5", ...]
+        moves: Vec<String>,
     },
     Go {
         /// The exact amount of time that should be searched
@@ -119,9 +119,11 @@ impl FromStr for UciCommand {
                 }
                 .to_string();
 
-                let uci_moves = parse_parameter(line, "moves", None).unwrap_or_default();
+                let moves = parse_parameter(line, "moves", None)
+                    .map(|s| s.split(' ').map(str::to_string).collect())
+                    .unwrap_or_default();
 
-                Ok(Self::Position { fen, uci_moves })
+                Ok(Self::Position { fen, moves })
             }
             "go" => {
                 let parse_duration = |key: &str| {
@@ -211,12 +213,19 @@ mod tests {
     #[test]
     fn position() {
         let fen = "startpos";
-        let moves = "e2e4 e7e5";
-        let cmd = uci!("position {fen} moves {moves}");
+        let moves = vec!["e2e4", "e7e5"];
+        let cmd = uci!("position {fen} moves {}", moves.join(" "));
 
         match cmd {
-            UciCommand::Position { fen, uci_moves } => {
-                assert_eq!(moves, uci_moves, "Incorrect moves returned: {}", uci_moves);
+            UciCommand::Position {
+                fen,
+                moves: uci_moves,
+            } => {
+                assert_eq!(
+                    moves, uci_moves,
+                    "Incorrect moves returned: {:?}",
+                    uci_moves
+                );
                 assert_ne!(
                     fen, "startpos",
                     "startpos was not converted to a real fen: {}",
@@ -234,12 +243,19 @@ mod tests {
 
     #[test]
     fn position_no_moves() {
-        let moves = "";
+        let moves = vec![""];
         let cmd = uci!("position startpos moves");
 
         match cmd {
-            UciCommand::Position { fen, uci_moves } => {
-                assert_eq!(moves, uci_moves, "Incorrect moves returned: {}", uci_moves);
+            UciCommand::Position {
+                fen,
+                moves: uci_moves,
+            } => {
+                assert_eq!(
+                    moves, uci_moves,
+                    "Incorrect moves returned: {:?}",
+                    uci_moves
+                );
                 assert_ne!(
                     fen, "startpos",
                     "startpos was not converted to a real fen: {}",

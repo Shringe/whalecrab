@@ -133,7 +133,7 @@ impl UciInterface {
                 }
             },
 
-            UciCommand::Position { fen, uci_moves } => {
+            UciCommand::Position { fen, moves } => {
                 log!("Received position: {fen}");
 
                 let mut game = match Game::from_fen(&fen) {
@@ -145,19 +145,17 @@ impl UciInterface {
                 };
 
                 // Play all moves in sequence
-                log!("Playing moves: {:#?}", uci_moves);
-                if !uci_moves.is_empty() {
-                    for uci_move in uci_moves.split(' ') {
-                        let move_to_play = match Move::from_uci(uci_move, &self.engine.game) {
-                            Ok(m) => m,
-                            Err(e) => {
-                                log!("Failed to parse uci move '{}': {:?}", uci_move, e);
-                                return (out, UciHandleAction::Continue);
-                            }
-                        };
-                        log!("Playing move: {}", move_to_play);
-                        game.play(&move_to_play);
-                    }
+                log!("Playing moves: {:#?}", moves);
+                for uci_move in moves {
+                    let move_to_play = match Move::from_uci(&uci_move, &self.engine.game) {
+                        Ok(m) => m,
+                        Err(e) => {
+                            log!("Failed to parse uci move '{}': {:?}", uci_move, e);
+                            return (out, UciHandleAction::Continue);
+                        }
+                    };
+                    log!("Playing move: {}", move_to_play);
+                    game.play(&move_to_play);
                 }
                 log!("Final position FEN: {}", game.to_fen());
                 log!("Game state: {:?}", game.state);
