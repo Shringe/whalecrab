@@ -1027,10 +1027,12 @@ impl Game {
 #[inline(always)]
 unsafe fn push_move_unchecked(moves: &mut Vec<Move>, m: Move, counter: &mut usize) {
     debug_assert!(moves.len() < moves.capacity());
+    debug_assert!(*counter < moves.capacity());
+    debug_assert_ne!(*counter, usize::MAX);
     unsafe {
         moves.as_mut_ptr().add(*counter).write(m);
+        *counter = counter.unchecked_add(1);
     }
-    *counter += 1;
 }
 
 #[cfg(test)]
