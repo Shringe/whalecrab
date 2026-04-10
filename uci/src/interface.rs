@@ -69,8 +69,10 @@ impl UciInterface {
             };
 
             let (responses, action) = self.handle(cmd);
-            sent!("{}", responses.join("\n"));
-            println!("{}", responses.join("\n"));
+            if !responses.is_empty() {
+                sent!("{}", responses.join("\n"));
+                println!("{}", responses.join("\n"));
+            }
 
             flush();
 
@@ -196,10 +198,10 @@ impl UciInterface {
                 );
 
                 let result = self.engine.search(movetime, depth);
-                log!("Search result");
-                for line in result.to_string().lines() {
-                    log!(" -- {}", line);
-                }
+                log!(
+                    "Search result:{}",
+                    ("\n".to_string() + &result.to_string()).replace("\n", "\n -- ")
+                );
 
                 let best_move = match result.best_move {
                     Some(m) => m,

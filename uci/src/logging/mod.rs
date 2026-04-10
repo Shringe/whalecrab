@@ -44,11 +44,9 @@ pub fn flush() {
     ] {
         if let Some(w) = writer
             && let Ok(mut w) = w.lock()
+            && let Err(e) = w.flush()
         {
-            match w.flush() {
-                Ok(_) => eprintln!("{} flushed successfully", name),
-                Err(e) => eprintln!("Failed to flush {}: {}", name, e),
-            }
+            eprintln!("Failed to flush {}: {}", name, e);
         }
     }
 }
@@ -147,8 +145,18 @@ impl Logger {
     fn log_with_prefix(prefix: &str, prefix_color: &str, msg: &str) {
         let text_prefix = prefix;
         let ansi_prefix = ansi::color(prefix, prefix_color);
-        let text_prefixed = format!("{}: {}", text_prefix, msg);
-        let ansi_prefixed = format!("{}: {}", ansi_prefix, msg);
+
+        let prefix_lines = |msg: &str, prefix: &str| {
+            msg.lines()
+                .map(|line| format!("{}: {}", prefix, line))
+                .collect::<Vec<_>>()
+                .join("\n")
+                + "\n"
+        };
+
+        let text_prefixed = prefix_lines(msg, text_prefix);
+        let ansi_prefixed = prefix_lines(msg, &ansi_prefix);
+
         eprint!("{}", ansi_prefixed);
         Self::write_to(&MAIN_WRITER, &text_prefixed);
         Self::write_to(&MAIN_ANSI_WRITER, &ansi_prefixed);
