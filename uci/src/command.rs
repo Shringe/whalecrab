@@ -2,6 +2,26 @@ use std::{fmt, str::FromStr, time::Duration};
 
 use whalecrab_lib::position::game::STARTING_FEN;
 
+#[derive(Debug)]
+pub enum UciError {
+    UnrecognizedCommand(String),
+    #[allow(unused)] // We might bring this back later
+    ParseMove(String),
+    ParseOptionName(String),
+    ParseOptionValue(String),
+}
+
+impl fmt::Display for UciError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
+            Self::ParseMove(cmd) => write!(f, "Failed to parse move string: '{}'", cmd),
+            Self::ParseOptionName(cmd) => write!(f, "Failed to name of setoption: '{}'", cmd),
+            Self::ParseOptionValue(cmd) => write!(f, "Failed to value of setoption: '{}'", cmd),
+        }
+    }
+}
+
 /// Enum of supported uci commands to receive.
 /// This behavior is implemented using the below documentation as a reference.
 /// https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf
@@ -26,12 +46,16 @@ pub enum UciCommand {
         wtime: Option<Duration>,
         /// Black's total time on the clock
         btime: Option<Duration>,
-        /// White's increment in milliseconds
+        /// White's increment
         #[allow(dead_code)]
         winc: Option<Duration>,
-        /// Black's increment in milliseconds
+        /// Black's increment
         #[allow(dead_code)]
         binc: Option<Duration>,
+        /// The amount of moves left in the time control
+        movestogo: Option<u16>,
+        /// The maximum depth to search
+        depth: Option<u16>,
     },
     SetOption {
         name: String,
@@ -39,24 +63,34 @@ pub enum UciCommand {
     },
 }
 
-#[derive(Debug)]
-pub enum UciError {
-    UnrecognizedCommand(String),
-    #[allow(unused)] // We might bring this back later
-    ParseMove(String),
-    ParseOptionName(String),
-    ParseOptionValue(String),
+/// Gets the `n` words after start. Returns None if `start` is not found, or `n` words are not present
+/// after start.
+fn parse_parameter_n(s: &str, start: &str, n: usize) -> Option<String> {
+    let after_start = s.split_once(start)?.1.trim();
+    let words: Vec<&str> = after_start.splitn(n.checked_add(1)?, ' ').take(n).collect();
+    if words.len() < n {
+        None
+    } else {
+        Some(words.join(" "))
+    }
 }
 
-impl fmt::Display for UciError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnrecognizedCommand(cmd) => write!(f, "Unrecognized UCI command: '{}'", cmd),
-            Self::ParseMove(cmd) => write!(f, "Failed to parse move string: '{}'", cmd),
-            Self::ParseOptionName(cmd) => write!(f, "Failed to name of setoption: '{}'", cmd),
-            Self::ParseOptionValue(cmd) => write!(f, "Failed to value of setoption: '{}'", cmd),
-        }
-    }
+/// See `parse_parameter_n`
+fn parse_parameter_first(s: &str, start: &str) -> Option<String> {
+    parse_parameter_n(s, start, 1)
+}
+
+/// Gets all words between `start` and `end`. If it can not find `start`, returns None.
+fn parse_parameter(s: &str, start: &str, end: Option<&str>) -> Option<String> {
+    let after_start = s.split_once(start)?.1.trim();
+    let out = if let Some(end) = end
+        && let Some(before_end) = after_start.split_once(end)
+    {
+        before_end.0
+    } else {
+        after_start
+    };
+    Some(out.trim().to_string())
 }
 
 impl FromStr for UciCommand {
@@ -75,33 +109,30 @@ impl FromStr for UciCommand {
             "quit" => Ok(Self::Quit),
             "isready" => Ok(Self::IsReady),
             "position" => {
-                let remaining = line.split_once("position ").unwrap_or(("", line)).1;
-                let (position, moves) = remaining.split_once(" moves ").unwrap_or((remaining, ""));
-
-                let fen = if let Some(fen) = position.strip_prefix("fen ") {
+                let starting_position = parse_parameter(line, "position", Some("moves"));
+                let fen = if let Some(pos) = &starting_position
+                    && let Some(fen) = pos.strip_prefix("fen ")
+                {
                     fen
                 } else {
                     STARTING_FEN
-                };
+                }
+                .to_string();
 
-                Ok(Self::Position {
-                    fen: fen.to_string(),
-                    uci_moves: moves.to_string(),
-                })
+                let uci_moves = parse_parameter(line, "moves", None).unwrap_or_default();
+
+                Ok(Self::Position { fen, uci_moves })
             }
             "go" => {
-                let tokens: Vec<&str> = line.split(' ').collect();
-
-                let parse_token = |key: &str| {
-                    tokens
-                        .windows(2)
-                        .find(|w| w[0] == key)
-                        .and_then(|w| w[1].parse::<u64>().ok())
+                let parse_duration = |key: &str| {
+                    eprintln!("{:?}", parse_parameter_first(line, key));
+                    parse_parameter_first(line, key)
+                        .and_then(|s| s.parse::<u64>().ok())
                         .map(Duration::from_millis)
                 };
 
-                let parse_inc = |key: &str| {
-                    let inc = parse_token(key);
+                let parse_increment = |key: &str| {
+                    let inc = parse_duration(key);
                     if inc == Some(Duration::ZERO) {
                         None
                     } else {
@@ -109,12 +140,18 @@ impl FromStr for UciCommand {
                     }
                 };
 
+                let parse_u16 = |key: &str| {
+                    parse_parameter_first(line, key).and_then(|s| s.parse::<u16>().ok())
+                };
+
                 Ok(Self::Go {
-                    movetime: parse_token("movetime"),
-                    wtime: parse_token("wtime"),
-                    btime: parse_token("btime"),
-                    winc: parse_inc("winc"),
-                    binc: parse_inc("binc"),
+                    movetime: parse_duration("movetime"),
+                    wtime: parse_duration("wtime"),
+                    btime: parse_duration("btime"),
+                    winc: parse_increment("winc"),
+                    binc: parse_increment("binc"),
+                    movestogo: parse_u16("movestogo"),
+                    depth: parse_u16("depth"),
                 })
             }
             "setoption" => {
@@ -229,24 +266,30 @@ mod tests {
                 btime: None,
                 winc: None,
                 binc: None,
+                movestogo: None,
+                depth: None,
             }
         ));
     }
 
     #[test]
     fn go_movetime() {
-        let cmd = UciCommand::from_str("go movetime 1000").unwrap();
-        assert!(matches!(
-            cmd,
+        assert_eq!(
+            uci!("go movetime 1000"),
             UciCommand::Go {
-                movetime: Some(d),
-                ..
-            } if d == Duration::from_millis(1000)
-        ));
+                movetime: Some(Duration::from_millis(1000)),
+                wtime: None,
+                btime: None,
+                winc: None,
+                binc: None,
+                movestogo: None,
+                depth: None,
+            }
+        );
     }
 
     #[test]
-    fn go_wtime_btime() {
+    fn go_wtime_btime_winc_binc() {
         let cmd = UciCommand::from_str("go wtime 60000 btime 60000 winc 500 binc 500").unwrap();
         assert!(matches!(
             cmd,
@@ -256,10 +299,35 @@ mod tests {
                 btime: Some(b),
                 winc: Some(wi),
                 binc: Some(bi),
+                movestogo: None,
+                depth: None,
             } if w == Duration::from_millis(60000)
               && b == Duration::from_millis(60000)
               && wi == Duration::from_millis(500)
               && bi == Duration::from_millis(500)
+        ));
+    }
+
+    #[test]
+    fn go_wtime_btime_winc_binc_movestogo() {
+        let cmd =
+            UciCommand::from_str("go wtime 60000 movestogo 567 btime 60000 winc 500 binc 500")
+                .unwrap();
+        assert!(matches!(
+            cmd,
+            UciCommand::Go {
+                movetime: None,
+                wtime: Some(w),
+                btime: Some(b),
+                winc: Some(wi),
+                binc: Some(bi),
+                movestogo: Some(mtg),
+                depth: None,
+            } if w == Duration::from_millis(60000)
+              && b == Duration::from_millis(60000)
+              && wi == Duration::from_millis(500)
+              && bi == Duration::from_millis(500)
+              && mtg == 567
         ));
     }
 
@@ -314,6 +382,8 @@ mod tests {
             btime: None,
             winc: Some(Duration::from_millis(50)),
             binc: None,
+            movestogo: None,
+            depth: None,
         };
         assert_eq!(actual, expected);
     }
@@ -325,6 +395,40 @@ mod tests {
         let UciCommand::Position { fen: actual, .. } = uci!("position fen {fen}") else {
             panic!("Wrong cmd returned")
         };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_parameter_movestogo() {
+        let line = "go wtime 500 btime 500 movestogo 50";
+        let expected = Some("50".to_string());
+        let actual = parse_parameter(line, "movestogo", None);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_parameter_fen_moves() {
+        let fen = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
+        let line = format!("position fen {fen} moves d4e5");
+        let expected = Some(fen.to_string());
+        let actual = parse_parameter(&line, "fen", Some("moves"));
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_parameter_fen() {
+        let fen = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
+        let line = format!("position fen {fen}");
+        let expected = Some(fen.to_string());
+        let actual = parse_parameter(&line, "fen", None);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_parameter_first_movestogo() {
+        let line = "go movestogo 50 movetime 1000";
+        let expected = Some("50".to_string());
+        let actual = parse_parameter_first(line, "movestogo");
         assert_eq!(actual, expected);
     }
 }
