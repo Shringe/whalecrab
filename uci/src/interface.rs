@@ -1,4 +1,9 @@
-use std::{io::Stdin, str::FromStr, time::Duration};
+use std::{
+    io::Stdin,
+    ops::{AddAssign, MulAssign},
+    str::FromStr,
+    time::Duration,
+};
 
 use whalecrab_engine::{engine::Engine, score::Score};
 use whalecrab_lib::{
@@ -167,18 +172,32 @@ impl UciInterface {
                 movetime,
                 wtime,
                 btime,
-                ..
+                winc,
+                binc,
+                movestogo,
+                depth,
             } => {
                 log!(
-                    "Movetime {:?} || wtime {:?} || btime {:?}",
+                    "Movetime {:?} || wtime {:?} || btime {:?} || winc {:?} || binc {:?} || movestogo {:?} || depth {:?}",
                     movetime,
                     wtime,
-                    btime
+                    btime,
+                    winc,
+                    binc,
+                    movestogo,
+                    depth
                 );
-                let movetime = self.determine_movetime(movetime, wtime, btime);
-                log!("Engine will target {:?} move duration", movetime);
 
-                let result = self.engine.search(movetime, self.depth);
+                let movetime =
+                    self.determine_movetime(movetime, wtime, btime, winc, binc, movestogo);
+                let depth = depth.unwrap_or(self.depth);
+                log!(
+                    "Engine will target a {:?} move duration and a depth of {}",
+                    movetime,
+                    depth
+                );
+
+                let result = self.engine.search(movetime, depth);
                 log!("Search result");
                 for line in result.to_string().lines() {
                     log!(" -- {}", line);
@@ -209,6 +228,9 @@ impl UciInterface {
         movetime: Option<Duration>,
         wtime: Option<Duration>,
         btime: Option<Duration>,
+        winc: Option<Duration>,
+        binc: Option<Duration>,
+        movestogo: Option<u16>,
     ) -> Duration {
         if let Some(movetime) = movetime {
             // In "time per move" time controls, taking more than the specified movetime may cause the
@@ -216,43 +238,55 @@ impl UciInterface {
             return movetime.mul_f64(0.9);
         }
 
-        let (ours, opponents) = match self.engine.game.turn {
-            PieceColor::White => (wtime, btime),
-            PieceColor::Black => (btime, wtime),
+        let (ours, our_increment, opponents, _) = match self.engine.game.turn {
+            PieceColor::White => (wtime, winc, btime, binc),
+            PieceColor::Black => (btime, binc, wtime, winc),
         };
 
         let Some(ours) = ours else {
             return self.duration;
         };
 
-        let expected_moves_remaining = 30;
-
-        let mut allocation = ours / expected_moves_remaining;
+        let expected_moves_remaining = movestogo.unwrap_or(30);
+        let mut allocation = Allocation(ours / expected_moves_remaining.into());
 
         // If we're losing, allocate more time
         let score = self.last_score.for_color(self.engine.game.turn);
-        let score_multiplier = if score == 0 {
-            1.0
-        } else if score > 0 {
-            0.8
-        } else {
-            (1.0 + (score / 500).to_int() as f64).min(2.0)
-        };
+        if score > 0 {
+            allocation *= 0.8;
+        } else if score < 0 {
+            allocation *= (1.0 + (score / 500).to_int() as f64).min(2.0);
+        }
 
         // If we are up on time, allocate more time
-        let time_multiplier = if let Some(opponents) = opponents
+        if let Some(opponents) = opponents
             && opponents > Duration::ZERO
         {
             let ratio = ours.as_secs_f64() / opponents.as_secs_f64();
-            ratio.sqrt().clamp(0.5, 2.0)
-        } else {
-            1.0
-        };
+            allocation *= ratio.sqrt().clamp(0.5, 2.0)
+        }
 
-        allocation = allocation.mul_f64(score_multiplier);
-        allocation = allocation.mul_f64(time_multiplier);
+        // Use some of our increment
+        if let Some(our_increment) = our_increment {
+            allocation += our_increment / 2;
+        }
 
-        allocation.min(ours.mul_f64(0.9))
+        allocation.0.min(ours.mul_f64(0.9))
+    }
+}
+
+/// Makes duration arithmetic easier
+struct Allocation(Duration);
+
+impl MulAssign<f64> for Allocation {
+    fn mul_assign(&mut self, factor: f64) {
+        self.0 = self.0.mul_f64(factor);
+    }
+}
+
+impl AddAssign<Duration> for Allocation {
+    fn add_assign(&mut self, rhs: Duration) {
+        self.0.add_assign(rhs);
     }
 }
 
@@ -269,7 +303,8 @@ mod test {
         let remaining = Duration::from_secs(2);
         let min = Duration::from_millis(20);
         let max = Duration::from_millis(2000);
-        let actual = uci.determine_movetime(None, Some(remaining), Some(remaining));
+        let actual =
+            uci.determine_movetime(None, Some(remaining), Some(remaining), None, None, None);
         assert!(actual > min);
         assert!(actual < max);
     }
