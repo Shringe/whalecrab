@@ -1,4 +1,4 @@
-use std::{io::Stdin, ops::MulAssign, str::FromStr, time::Duration};
+use std::{io::Stdin, str::FromStr, time::Duration};
 
 use whalecrab_engine::{engine::Engine, score::Score};
 use whalecrab_lib::{

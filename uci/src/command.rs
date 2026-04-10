@@ -35,6 +35,7 @@ pub enum UciCommand {
 #[derive(Debug)]
 pub enum UciError {
     UnrecognizedCommand(String),
+    #[allow(unused)] // We might bring this back later
     ParseMove(String),
     ParseOptionName(String),
     ParseOptionValue(String),
