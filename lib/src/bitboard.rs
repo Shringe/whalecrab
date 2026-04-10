@@ -156,7 +156,7 @@ impl BitBoard {
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
     #[inline]
     pub fn to_square(&self) -> Square {
-        Square::new(self.0.trailing_zeros() as u8)
+        unsafe { Square::new_unchecked(self.0.trailing_zeros() as u8) }
     }
 
     /// Check if a square's index is on in the bitboard
@@ -193,9 +193,9 @@ impl Iterator for BitBoard {
         if self.0 == 0 {
             None
         } else {
-            let result = self.to_square();
-            *self ^= BitBoard::from_square(result);
-            Some(result)
+            let lsb = self.0.trailing_zeros();
+            self.0 &= self.0 - 1;
+            unsafe { Some(Square::new_unchecked(lsb as u8)) }
         }
     }
 }

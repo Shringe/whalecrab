@@ -146,6 +146,12 @@ impl Square {
         Square(sq & 63)
     }
 
+    /// # Safety
+    /// `sq` should be less than 64
+    pub const unsafe fn new_unchecked(sq: u8) -> Square {
+        Square(sq)
+    }
+
     pub const fn to_int(&self) -> u8 {
         self.0
     }
