@@ -14,15 +14,22 @@ pub enum UciCommand {
     /// The position to set up on the internal board. The engine should start with the given fen,
     /// then play all of the uci moves.
     Position {
+        /// The fen to a position. Currently will return the starting fen if the GUI says "startpos" instead of a specific fen
         fen: String,
+        /// A string such as "e2e4 e7e5 ..."
         uci_moves: String,
     },
     Go {
+        /// The exact amount of time that should be searched
         movetime: Option<Duration>,
+        /// White's total time on the clock
         wtime: Option<Duration>,
+        /// Black's total time on the clock
         btime: Option<Duration>,
+        /// White's increment in milliseconds
         #[allow(dead_code)]
         winc: Option<Duration>,
+        /// Black's increment in milliseconds
         #[allow(dead_code)]
         binc: Option<Duration>,
     },
