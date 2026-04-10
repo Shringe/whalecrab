@@ -33,6 +33,26 @@ macro_rules! sent {
     };
 }
 
+/// Flush all log files
+pub fn flush() {
+    log!("Flushing log files");
+    for (writer, name) in [
+        (MAIN_WRITER.get(), "main.log"),
+        (SENT_WRITER.get(), "sent.log"),
+        (RECEIVED_WRITER.get(), "received.log"),
+        (MAIN_ANSI_WRITER.get(), "main.ans"),
+    ] {
+        if let Some(w) = writer
+            && let Ok(mut w) = w.lock()
+        {
+            match w.flush() {
+                Ok(_) => eprintln!("{} flushed successfully", name),
+                Err(e) => eprintln!("Failed to flush {}: {}", name, e),
+            }
+        }
+    }
+}
+
 /// Flushes the logger any time an instance of this type is dropped.
 /// You can prevent this type from being dropped immediately by using a binding.
 /// ```rust
@@ -87,22 +107,7 @@ impl Default for Logger {
 
 impl Drop for Logger {
     fn drop(&mut self) {
-        log!("Flushing log files");
-        for (writer, name) in [
-            (MAIN_WRITER.get(), "main.log"),
-            (SENT_WRITER.get(), "sent.log"),
-            (RECEIVED_WRITER.get(), "received.log"),
-            (MAIN_ANSI_WRITER.get(), "main.ans"),
-        ] {
-            if let Some(w) = writer
-                && let Ok(mut w) = w.lock()
-            {
-                match w.flush() {
-                    Ok(_) => eprintln!("{} flushed successfully", name),
-                    Err(e) => eprintln!("Failed to flush {}: {}", name, e),
-                }
-            }
-        }
+        flush();
     }
 }
 
@@ -136,7 +141,6 @@ impl Logger {
             && let Ok(mut w) = w.lock()
         {
             let _ = w.write_all(msg.as_bytes());
-            let _ = w.flush();
         }
     }
 
