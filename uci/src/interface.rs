@@ -210,7 +210,9 @@ impl UciInterface {
         btime: Option<Duration>,
     ) -> Duration {
         if let Some(movetime) = movetime {
-            return movetime;
+            // In "time per move" time controls, taking more than the specified movetime may cause the
+            // engine to lose on time, so we allocate some overhead.
+            return movetime.mul_f32(0.9);
         }
 
         let remaining = match self.engine.game.turn {
