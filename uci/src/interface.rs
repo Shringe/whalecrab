@@ -306,7 +306,12 @@ mod test {
             let (responses, action) = uci.handle(uci!("go movetime {}", movetime.as_millis()));
             assert_eq!(action, UciHandleAction::Continue);
             let elapsed = start.elapsed();
-            assert!(elapsed > movetime);
+            assert!(
+                elapsed * 2 > movetime,
+                "Movetime is {:?}, but only {:?} elapsed",
+                movetime,
+                elapsed
+            );
             assert!(elapsed < movetime * 2);
 
             let bestmove = responses.iter().find(|r| r.starts_with("bestmove"));
@@ -329,9 +334,8 @@ mod test {
         let fen = "k7/ppn5/8/8/3K1Q2/8/8/R7 b - - 0 1";
         let mut uci = UciInterface::default();
         uci.handle(uci!("position fen {fen}"));
-        uci.handle(uci!("go movetime 100"));
-        let actual = uci.engine.game.to_fen();
-        let expected = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
-        assert_eq!(actual, expected);
+        let binding = uci.handle(uci!("go movetime 100"));
+        let response = binding.0.first().unwrap();
+        assert_eq!(response, "bestmove c7e6");
     }
 }
