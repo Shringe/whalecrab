@@ -11,7 +11,7 @@ use whalecrab_lib::{
     position::game::Game,
 };
 
-use crate::{command::UciCommand, log, logging::flush, received, sent};
+use crate::{command::UciCommand, log, logging::flush, received, send};
 
 const ID_NAME: &str = "whalecrab";
 const ID_AUTHOR: &str = "Shringe";
@@ -70,8 +70,7 @@ impl UciInterface {
 
             let (responses, action) = self.handle(cmd);
             if !responses.is_empty() {
-                sent!("{}", responses.join("\n"));
-                println!("{}", responses.join("\n"));
+                send!("{}", responses.join("\n"));
             }
 
             flush();

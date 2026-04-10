@@ -3,6 +3,10 @@ name = "uci"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = ["is-terminal"]
+
 [dependencies]
 whalecrab_lib = { path = "../lib" }
 whalecrab_engine = { path = "../engine" }
+is-terminal = { version = "0.4.17", optional = true }

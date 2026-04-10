@@ -7,7 +7,6 @@ mod test_utils;
 use std::io;
 
 use crate::interface::UciInterface;
-use crate::logging::Logger;
 
 #[cfg(debug_assertions)]
 fn replay_mode() {
@@ -62,10 +61,11 @@ fn main() {
     replay_mode();
 
     #[allow(clippy::default_constructed_unit_structs)]
-    let _g = Logger::default();
+    let _g = logging::Logger::default();
 
     let mut uci = UciInterface::default();
 
     let stdin = io::stdin();
+    logging::check_for_interactive_session(&stdin);
     uci.watch(stdin);
 }

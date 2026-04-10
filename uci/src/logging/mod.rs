@@ -1,16 +1,11 @@
-mod ansi;
+pub mod ansi;
 
 use std::{
     fs::{self, File},
-    io::{BufWriter, Write},
+    io::{BufWriter, Stdin, Write},
     path::Path,
     sync::{Mutex, OnceLock},
 };
-
-static MAIN_ANSI_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
-static MAIN_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
-static SENT_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
-static RECEIVED_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 
 #[macro_export]
 macro_rules! log {
@@ -33,9 +28,45 @@ macro_rules! sent {
     };
 }
 
+/// Acts like a sent!() + println!(), but with special formatting if the interface is interactive
+#[macro_export]
+macro_rules! send {
+    ($($arg:tt)*) => {
+        let msg = format!($($arg)*);
+        $crate::sent!("{}", msg);
+        if let Some(interactive) = $crate::logging::INTERACTIVE.get()
+            && *interactive
+        {
+            println!("{}", $crate::logging::ansi::color(&msg, $crate::logging::ansi::GREEN));
+        } else {
+            println!("{}", msg);
+        };
+    };
+}
+
+static MAIN_ANSI_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
+static MAIN_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
+static SENT_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
+static RECEIVED_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
+
+pub static INTERACTIVE: OnceLock<bool> = OnceLock::new();
+
+pub fn check_for_interactive_session(stdin: &Stdin) {
+    INTERACTIVE.get_or_init(move || {
+        #[cfg(feature = "is-terminal")]
+        {
+            use is_terminal::IsTerminal;
+            let out = stdin.is_terminal();
+            log!("Interactive session detected");
+            out
+        }
+        #[cfg(not(feature = "is-terminal"))]
+        false
+    });
+}
+
 /// Flush all log files
 pub fn flush() {
-    log!("Flushing log files");
     for (writer, name) in [
         (MAIN_WRITER.get(), "main.log"),
         (SENT_WRITER.get(), "sent.log"),
@@ -54,7 +85,7 @@ pub fn flush() {
 /// Flushes the logger any time an instance of this type is dropped.
 /// You can prevent this type from being dropped immediately by using a binding.
 /// ```rust
-/// use uci::logger::Logger;
+/// use uci::logging::Logger;
 /// use uci::log;
 ///
 /// {
