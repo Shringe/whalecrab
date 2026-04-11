@@ -147,7 +147,53 @@ impl Default for Game {
 
 impl fmt::Debug for Game {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Game(\"{}\")", self.to_fen())
+        if !f.alternate() {
+            return write!(f, "Game(\"{}\")", self.to_fen());
+        }
+
+        let separator = "=".repeat(20);
+        let divider = "-".repeat(20);
+
+        let mut out = String::new();
+        out.push('\n');
+
+        out.push_str(&format!("{separator} BitBoards {separator}\n"));
+        out.push_str(&format!("White pawns:\n{}\n", self.white_pawns));
+        out.push_str(&format!("White knights:\n{}\n", self.white_knights));
+        out.push_str(&format!("White bishops:\n{}\n", self.white_bishops));
+        out.push_str(&format!("White rooks:\n{}\n", self.white_rooks));
+        out.push_str(&format!("White queens:\n{}\n", self.white_queens));
+        out.push_str(&format!("White kings:\n{}\n", self.white_kings));
+        out.push_str(&format!("{divider}\n"));
+        out.push_str(&format!("Black pawns:\n{}\n", self.black_pawns));
+        out.push_str(&format!("Black knights:\n{}\n", self.black_knights));
+        out.push_str(&format!("Black bishops:\n{}\n", self.black_bishops));
+        out.push_str(&format!("Black rooks:\n{}\n", self.black_rooks));
+        out.push_str(&format!("Black queens:\n{}\n", self.black_queens));
+        out.push_str(&format!("Black kings:\n{}\n", self.black_kings));
+
+        out.push_str(&format!("{separator} Attacks {separator}\n"));
+        out.push_str(&format!("White attacks:\n{}\n", self.white_attacks));
+        out.push_str(&format!("Black attacks:\n{}\n", self.black_attacks));
+
+        out.push_str(&format!("{separator} Check Rays {separator}\n"));
+        out.push_str(&format!("White check rays:\n{}\n", self.white_check_rays));
+        out.push_str(&format!("Black check rays:\n{}\n", self.black_check_rays));
+
+        out.push_str(&format!("{separator} State {separator}\n"));
+        out.push_str(&format!("Turn:              {:?}\n", self.turn));
+        out.push_str(&format!("State:             {:?}\n", self.state));
+        out.push_str(&format!("Castling rights:   {:#?}\n", self.castling_rights));
+        out.push_str(&format!(
+            "En passant target: {:?}\n",
+            self.en_passant_target
+        ));
+        out.push_str(&format!("Half move clock:   {}\n", self.half_move_timeout));
+        out.push_str(&format!("Full move clock:   {}\n", self.full_move_clock));
+        out.push_str(&format!("Hash:              {:#018x}\n", self.hash));
+        out.push_str(&format!("FEN:               {}\n", self.to_fen()));
+
+        write!(f, "{}", out)
     }
 }
 
@@ -353,25 +399,7 @@ impl Game {
         });
 
         fen.push(' ');
-        let mut castling = String::new();
-        if self.castling_rights.white_kingside() {
-            castling.push('K');
-        }
-        if self.castling_rights.white_queenside() {
-            castling.push('Q');
-        }
-        if self.castling_rights.black_kingside() {
-            castling.push('k');
-        }
-        if self.castling_rights.black_queenside() {
-            castling.push('q');
-        }
-
-        if castling.is_empty() {
-            fen.push('-');
-        } else {
-            fen.push_str(&castling);
-        }
+        fen.push_str(&self.castling_rights.to_fen());
 
         fen.push(' ');
         if let Some(target) = self.en_passant_target {

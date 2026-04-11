@@ -27,7 +27,7 @@ fn play_game(args: &cli::Args) {
             break;
         }
 
-        log::debug!("Position: {:?}", game);
+        log::debug!("Position: {:#?}", game);
         let moves = game.legal_moves();
         let Some(m) = moves.choose(&mut rng) else {
             log::info!("No moves found. {:?}", game.state);

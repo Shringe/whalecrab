@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{bitboard::BitBoard, square::Square};
 
 pub const BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR: BitBoard =
@@ -71,8 +73,26 @@ pub enum CastleSide {
     Kingside,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Clone, Copy, PartialEq, Hash)]
 pub struct CastlingRights(u8);
+
+impl fmt::Debug for CastlingRights {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            write!(
+                f,
+                "CastlingRights({}) {{ white_kingside: {}, white_queenside: {}, black_kingside: {}, black_queenside: {} }}",
+                self.to_int(),
+                self.white_kingside(),
+                self.white_queenside(),
+                self.black_kingside(),
+                self.black_queenside(),
+            )
+        } else {
+            write!(f, "CastlingRights(\"{}\")", self.to_fen())
+        }
+    }
+}
 
 impl Default for CastlingRights {
     fn default() -> Self {
@@ -95,6 +115,14 @@ impl CastlingRights {
         Self(0)
     }
 
+    pub(crate) const fn from_int(val: u8) -> CastlingRights {
+        CastlingRights(val)
+    }
+
+    pub(crate) const fn to_int(self) -> u8 {
+        self.0
+    }
+
     pub fn from_fen(castling_fen: &str) -> Self {
         let mut out = 0;
         if castling_fen.contains('Q') {
@@ -112,12 +140,24 @@ impl CastlingRights {
         Self(out)
     }
 
-    pub(crate) const fn from_int(val: u8) -> CastlingRights {
-        CastlingRights(val)
-    }
-
-    pub(crate) const fn to_int(self) -> u8 {
-        self.0
+    pub fn to_fen(&self) -> String {
+        let mut out = String::with_capacity(4);
+        if self.white_kingside() {
+            out.push('K');
+        }
+        if self.white_queenside() {
+            out.push('Q');
+        }
+        if self.black_kingside() {
+            out.push('k');
+        }
+        if self.black_queenside() {
+            out.push('q');
+        }
+        if out.is_empty() {
+            return '-'.to_string();
+        }
+        out
     }
 
     pub fn white_queenside(self) -> bool {
