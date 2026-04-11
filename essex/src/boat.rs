@@ -53,7 +53,7 @@ impl Boat {
                 let positions = self.positions.fetch_add(1, Ordering::Relaxed);
                 log::trace!("Position #{}", positions);
                 if positions >= self.args.positions {
-                    log::warn!("{} positions reached", self.args.positions);
+                    log::warn!("{} positions reached, quiting...", self.args.positions);
                     self.term.store(true, Ordering::Relaxed);
                     break;
                 }
@@ -91,7 +91,8 @@ impl Boat {
             });
 
             if self.args.quit {
-                log::trace!("Quiting");
+                log::info!("Error found and --quit was passed, quiting...");
+                self.term.store(true, Ordering::Relaxed);
                 break;
             }
 
