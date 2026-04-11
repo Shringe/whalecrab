@@ -204,7 +204,7 @@ impl Game {
                         ..
                     }
                 ),
-                "The king is being captured! {}",
+                "The king is capturable! {}",
                 m
             );
 
