@@ -997,10 +997,12 @@ impl Game {
                     // Generating grouped pawn moves when there are no pawns
                     // can be slow
                     if num_pawns != 0 {
-                        self.generate_grouped_psuedo_legal_white_pawn_moves(
-                            &mut moves,
-                            &mut counter,
-                        );
+                        // TODO: fix and reenable grouped pawn move generation
+                        push_moves!(moves, PieceType::Pawn, self.white_pawns);
+                        // self.generate_grouped_psuedo_legal_white_pawn_moves(
+                        //     &mut moves,
+                        //     &mut counter,
+                        // );
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves!(moves, PieceType::Bishop, self.white_bishops);
@@ -1023,10 +1025,11 @@ impl Game {
                 let mut moves = Vec::with_capacity(capacity);
                 unsafe {
                     if num_pawns != 0 {
-                        self.generate_grouped_psuedo_legal_black_pawn_moves(
-                            &mut moves,
-                            &mut counter,
-                        );
+                        push_moves!(moves, PieceType::Pawn, self.black_pawns);
+                        // self.generate_grouped_psuedo_legal_black_pawn_moves(
+                        //     &mut moves,
+                        //     &mut counter,
+                        // );
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves!(moves, PieceType::Bishop, self.black_bishops);
