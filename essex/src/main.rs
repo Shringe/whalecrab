@@ -1,97 +1,26 @@
+mod boat;
 mod cli;
 mod database;
 
-use std::panic;
+use std::{
+    io::Error,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
+    time::Duration,
+};
 
 use clap::Parser;
-use rand::{Rng, SeedableRng, rngs::SmallRng, seq::IndexedRandom};
-use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed};
-use whalecrab_lib::position::game::{Game, STARTING_FEN, State};
+use whalecrab_engine::{platform_timer, timers::MoveTimer};
 
-fn play_game(args: &cli::Args) -> Option<database::Dataset> {
-    let mut seed = args.seed.unwrap_or_else(|| rand::rng().next_u32());
-    log::info!("Seed: {}", seed);
-    let mut rng = SmallRng::seed_from_u64(seed.into());
+use crate::boat::Boat;
 
-    let mut game = Game::from_fen(&args.fen.clone().unwrap_or(STARTING_FEN.to_string()))?;
-    let mut positions: u32 = 0;
-    let timer = Elapsed::now(args.time);
-
-    let mut db = database::Dataset::load(&args.database_path);
-
-    macro_rules! save_position {
-        ($error:expr) => {
-            log::debug!("Found error at Position:\n{:#?}", game);
-            let (error, context) = $error.to_error_type_and_string();
-            let entry = database::Entry {
-                seed,
-                positions,
-                fen: game.to_fen(),
-                error,
-                context,
-            };
-
-            log::debug!("Adding entry to dataset: {:#?}", entry);
-            db.insert(seed, entry);
-        };
-    }
-
-    loop {
-        log::debug!("Position #{}", positions);
-        positions = positions.saturating_add(1);
-        if positions >= args.positions {
-            log::info!("{} positions reached", args.positions);
-            break;
-        }
-        if timer.over() {
-            log::info!("Timer finished; {:?} is up", args.time);
-            break;
-        }
-
-        let moves = game.legal_moves();
-        let Some(m) = moves.choose(&mut rng) else {
-            log::info!("No moves found. {:?}", game.state);
-            if game.state == State::InProgress {
-                log::warn!("Game finished and was in progress!");
-                save_position!(database::ErrorInfo::FinishedInProgress {
-                    state: format!("{:?}", game.state)
-                });
-            }
-            log::info!("Starting new game");
-            game = Game::default();
-            continue;
-        };
-
-        log::debug!("Playing move: {:?}", m);
-        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-            game.play(m);
-        }));
-
-        let Err(e) = result else {
-            continue;
-        };
-
-        log::warn!("Found error {:?}", e);
-
-        save_position!(database::ErrorInfo::PanicOnMove {
-            m: m.to_string(),
-            uci: m.to_uci(&game),
-            error: format!("{:?}", e)
-        });
-
-        if args.quit {
-            log::info!("Quiting");
-            break;
-        }
-
-        game = Game::default();
-        seed = rand::rng().next_u32();
-        log::info!("New Seed: {}", seed);
-        rng = SmallRng::seed_from_u64(seed.into());
-    }
-
-    log::info!("Seed: {}", seed);
-    Some(db)
+fn register_hooks(term: &Arc<AtomicBool>) -> Result<(), Error> {
+    signal_hook::flag::register(signal_hook::consts::SIGINT, term.clone())?;
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, term.clone())?;
+    Ok(())
 }
 
 fn main() {
@@ -100,11 +29,36 @@ fn main() {
     let args = cli::Args::parse();
     log::debug!("{:#?}", args);
 
-    match play_game(&args) {
-        Some(db) => match db.save(&args.database_path) {
-            Ok(_) => log::info!("Database saved successfully"),
-            Err(e) => log::error!("Failed to save database: {:?}", e),
-        },
-        None => log::error!("No database returned"),
+    let term = Arc::new(AtomicBool::new(false));
+    let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
+
+    for _ in 0..args.threads {
+        let boat = Boat::new(&args, &term, &dataset);
+        let _ = thread::spawn(move || {
+            boat.sail();
+        });
     }
+
+    if let Err(e) = register_hooks(&term) {
+        log::error!(
+            "Failed to register hooks. Program may appear unresponsive: {:?}",
+            e
+        );
+    }
+
+    let timer = platform_timer!(args.time);
+    while !timer.over() && !term.load(Ordering::Relaxed) {
+        thread::sleep(Duration::from_millis(5));
+    }
+
+    log::info!("Finishing program...");
+    term.store(true, Ordering::Relaxed);
+
+    thread::sleep(Duration::from_millis(25));
+    log::info!("Saving dataset to {}", args.database_path.display());
+    dataset
+        .lock()
+        .expect("Failed to retrieve the dataset")
+        .save(&args.database_path)
+        .expect("Failed to save the dataset");
 }

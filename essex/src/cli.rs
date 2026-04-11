@@ -2,7 +2,7 @@ use std::{path::PathBuf, time::Duration};
 
 use clap::Parser;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Args {
     #[arg(long)]
     pub fen: Option<String>,
@@ -19,6 +19,10 @@ pub struct Args {
     /// Quit after finding the first error
     #[arg(long)]
     pub quit: bool,
+
+    /// Number of threads to use
+    #[arg(long, default_value_t = 16)]
+    pub threads: u8,
 
     /// Path to the database. You can set this to `/dev/null` to disable the db
     #[arg(long, default_value = "whalecrab_essex.csv")]
