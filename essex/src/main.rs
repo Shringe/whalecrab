@@ -27,7 +27,7 @@ fn main() {
     env_logger::init();
 
     // Log panics instead of printing to stderr
-    std::panic::set_hook(Box::new(|e| log::debug!("{}", e)));
+    std::panic::set_hook(Box::new(|e| log::warn!("{}", e)));
 
     let boat = {
         let args = cli::Args::parse();

@@ -53,8 +53,7 @@ impl Boat {
                 let positions = self.positions.fetch_add(1, Ordering::Relaxed);
                 log::trace!("Position #{}", positions);
                 if positions >= self.args.positions {
-                    log::warn!("{} positions reached, quiting...", self.args.positions);
-                    self.term.store(true, Ordering::Relaxed);
+                    log::warn!("{} positions reached", self.args.positions);
                     break;
                 }
             }
@@ -91,8 +90,7 @@ impl Boat {
             });
 
             if self.args.quit {
-                log::info!("Error found and --quit was passed, quiting...");
-                self.term.store(true, Ordering::Relaxed);
+                log::warn!("Error found and --quit was passed");
                 break;
             }
 
@@ -102,6 +100,7 @@ impl Boat {
             rng = SmallRng::seed_from_u64(seed.into());
         }
 
-        log::trace!("Seed: {}", seed);
+        log::info!("Quiting on seed {}", seed);
+        self.term.store(true, Ordering::Relaxed);
     }
 }
