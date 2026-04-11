@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Args {

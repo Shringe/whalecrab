@@ -45,6 +45,7 @@ fn play_game(args: &cli::Args) {
 
     log::info!("Seed: {}", seed);
 }
+
 fn main() {
     env_logger::init();
 
