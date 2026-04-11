@@ -20,28 +20,31 @@
 
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
+          makeCratePackage =
+            name: pname:
+            pkgs.rustPlatform.buildRustPackage {
+              inherit version name pname;
+              src = self;
+              cargoLock.lockFile = ./Cargo.lock;
+
+              # It is highly recommended to build with native optimizations
+              RUSTFLAGS = "-C target-cpu=native";
+
+              # Ensure only the necessary dependencies get built
+              cargoTestFlags = [
+                "--package"
+                name
+              ];
+              cargoBuildFlags = [
+                "--package"
+                name
+              ];
+            };
         in
         {
           packages = {
-            tui = pkgs.rustPlatform.buildRustPackage {
-              inherit version;
-              name = "tui";
-              pname = "whalecrab_tui";
-
-              cargoLock.lockFile = ./Cargo.lock;
-              src = self;
-              RUSTFLAGS = "-C target-cpu=native";
-            };
-
-            uci = pkgs.rustPlatform.buildRustPackage {
-              inherit version;
-              name = "uci";
-              pname = "whalecrab_uci";
-
-              cargoLock.lockFile = ./Cargo.lock;
-              src = self;
-              RUSTFLAGS = "-C target-cpu=native";
-            };
+            tui = makeCratePackage "tui" "whalecrab_tui";
+            uci = makeCratePackage "uci" "whalecrab_uci";
           };
 
           devShells.default = pkgs.mkShell {
