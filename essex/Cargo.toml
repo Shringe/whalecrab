@@ -1,0 +1,13 @@
+[package]
+name = "essex"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+whalecrab_lib = { path = "../lib" }
+whalecrab_engine = { path = "../engine" }
+rand = "0.10.0"
+clap = { version = "4.6.0", features = ["derive"] }
+humantime = "2.3.0"
+log = "0.4.29"
+env_logger = "0.11.10"

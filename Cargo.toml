@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib", "demos", "uci", "tui", "engine"]
+members = ["lib", "demos", "uci", "tui", "engine", "essex"]
 resolver = "2"
 
 [workspace.package]
