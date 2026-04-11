@@ -11,10 +11,10 @@ pub struct Args {
     pub time: Duration,
 
     #[arg(long, default_value_t = 100_000)]
-    pub positions: usize,
+    pub positions: u32,
 
     #[arg(long)]
-    pub seed: Option<u64>,
+    pub seed: Option<u32>,
 
     /// Quit after finding the first error
     #[arg(long)]

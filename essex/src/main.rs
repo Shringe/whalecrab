@@ -8,17 +8,33 @@ use rand::{Rng, SeedableRng, rngs::SmallRng, seq::IndexedRandom};
 use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed};
 use whalecrab_lib::position::game::{Game, STARTING_FEN, State};
 
-fn play_game(args: &cli::Args) {
-    let mut seed = args.seed.unwrap_or_else(|| rand::rng().next_u64());
+fn play_game(args: &cli::Args) -> Option<database::Dataset> {
+    let mut seed = args.seed.unwrap_or_else(|| rand::rng().next_u32());
     log::info!("Seed: {}", seed);
-    let mut rng = SmallRng::seed_from_u64(seed);
+    let mut rng = SmallRng::seed_from_u64(seed.into());
 
-    let mut game = Game::from_fen(&args.fen.clone().unwrap_or(STARTING_FEN.to_string()))
-        .expect("Provided fen is not valid");
-    let mut positions: usize = 0;
+    let mut game = Game::from_fen(&args.fen.clone().unwrap_or(STARTING_FEN.to_string()))?;
+    let mut positions: u32 = 0;
     let timer = Elapsed::now(args.time);
 
-    let mut db = database::load(&args.database_path);
+    let mut db = database::Dataset::load(&args.database_path);
+
+    macro_rules! save_position {
+        ($last_move:expr, $last_move_uci:expr, $e:expr) => {
+            log::debug!("Found error at Position:\n{:#?}", game);
+            let entry = database::Entry {
+                seed,
+                positions,
+                last_move: $last_move,
+                last_move_uci: $last_move_uci,
+                fen: game.to_fen(),
+                error: format!("{:?}", $e),
+            };
+
+            log::debug!("Adding entry to dataset: {:#?}", entry);
+            db.insert(seed, entry);
+        };
+    }
 
     loop {
         log::debug!("Position #{}", positions);
@@ -32,12 +48,12 @@ fn play_game(args: &cli::Args) {
             break;
         }
 
-        log::debug!("Position: {:#?}", game);
         let moves = game.legal_moves();
         let Some(m) = moves.choose(&mut rng) else {
             log::info!("No moves found. {:?}", game.state);
             if game.state == State::InProgress {
-                log::error!("Game finished and was in progress!");
+                log::warn!("Game finished and was in progress!");
+                save_position!("None".to_string(), "None".to_string(), "FinishedInProgress");
             }
             log::info!("Starting new game");
             game = Game::default();
@@ -53,19 +69,9 @@ fn play_game(args: &cli::Args) {
             continue;
         };
 
-        log::error!("Found error {:?}", e);
-        log::error!("Saving error to db then restarting game");
+        log::warn!("Found error {:?}", e);
 
-        let entry = database::Entry {
-            seed,
-            positions,
-            last_move: m.to_string(),
-            fen: game.to_fen(),
-        };
-        db.insert(seed, entry);
-        if let Err(e) = database::save(&args.database_path, &db) {
-            log::error!("Error saving database: {:?}", e);
-        }
+        save_position!(m.to_string(), m.to_uci(&game), e);
 
         if args.quit {
             log::info!("Quiting");
@@ -73,12 +79,13 @@ fn play_game(args: &cli::Args) {
         }
 
         game = Game::default();
-        seed = rand::rng().next_u64();
+        seed = rand::rng().next_u32();
         log::info!("New Seed: {}", seed);
-        rng = SmallRng::seed_from_u64(seed);
+        rng = SmallRng::seed_from_u64(seed.into());
     }
 
     log::info!("Seed: {}", seed);
+    Some(db)
 }
 
 fn main() {
@@ -87,5 +94,11 @@ fn main() {
     let args = cli::Args::parse();
     log::debug!("{:#?}", args);
 
-    play_game(&args);
+    match play_game(&args) {
+        Some(db) => match db.save(&args.database_path) {
+            Ok(_) => log::info!("Database saved successfully"),
+            Err(e) => log::error!("Failed to save database: {:?}", e),
+        },
+        None => log::error!("No database returned"),
+    }
 }
