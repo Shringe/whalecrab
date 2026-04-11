@@ -411,7 +411,6 @@ impl Game {
 
     /// Finishes a turn and determines game state is possible
     pub(crate) fn next_turn(&mut self, last_move: &Move) {
-        println!("{}", last_move);
         // Handle en_passant
         self.en_passant_target = match last_move {
             Move::CreateEnPassant { at } => match self.turn {

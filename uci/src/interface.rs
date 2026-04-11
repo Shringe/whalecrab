@@ -151,7 +151,7 @@ impl UciInterface {
                 // Play all moves in sequence
                 log!("Playing moves: {:#?}", moves);
                 for uci_move in moves {
-                    let move_to_play = match Move::from_uci(&uci_move, &self.engine.game) {
+                    let move_to_play = match Move::from_uci(&uci_move, &game) {
                         Ok(m) => m,
                         Err(e) => {
                             log!("Failed to parse uci move '{}': {:?}", uci_move, e);
