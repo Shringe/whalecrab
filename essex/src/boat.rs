@@ -2,7 +2,7 @@ use std::{
     panic,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     },
 };
 
@@ -20,6 +20,7 @@ pub struct Boat {
     pub term: Arc<AtomicBool>,
     pub dataset: Arc<Dataset>,
     pub positions: Arc<AtomicU64>,
+    pub errors: Arc<AtomicU32>,
 }
 
 impl Boat {
@@ -32,30 +33,28 @@ impl Boat {
             Game::from_fen(&self.args.fen.clone().unwrap_or_default()).unwrap_or_default();
 
         macro_rules! save_position {
-            ($error:expr) => {
-                log::debug!("Found error at Position:\n{:#?}", game);
-                let (error, context) = $error.to_error_type_and_string();
-                let entry = database::Entry {
-                    seed,
-                    positions: self.positions.load(Ordering::Relaxed),
-                    fen: game.to_fen(),
-                    error,
-                    context,
-                };
+            ($error:expr) => {{
+                let errors = self.errors.fetch_add(1, Ordering::Relaxed);
+                log::debug!("Found error #{} at Position:\n{:#?}", errors, game);
+            }
 
-                log::trace!("Adding entry to dataset: {:#?}", entry);
-                self.dataset.insert(seed, entry);
+            let (error, context) = $error.to_error_type_and_string();
+            let entry = database::Entry {
+                seed,
+                positions: self.positions.load(Ordering::Relaxed),
+                fen: game.to_fen(),
+                error,
+                context,
             };
+
+            log::trace!("Adding entry to dataset: {:#?}", entry);
+            self.dataset.insert(seed, entry);};
         }
 
         while !self.term.load(Ordering::Relaxed) {
             {
                 let positions = self.positions.fetch_add(1, Ordering::Relaxed);
                 log::trace!("Position #{}", positions);
-                if positions >= self.args.positions {
-                    log::warn!("{} positions reached", self.args.positions);
-                    break;
-                }
             }
 
             let moves = game.legal_moves();
@@ -89,11 +88,6 @@ impl Boat {
                 error: format!("{:?}", e)
             });
 
-            if self.args.quit {
-                log::warn!("Error found and --quit was passed");
-                break;
-            }
-
             game = Game::default();
             seed = rand::rng().next_u32();
             log::trace!("New Seed: {}", seed);
@@ -101,6 +95,5 @@ impl Boat {
         }
 
         log::info!("Quiting on seed {}", seed);
-        self.term.store(true, Ordering::Relaxed);
     }
 }

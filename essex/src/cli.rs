@@ -7,18 +7,20 @@ pub struct Args {
     #[arg(long)]
     pub fen: Option<String>,
 
+    /// The maximum time to spend checking positions
     #[arg(long, default_value = "10s", value_parser=humantime::parse_duration)]
     pub time: Duration,
 
+    /// The maximum amount of positions to check
     #[arg(long, default_value_t = 100_000)]
     pub positions: u64,
 
+    /// How many errors should be tolerated before quiting
+    #[arg(long)]
+    pub quit_after: u32,
+
     #[arg(long)]
     pub seed: Option<u32>,
-
-    /// Quit after finding the first error
-    #[arg(long)]
-    pub quit: bool,
 
     /// Number of threads to use
     #[arg(long, default_value_t = 16)]

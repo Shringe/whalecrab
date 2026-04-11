@@ -6,7 +6,7 @@ use std::{
     io::Error,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     },
     thread,
     time::Duration,
@@ -33,15 +33,17 @@ fn main() {
         let args = cli::Args::parse();
         log::trace!("{:#?}", args);
 
-        let positions = Arc::new(AtomicU64::new(0));
         let term = Arc::new(AtomicBool::new(false));
         let dataset = Arc::new(database::Dataset::load(&args.database_path));
+        let positions = Arc::new(AtomicU64::new(0));
+        let errors = Arc::new(AtomicU32::new(0));
 
         Boat {
             args,
             term,
             dataset,
             positions,
+            errors,
         }
     };
 
@@ -60,14 +62,38 @@ fn main() {
     }
 
     let timer = platform_timer!(boat.args.time);
-    while !timer.over() && !boat.term.load(Ordering::Relaxed) {
+    loop {
+        if timer.over() {
+            log::info!("Time is up");
+            break;
+        }
+        if boat.term.load(Ordering::Relaxed) {
+            log::info!("Termination signal received");
+            break;
+        }
+        if boat.positions.load(Ordering::Relaxed) >= boat.args.positions {
+            log::info!("Maximum amount of positions reached");
+            break;
+        }
+        if boat.errors.load(Ordering::Relaxed) >= boat.args.quit_after {
+            log::info!("Maximum amount of errors reached");
+            break;
+        }
         thread::sleep(Duration::from_millis(5));
     }
 
-    log::info!("Finishing program...");
     boat.term.store(true, Ordering::Relaxed);
+    log::info!("Finishing program...");
 
-    thread::sleep(Duration::from_millis(25));
+    thread::sleep(Duration::from_millis(50));
+    let positions = boat.positions.load(Ordering::Relaxed);
+    let errors = boat.errors.load(Ordering::Relaxed);
+    let ratio = (errors as u64)
+        .saturating_mul(1_000_000)
+        .saturating_div(positions);
+    log::info!("Total number of positions searched:      {}", positions);
+    log::info!("Total number of errors found:            {}", errors);
+    log::info!("Number of errors per million positions:  {}", ratio);
 
     log::info!("Saving dataset to {}", boat.args.database_path.display());
     boat.dataset
