@@ -173,82 +173,115 @@ impl Square {
         Square::new(self.0 ^ 56)
     }
 
-    pub fn uleft(&self) -> Option<Square> {
-        if self.get_rank() == Rank::Eighth || self.get_file() == File::A {
+    /// # Safety
+    /// `self.get_file() > File::A && self.get_rank() < Rank::Eighth`
+    pub const unsafe fn uleft_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 + 7) }
+    }
+
+    /// # Safety
+    /// `self.get_file() < File::H && self.get_rank() < Rank::Eighth`
+    pub const unsafe fn uright_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 + 9) }
+    }
+
+    /// # Safety
+    /// `self.get_file() > File::A && self.get_rank() > Rank::First`
+    pub const unsafe fn dleft_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 - 9) }
+    }
+
+    /// # Safety
+    /// `self.get_file() < File::H && self.get_rank() > Rank::First`
+    pub const unsafe fn dright_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 - 7) }
+    }
+
+    /// # Safety
+    /// `self.get_rank() < Rank::Eighth`
+    pub const unsafe fn up_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 + 8) }
+    }
+
+    /// # Safety
+    /// `self.get_rank() > Rank::First`
+    pub const unsafe fn down_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 - 8) }
+    }
+
+    /// # Safety
+    /// `self.get_file() > File::A`
+    pub const unsafe fn left_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 - 1) }
+    }
+
+    /// # Safety
+    /// `self.get_file() < File::H`
+    pub const unsafe fn right_unchecked(&self) -> Square {
+        unsafe { Square::new_unchecked(self.0 + 1) }
+    }
+
+    pub const fn uleft(&self) -> Option<Square> {
+        if self.0 >= 56 || self.0 & 7 == 0 {
             None
         } else {
-            Some(Square::make_square(
-                self.get_rank().up(),
-                self.get_file().left(),
-            ))
+            Some(unsafe { self.uleft_unchecked() })
         }
     }
 
-    pub fn uright(&self) -> Option<Square> {
-        if self.get_rank() == Rank::Eighth || self.get_file() == File::H {
+    pub const fn uright(&self) -> Option<Square> {
+        if self.0 >= 56 || self.0 & 7 == 7 {
             None
         } else {
-            Some(Square::make_square(
-                self.get_rank().up(),
-                self.get_file().right(),
-            ))
+            Some(unsafe { self.uright_unchecked() })
         }
     }
 
-    pub fn dleft(&self) -> Option<Square> {
-        if self.get_rank() == Rank::First || self.get_file() == File::A {
+    pub const fn dleft(&self) -> Option<Square> {
+        if self.0 < 8 || self.0 & 7 == 0 {
             None
         } else {
-            Some(Square::make_square(
-                self.get_rank().down(),
-                self.get_file().left(),
-            ))
+            Some(unsafe { self.dleft_unchecked() })
         }
     }
 
-    pub fn dright(&self) -> Option<Square> {
-        if self.get_rank() == Rank::First || self.get_file() == File::H {
+    pub const fn dright(&self) -> Option<Square> {
+        if self.0 < 8 || self.0 & 7 == 7 {
             None
         } else {
-            Some(Square::make_square(
-                self.get_rank().down(),
-                self.get_file().right(),
-            ))
+            Some(unsafe { self.dright_unchecked() })
         }
     }
 
-    pub fn up(&self) -> Option<Square> {
-        if self.get_rank() == Rank::Eighth {
+    pub const fn up(&self) -> Option<Square> {
+        if self.0 >= 56 {
             None
         } else {
-            Some(Square::make_square(self.get_rank().up(), self.get_file()))
+            Some(unsafe { self.up_unchecked() })
         }
     }
 
-    pub fn down(&self) -> Option<Square> {
-        if self.get_rank() == Rank::First {
+    pub const fn down(&self) -> Option<Square> {
+        if self.0 < 8 {
             None
         } else {
-            Some(Square::make_square(self.get_rank().down(), self.get_file()))
+            Some(unsafe { self.down_unchecked() })
         }
     }
 
-    pub fn left(&self) -> Option<Square> {
-        if self.get_file() == File::A {
+    pub const fn left(&self) -> Option<Square> {
+        if self.0 & 7 == 0 {
             None
         } else {
-            Some(Square::make_square(self.get_rank(), self.get_file().left()))
+            Some(unsafe { self.left_unchecked() })
         }
     }
 
-    pub fn right(&self) -> Option<Square> {
-        if self.get_file() == File::H {
+    pub const fn right(&self) -> Option<Square> {
+        if self.0 & 7 == 7 {
             None
         } else {
-            Some(Square::make_square(
-                self.get_rank(),
-                self.get_file().right(),
-            ))
+            Some(unsafe { self.right_unchecked() })
         }
     }
 
