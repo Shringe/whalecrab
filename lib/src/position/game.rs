@@ -670,7 +670,7 @@ impl Game {
     /// # Safety
     /// The counter must be set to the current length of `moves`, `moves` must have
     /// enough capacity, and `moves.set_len(counter)` must be called after.
-    pub unsafe fn generate_psuedo_legal_white_pawn_moves(
+    pub unsafe fn generate_grouped_psuedo_legal_white_pawn_moves(
         &self,
         moves: &mut Vec<Move>,
         counter: &mut usize,
@@ -811,7 +811,7 @@ impl Game {
     /// # Safety
     /// The counter must be set to the current length of `moves`, `moves` must have
     /// enough capacity, and `moves.set_len(counter)` must be called after.
-    pub unsafe fn generate_psuedo_legal_black_pawn_moves(
+    pub unsafe fn generate_grouped_psuedo_legal_black_pawn_moves(
         &self,
         moves: &mut Vec<Move>,
         counter: &mut usize,
@@ -976,7 +976,10 @@ impl Game {
                     // Generating grouped pawn moves when there are no pawns
                     // can be slow
                     if num_pawns != 0 {
-                        self.generate_psuedo_legal_white_pawn_moves(&mut moves, &mut counter);
+                        self.generate_grouped_psuedo_legal_white_pawn_moves(
+                            &mut moves,
+                            &mut counter,
+                        );
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves!(moves, PieceType::Bishop, self.white_bishops);
@@ -999,7 +1002,10 @@ impl Game {
                 let mut moves = Vec::with_capacity(capacity);
                 unsafe {
                     if num_pawns != 0 {
-                        self.generate_psuedo_legal_black_pawn_moves(&mut moves, &mut counter);
+                        self.generate_grouped_psuedo_legal_black_pawn_moves(
+                            &mut moves,
+                            &mut counter,
+                        );
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves!(moves, PieceType::Bishop, self.black_bishops);
@@ -1405,7 +1411,7 @@ mod tests {
         let mut counter = 0;
         let mut grouped = Vec::with_capacity(100);
         unsafe {
-            game.generate_psuedo_legal_white_pawn_moves(&mut grouped, &mut counter);
+            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped, &mut counter);
             grouped.set_len(counter);
         }
 
@@ -1437,7 +1443,7 @@ mod tests {
         let mut counter = 0;
         let mut grouped = Vec::with_capacity(100);
         unsafe {
-            game.generate_psuedo_legal_black_pawn_moves(&mut grouped, &mut counter);
+            game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped, &mut counter);
             grouped.set_len(counter);
         }
 

@@ -51,6 +51,18 @@ fn bench(c: &mut Criterion) {
         b.iter(|| game.legal_moves_filter(moves.clone()));
     });
 
+    c.bench_function("Generate grouped pawn moves", |b| {
+        let capacity = game.white_pawns.popcnt() * 4;
+        b.iter(|| {
+            let mut counter = 0;
+            let mut moves = Vec::with_capacity(capacity as usize);
+            unsafe {
+                game.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves, &mut counter);
+                moves.set_len(counter);
+            }
+        });
+    });
+
     c.bench_function("Move inference / Constructing all moves", |b| {
         b.iter(|| {
             for m in &moves {
