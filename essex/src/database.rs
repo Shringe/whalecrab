@@ -7,14 +7,44 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
+pub enum ErrorInfo {
+    /// The game ran out of moves but was still set to State::InProgress
+    FinishedInProgress { state: String },
+    /// The game panicked while playing a move
+    PanicOnMove {
+        m: String,
+        uci: String,
+        error: String,
+    },
+}
+
+impl ErrorInfo {
+    #[allow(clippy::wrong_self_convention)]
+    pub fn to_error_type_and_string(self) -> (ErrorType, String) {
+        match self {
+            ErrorInfo::FinishedInProgress { state } => (ErrorType::FinishedInProgress, state),
+            ErrorInfo::PanicOnMove { m, uci, error } => {
+                (ErrorType::PanicOnMove, format!("{}||{}||{}", m, uci, error))
+            }
+        }
+    }
+}
+
+/// Workaround because serde can't deserialize `ErrorInfo`
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ErrorType {
+    FinishedInProgress,
+    PanicOnMove,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub seed: u32,
     pub positions: u32,
-    pub last_move: String,
-    pub last_move_uci: String,
     pub fen: String,
-    pub error: String,
+    pub error: ErrorType,
+    pub context: String,
 }
 
 pub struct Dataset {

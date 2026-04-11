@@ -20,15 +20,15 @@ fn play_game(args: &cli::Args) -> Option<database::Dataset> {
     let mut db = database::Dataset::load(&args.database_path);
 
     macro_rules! save_position {
-        ($last_move:expr, $last_move_uci:expr, $e:expr) => {
+        ($error:expr) => {
             log::debug!("Found error at Position:\n{:#?}", game);
+            let (error, context) = $error.to_error_type_and_string();
             let entry = database::Entry {
                 seed,
                 positions,
-                last_move: $last_move,
-                last_move_uci: $last_move_uci,
                 fen: game.to_fen(),
-                error: format!("{:?}", $e),
+                error,
+                context,
             };
 
             log::debug!("Adding entry to dataset: {:#?}", entry);
@@ -53,7 +53,9 @@ fn play_game(args: &cli::Args) -> Option<database::Dataset> {
             log::info!("No moves found. {:?}", game.state);
             if game.state == State::InProgress {
                 log::warn!("Game finished and was in progress!");
-                save_position!("None".to_string(), "None".to_string(), "FinishedInProgress");
+                save_position!(database::ErrorInfo::FinishedInProgress {
+                    state: format!("{:?}", game.state)
+                });
             }
             log::info!("Starting new game");
             game = Game::default();
@@ -71,7 +73,11 @@ fn play_game(args: &cli::Args) -> Option<database::Dataset> {
 
         log::warn!("Found error {:?}", e);
 
-        save_position!(m.to_string(), m.to_uci(&game), e);
+        save_position!(database::ErrorInfo::PanicOnMove {
+            m: m.to_string(),
+            uci: m.to_uci(&game),
+            error: format!("{:?}", e)
+        });
 
         if args.quit {
             log::info!("Quiting");
