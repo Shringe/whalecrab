@@ -6,7 +6,7 @@ use std::{
     io::Error,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::Duration,
@@ -26,42 +26,53 @@ fn register_hooks(term: &Arc<AtomicBool>) -> Result<(), Error> {
 fn main() {
     env_logger::init();
 
-    let args = cli::Args::parse();
-    log::trace!("{:#?}", args);
-
-    let term = Arc::new(AtomicBool::new(false));
-    let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
-
     // Log panics instead of printing to stderr
     std::panic::set_hook(Box::new(|e| log::debug!("{}", e)));
-    for _ in 0..args.threads {
-        let boat = Boat::new(&args, &term, &dataset);
+
+    let boat = {
+        let args = cli::Args::parse();
+        log::trace!("{:#?}", args);
+
+        let positions = Arc::new(AtomicU64::new(0));
+        let term = Arc::new(AtomicBool::new(false));
+        let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
+
+        Boat {
+            args,
+            term,
+            dataset,
+            positions,
+        }
+    };
+
+    for _ in 0..boat.args.threads {
+        let boat = boat.clone();
         let _ = thread::spawn(move || {
             boat.sail();
         });
     }
 
-    if let Err(e) = register_hooks(&term) {
+    if let Err(e) = register_hooks(&boat.term) {
         log::error!(
             "Failed to register hooks. Program may appear unresponsive: {:?}",
             e
         );
     }
 
-    let timer = platform_timer!(args.time);
-    while !timer.over() && !term.load(Ordering::Relaxed) {
+    let timer = platform_timer!(boat.args.time);
+    while !timer.over() && !boat.term.load(Ordering::Relaxed) {
         thread::sleep(Duration::from_millis(5));
     }
 
     log::info!("Finishing program...");
-    term.store(true, Ordering::Relaxed);
+    boat.term.store(true, Ordering::Relaxed);
 
     thread::sleep(Duration::from_millis(25));
 
-    log::info!("Saving dataset to {}", args.database_path.display());
-    dataset
+    log::info!("Saving dataset to {}", boat.args.database_path.display());
+    boat.dataset
         .lock()
         .expect("Failed to retrieve the dataset")
-        .save(&args.database_path)
+        .save(&boat.args.database_path)
         .expect("Failed to save the dataset");
 }

@@ -41,7 +41,7 @@ pub enum ErrorType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub seed: u32,
-    pub positions: u32,
+    pub positions: u64,
     pub fen: String,
     pub error: ErrorType,
     pub context: String,

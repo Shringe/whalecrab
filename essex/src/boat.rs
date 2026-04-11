@@ -2,7 +2,7 @@ use std::{
     panic,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
 
@@ -14,21 +14,15 @@ use crate::{
     database::{self, Dataset},
 };
 
+#[derive(Clone)]
 pub struct Boat {
-    args: Args,
-    term: Arc<AtomicBool>,
-    dataset: Arc<Mutex<Dataset>>,
+    pub args: Args,
+    pub term: Arc<AtomicBool>,
+    pub dataset: Arc<Mutex<Dataset>>,
+    pub positions: Arc<AtomicU64>,
 }
 
 impl Boat {
-    pub fn new(args: &Args, term: &Arc<AtomicBool>, dataset: &Arc<Mutex<Dataset>>) -> Boat {
-        Boat {
-            args: args.clone(),
-            term: term.clone(),
-            dataset: dataset.clone(),
-        }
-    }
-
     pub fn sail(&self) {
         let mut seed = self.args.seed.unwrap_or_else(|| rand::rng().next_u32());
         log::trace!("Seed: {}", seed);
@@ -36,7 +30,6 @@ impl Boat {
 
         let mut game =
             Game::from_fen(&self.args.fen.clone().unwrap_or_default()).unwrap_or_default();
-        let mut positions: u32 = 0;
 
         macro_rules! save_position {
             ($error:expr) => {
@@ -44,7 +37,7 @@ impl Boat {
                 let (error, context) = $error.to_error_type_and_string();
                 let entry = database::Entry {
                     seed,
-                    positions,
+                    positions: self.positions.load(Ordering::Relaxed),
                     fen: game.to_fen(),
                     error,
                     context,
@@ -61,12 +54,16 @@ impl Boat {
         }
 
         while !self.term.load(Ordering::Relaxed) {
-            log::trace!("Position #{}", positions);
-            positions = positions.saturating_add(1);
-            if positions >= self.args.positions {
-                log::trace!("{} positions reached", self.args.positions);
-                break;
+            {
+                let positions = self.positions.fetch_add(1, Ordering::Relaxed);
+                log::trace!("Position #{}", positions);
+                if positions >= self.args.positions {
+                    log::warn!("{} positions reached", self.args.positions);
+                    self.term.store(true, Ordering::Relaxed);
+                    break;
+                }
             }
+
             let moves = game.legal_moves();
             let Some(m) = moves.choose(&mut rng) else {
                 log::trace!("No moves found. {:?}", game.state);

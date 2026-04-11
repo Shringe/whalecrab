@@ -11,7 +11,7 @@ pub struct Args {
     pub time: Duration,
 
     #[arg(long, default_value_t = 100_000)]
-    pub positions: u32,
+    pub positions: u64,
 
     #[arg(long)]
     pub seed: Option<u32>,
