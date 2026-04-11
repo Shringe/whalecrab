@@ -444,6 +444,8 @@ impl Square {
 
 #[cfg(test)]
 mod tests {
+    use crate::{file::ALL_FILES, rank::ALL_RANKS};
+
     use super::*;
 
     #[test]
@@ -509,5 +511,16 @@ mod tests {
 
         let actual = rook.ray(&direction, &game);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn get_rank_file() {
+        for rank in ALL_RANKS {
+            for file in ALL_FILES {
+                let sq = Square::make_square(rank, file);
+                assert_eq!(sq.get_rank(), rank);
+                assert_eq!(sq.get_file(), file);
+            }
+        }
     }
 }
