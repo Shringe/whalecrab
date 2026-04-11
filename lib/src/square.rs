@@ -415,38 +415,39 @@ impl Square {
         // Maybe I should take in color as a parameter?
         let enemy = game.determine_color(selfbb).unwrap_or(game.turn).opponent();
 
-        let kingbb = game.get_pieces(&PieceType::King, &enemy);
-
         let mut current = *self;
+        let mut second_blocker = false;
         let mut is_check = false;
         while let Some(forward) = current.walk(direction) {
             let forwardbb = BitBoard::from_square(forward);
+            moveinfo.check_rays |= forwardbb;
+
+            if is_check {
+                moveinfo.attacks |= forwardbb;
+            }
+
             if let Some((piece, color)) = game.piece_lookup(forward) {
                 let is_king = piece == PieceType::King;
                 let is_enemy = color == enemy;
 
+                if is_enemy && is_king {
+                    is_check = true;
+                }
+
+                if second_blocker {
+                    break;
+                }
+
                 moveinfo.attacks |= forwardbb;
-                moveinfo.check_rays |= forwardbb;
 
                 if is_enemy {
                     moveinfo.targets |= forwardbb;
-
-                    if is_king {
-                        is_check = true;
-                    } else if let Some(extra) = forward.walk(direction) {
-                        let extrabb = BitBoard::from_square(extra);
-                        moveinfo.check_rays |= extrabb;
-                        is_check = kingbb.has_square(extrabb);
-                    }
                 }
 
-                if !(is_king && is_enemy) {
-                    break;
-                }
-            } else {
+                second_blocker = true;
+            } else if !second_blocker {
                 moveinfo.targets |= forwardbb;
                 moveinfo.attacks |= forwardbb;
-                moveinfo.check_rays |= forwardbb;
             }
 
             current = forward;
