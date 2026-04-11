@@ -56,7 +56,12 @@ fn play_game(args: &cli::Args) {
         log::error!("Found error {:?}", e);
         log::error!("Saving error to db then restarting game");
 
-        let entry = database::Entry { seed, positions };
+        let entry = database::Entry {
+            seed,
+            positions,
+            last_move: m.to_string(),
+            fen: game.to_fen(),
+        };
         db.insert(seed, entry);
         if let Err(e) = database::save(&args.database_path, &db) {
             log::error!("Error saving database: {:?}", e);

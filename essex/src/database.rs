@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct Entry {
     pub seed: u64,
     pub positions: usize,
+    pub last_move: String,
+    pub fen: String,
 }
 
 pub fn load(path: &PathBuf) -> HashMap<u64, Entry> {
