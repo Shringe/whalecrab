@@ -1,4 +1,7 @@
 mod cli;
+mod database;
+
+use std::panic;
 
 use clap::Parser;
 use rand::{Rng, SeedableRng, rngs::SmallRng, seq::IndexedRandom};
@@ -6,7 +9,7 @@ use whalecrab_engine::timers::{MoveTimer, elapsed::Elapsed};
 use whalecrab_lib::position::game::{Game, STARTING_FEN, State};
 
 fn play_game(args: &cli::Args) {
-    let seed = args.seed.unwrap_or_else(|| rand::rng().next_u64());
+    let mut seed = args.seed.unwrap_or_else(|| rand::rng().next_u64());
     log::info!("Seed: {}", seed);
     let mut rng = SmallRng::seed_from_u64(seed);
 
@@ -14,6 +17,8 @@ fn play_game(args: &cli::Args) {
         .expect("Provided fen is not valid");
     let mut positions: usize = 0;
     let timer = Elapsed::now(args.time);
+
+    let mut db = database::load(&args.database_path);
 
     loop {
         log::debug!("Position #{}", positions);
@@ -40,7 +45,32 @@ fn play_game(args: &cli::Args) {
         };
 
         log::debug!("Playing move: {:?}", m);
-        game.play(m);
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            game.play(m);
+        }));
+
+        let Err(e) = result else {
+            continue;
+        };
+
+        log::error!("Found error {:?}", e);
+        log::error!("Saving error to db then restarting game");
+
+        let entry = database::Entry { seed, positions };
+        db.insert(seed, entry);
+        if let Err(e) = database::save(&args.database_path, &db) {
+            log::error!("Error saving database: {:?}", e);
+        }
+
+        if args.quit {
+            log::info!("Quiting");
+            break;
+        }
+
+        game = Game::default();
+        seed = rand::rng().next_u64();
+        log::info!("New Seed: {}", seed);
+        rng = SmallRng::seed_from_u64(seed);
     }
 
     log::info!("Seed: {}", seed);

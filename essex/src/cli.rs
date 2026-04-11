@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use clap::Parser;
 
@@ -15,4 +15,12 @@ pub struct Args {
 
     #[arg(long)]
     pub seed: Option<u64>,
+
+    /// Quit after finding the first error
+    #[arg(long)]
+    pub quit: bool,
+
+    /// Path to the database. You can set this to `/dev/null` to disable the db
+    #[arg(long, default_value = "whalecrab_essex.csv")]
+    pub database_path: PathBuf,
 }
