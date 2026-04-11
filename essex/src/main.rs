@@ -32,6 +32,8 @@ fn main() {
     let term = Arc::new(AtomicBool::new(false));
     let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
 
+    // Log panics instead of printing to stderr
+    std::panic::set_hook(Box::new(|e| log::debug!("{}", e)));
     for _ in 0..args.threads {
         let boat = Boat::new(&args, &term, &dataset);
         let _ = thread::spawn(move || {
@@ -55,6 +57,7 @@ fn main() {
     term.store(true, Ordering::Relaxed);
 
     thread::sleep(Duration::from_millis(25));
+
     log::info!("Saving dataset to {}", args.database_path.display());
     dataset
         .lock()
