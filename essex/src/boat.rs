@@ -31,7 +31,7 @@ impl Boat {
 
     pub fn sail(&self) {
         let mut seed = self.args.seed.unwrap_or_else(|| rand::rng().next_u32());
-        log::info!("Seed: {}", seed);
+        log::trace!("Seed: {}", seed);
         let mut rng = SmallRng::seed_from_u64(seed.into());
 
         let mut game =
@@ -50,7 +50,7 @@ impl Boat {
                     context,
                 };
 
-                log::debug!("Adding entry to dataset: {:#?}", entry);
+                log::trace!("Adding entry to dataset: {:#?}", entry);
                 match self.dataset.lock() {
                     Ok(mut d) => {
                         let _ = d.insert(seed, entry);
@@ -61,27 +61,27 @@ impl Boat {
         }
 
         while !self.term.load(Ordering::Relaxed) {
-            log::debug!("Position #{}", positions);
+            log::trace!("Position #{}", positions);
             positions = positions.saturating_add(1);
             if positions >= self.args.positions {
-                log::info!("{} positions reached", self.args.positions);
+                log::trace!("{} positions reached", self.args.positions);
                 break;
             }
             let moves = game.legal_moves();
             let Some(m) = moves.choose(&mut rng) else {
-                log::info!("No moves found. {:?}", game.state);
+                log::trace!("No moves found. {:?}", game.state);
                 if game.state == State::InProgress {
-                    log::warn!("Game finished and was in progress!");
+                    log::debug!("Game finished and was in progress!");
                     save_position!(database::ErrorInfo::FinishedInProgress {
                         state: format!("{:?}", game.state)
                     });
                 }
-                log::info!("Starting new game");
+                log::trace!("Starting new game");
                 game = Game::default();
                 continue;
             };
 
-            log::debug!("Playing move: {:?}", m);
+            log::trace!("Playing move: {:?}", m);
             let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
                 game.play(m);
             }));
@@ -90,7 +90,7 @@ impl Boat {
                 continue;
             };
 
-            log::warn!("Found error {:?}", e);
+            log::debug!("Found error {:?}", e);
 
             save_position!(database::ErrorInfo::PanicOnMove {
                 m: m.to_string(),
@@ -99,16 +99,16 @@ impl Boat {
             });
 
             if self.args.quit {
-                log::info!("Quiting");
+                log::trace!("Quiting");
                 break;
             }
 
             game = Game::default();
             seed = rand::rng().next_u32();
-            log::info!("New Seed: {}", seed);
+            log::trace!("New Seed: {}", seed);
             rng = SmallRng::seed_from_u64(seed.into());
         }
 
-        log::info!("Seed: {}", seed);
+        log::trace!("Seed: {}", seed);
     }
 }

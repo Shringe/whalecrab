@@ -27,7 +27,7 @@ fn main() {
     env_logger::init();
 
     let args = cli::Args::parse();
-    log::debug!("{:#?}", args);
+    log::trace!("{:#?}", args);
 
     let term = Arc::new(AtomicBool::new(false));
     let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
