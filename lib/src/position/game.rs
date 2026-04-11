@@ -411,6 +411,7 @@ impl Game {
 
     /// Finishes a turn and determines game state is possible
     pub(crate) fn next_turn(&mut self, last_move: &Move) {
+        println!("{}", last_move);
         // Handle en_passant
         self.en_passant_target = match last_move {
             Move::CreateEnPassant { at } => match self.turn {
@@ -537,7 +538,13 @@ impl Game {
         let mut check_rays = EMPTY;
 
         for sq in *self.get_occupied(color) {
-            let (piece, _) = self.piece_lookup(sq).unwrap();
+            let Some((piece, _)) = self.piece_lookup(sq) else {
+                panic!(
+                    "The piece lookup table has a fake piece! {:?}\n{:?}",
+                    self,
+                    self.get_occupied(color)
+                )
+            };
             let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
             attacks |= moveinfo.attacks;
             check_rays |= moveinfo.check_rays;
@@ -679,12 +686,12 @@ impl Game {
         let promotion_mask = Rank::Eighth.mask();
         let unoccupied = !self.occupied;
 
-        let once = (self.white_pawns << 8) & unoccupied;
-        let twice = (once << 8) & unoccupied & twice_mask;
+        let once = self.white_pawns.up() & unoccupied;
+        let twice = once.up() & unoccupied & twice_mask;
         let promotions = once & promotion_mask;
 
-        let capture_right = (self.white_pawns << 9) & (self.black_occupied & !File::A.mask());
-        let capture_left = (self.white_pawns << 7) & (self.black_occupied & !File::H.mask());
+        let capture_right = self.white_pawns.up_right() & (self.black_occupied & !File::A.mask());
+        let capture_left = self.white_pawns.up_left() & (self.black_occupied & !File::H.mask());
 
         macro_rules! get_piece {
             ($sq:expr) => {
@@ -702,7 +709,7 @@ impl Game {
         }
 
         for to in once ^ promotions {
-            let from = to - 8;
+            let from = unsafe { to.down_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -734,7 +741,7 @@ impl Game {
         }
 
         for to in capture_right & !promotion_mask {
-            let from = to - 9;
+            let from = unsafe { to.dleft_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -746,7 +753,7 @@ impl Game {
         }
 
         for to in capture_left & !promotion_mask {
-            let from = to - 7;
+            let from = unsafe { to.dright_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -758,8 +765,7 @@ impl Game {
         }
 
         for to in capture_right & promotion_mask {
-            let from = to - 9;
-
+            let from = unsafe { to.dleft_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -772,7 +778,7 @@ impl Game {
         }
 
         for to in capture_left & promotion_mask {
-            let from = to - 7;
+            let from = unsafe { to.dright_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -785,26 +791,20 @@ impl Game {
         }
 
         if let Some(target) = self.en_passant_target {
-            let left = target - 7;
-            let right = target - 9;
-            let leftbb = BitBoard::from_square(left) & !File::A.mask();
-            let rightbb = BitBoard::from_square(right) & !File::H.mask();
-            if self.white_pawns.has_square(leftbb) {
-                let m = Move::CaptureEnPassant {
-                    from: left.get_file(),
-                };
-                unsafe {
-                    push_move_unchecked(moves, m, counter);
+            let mut process_target = |sq: Option<Square>| {
+                if let Some(sq) = sq
+                    && self.white_pawns.has_square(BitBoard::from_square(sq))
+                {
+                    let m = Move::CaptureEnPassant {
+                        from: sq.get_file(),
+                    };
+                    unsafe {
+                        push_move_unchecked(moves, m, counter);
+                    }
                 }
-            }
-            if self.white_pawns.has_square(rightbb) {
-                let m = Move::CaptureEnPassant {
-                    from: right.get_file(),
-                };
-                unsafe {
-                    push_move_unchecked(moves, m, counter);
-                }
-            }
+            };
+            process_target(target.dleft());
+            process_target(target.dright());
         }
     }
 
@@ -820,12 +820,12 @@ impl Game {
         let promotion_mask = Rank::First.mask();
         let unoccupied = !self.occupied;
 
-        let once = (self.black_pawns >> 8) & unoccupied;
-        let twice = (once >> 8) & unoccupied & twice_mask;
+        let once = self.black_pawns.down() & unoccupied;
+        let twice = once.down() & unoccupied & twice_mask;
         let promotions = once & promotion_mask;
 
-        let capture_right = (self.black_pawns >> 9) & (self.white_occupied & !File::H.mask());
-        let capture_left = (self.black_pawns >> 7) & (self.white_occupied & !File::A.mask());
+        let capture_right = self.black_pawns.down_left() & (self.white_occupied & !File::H.mask());
+        let capture_left = self.black_pawns.down_right() & (self.white_occupied & !File::A.mask());
 
         macro_rules! get_piece {
             ($sq:expr) => {
@@ -841,7 +841,7 @@ impl Game {
         }
 
         for to in once ^ promotions {
-            let from = to + 8;
+            let from = unsafe { to.up_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -873,7 +873,7 @@ impl Game {
         }
 
         for to in capture_right & !promotion_mask {
-            let from = to + 9;
+            let from = unsafe { to.uright_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -885,7 +885,7 @@ impl Game {
         }
 
         for to in capture_left & !promotion_mask {
-            let from = to + 7;
+            let from = unsafe { to.uleft_unchecked() };
             let m = Move::Normal {
                 from,
                 to,
@@ -897,7 +897,7 @@ impl Game {
         }
 
         for to in capture_right & promotion_mask {
-            let from = to + 9;
+            let from = unsafe { to.uleft_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -910,7 +910,7 @@ impl Game {
         }
 
         for to in capture_left & promotion_mask {
-            let from = to + 7;
+            let from = unsafe { to.uright_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -923,26 +923,20 @@ impl Game {
         }
 
         if let Some(target) = self.en_passant_target {
-            let left = target + 7;
-            let right = target + 9;
-            let leftbb = BitBoard::from_square(left) & !File::H.mask();
-            let rightbb = BitBoard::from_square(right) & !File::A.mask();
-            if self.black_pawns.has_square(leftbb) {
-                let m = Move::CaptureEnPassant {
-                    from: left.get_file(),
-                };
-                unsafe {
-                    push_move_unchecked(moves, m, counter);
+            let mut process_target = |sq: Option<Square>| {
+                if let Some(sq) = sq
+                    && self.black_pawns.has_square(BitBoard::from_square(sq))
+                {
+                    let m = Move::CaptureEnPassant {
+                        from: sq.get_file(),
+                    };
+                    unsafe {
+                        push_move_unchecked(moves, m, counter);
+                    }
                 }
-            }
-            if self.black_pawns.has_square(rightbb) {
-                let m = Move::CaptureEnPassant {
-                    from: right.get_file(),
-                };
-                unsafe {
-                    push_move_unchecked(moves, m, counter);
-                }
-            }
+            };
+            process_target(target.uleft());
+            process_target(target.uright());
         }
     }
 

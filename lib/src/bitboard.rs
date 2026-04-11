@@ -182,6 +182,31 @@ impl BitBoard {
     pub fn to_size(&self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
     }
+
+    pub fn right(self) -> BitBoard {
+        self << 1
+    }
+    pub fn left(self) -> BitBoard {
+        self >> 1
+    }
+    pub fn up(self) -> BitBoard {
+        self << 8
+    }
+    pub fn down(self) -> BitBoard {
+        self >> 8
+    }
+    pub fn up_right(self) -> BitBoard {
+        self << 9
+    }
+    pub fn up_left(self) -> BitBoard {
+        self << 7
+    }
+    pub fn down_right(self) -> BitBoard {
+        self >> 7
+    }
+    pub fn down_left(self) -> BitBoard {
+        self >> 9
+    }
 }
 
 /// For the `BitBoard`, iterate over every `Square` set.
