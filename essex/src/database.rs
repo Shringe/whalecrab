@@ -1,10 +1,10 @@
 use std::{
-    collections::HashMap,
     io,
     ops::{Deref, DerefMut},
     path::PathBuf,
 };
 
+use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -48,7 +48,7 @@ pub struct Entry {
 }
 
 pub struct Dataset {
-    data: HashMap<u32, Entry>,
+    data: DashMap<u32, Entry>,
 }
 
 impl Dataset {
@@ -72,15 +72,15 @@ impl Dataset {
         let mut writer = csv::WriterBuilder::new()
             .has_headers(true)
             .from_path(path)?;
-        for entry in self.data.values() {
-            writer.serialize(entry)?;
+        for entry in self.data.iter() {
+            writer.serialize(entry.deref())?;
         }
         Ok(())
     }
 }
 
 impl Deref for Dataset {
-    type Target = HashMap<u32, Entry>;
+    type Target = DashMap<u32, Entry>;
     fn deref(&self) -> &Self::Target {
         &self.data
     }

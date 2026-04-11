@@ -14,3 +14,4 @@ env_logger = "0.11.10"
 serde = { version = "1.0.228", features = ["derive"] }
 csv = "1.4.0"
 signal-hook = "0.4.4"
+dashmap = "6.1.0"

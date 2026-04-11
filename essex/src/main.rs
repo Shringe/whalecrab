@@ -5,7 +5,7 @@ mod database;
 use std::{
     io::Error,
     sync::{
-        Arc, Mutex,
+        Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
@@ -35,7 +35,7 @@ fn main() {
 
         let positions = Arc::new(AtomicU64::new(0));
         let term = Arc::new(AtomicBool::new(false));
-        let dataset = Arc::new(Mutex::new(database::Dataset::load(&args.database_path)));
+        let dataset = Arc::new(database::Dataset::load(&args.database_path));
 
         Boat {
             args,
@@ -71,8 +71,6 @@ fn main() {
 
     log::info!("Saving dataset to {}", boat.args.database_path.display());
     boat.dataset
-        .lock()
-        .expect("Failed to retrieve the dataset")
         .save(&boat.args.database_path)
         .expect("Failed to save the dataset");
 }

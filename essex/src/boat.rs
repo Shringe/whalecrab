@@ -1,7 +1,7 @@
 use std::{
     panic,
     sync::{
-        Arc, Mutex,
+        Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
@@ -18,7 +18,7 @@ use crate::{
 pub struct Boat {
     pub args: Args,
     pub term: Arc<AtomicBool>,
-    pub dataset: Arc<Mutex<Dataset>>,
+    pub dataset: Arc<Dataset>,
     pub positions: Arc<AtomicU64>,
 }
 
@@ -44,12 +44,7 @@ impl Boat {
                 };
 
                 log::trace!("Adding entry to dataset: {:#?}", entry);
-                match self.dataset.lock() {
-                    Ok(mut d) => {
-                        let _ = d.insert(seed, entry);
-                    }
-                    Err(e) => log::error!("Failed write entry: {:?}", e),
-                }
+                self.dataset.insert(seed, entry);
             };
         }
 
