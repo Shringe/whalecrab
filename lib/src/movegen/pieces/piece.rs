@@ -196,9 +196,29 @@ impl Game {
                 }
             }
 
+            debug_assert!(
+                !matches!(
+                    m,
+                    Move::Normal {
+                        capture: Some(PieceType::King),
+                        ..
+                    }
+                ),
+                "The king is being captured! {}",
+                m
+            );
+
             legal.push(m);
         }
 
+        debug_assert!(
+            self.white_kings != EMPTY && self.black_kings != EMPTY,
+            "There is no king! {:#?} {:?}",
+            legal,
+            self
+        );
+
+        // TODO: remove
         legal.shrink_to_fit();
         legal
     }
@@ -592,5 +612,21 @@ Available moves: {}
             "White can play: {}",
             format_pretty_list(&moves)
         );
+    }
+
+    #[test]
+    fn check_rays_are_populated() {
+        let fen = "5B1n/8/1k2pR2/8/8/2K5/8/8 b - - 11 104";
+        let game = Game::from_fen(fen).unwrap();
+        println!("{:#?}", game);
+        println!(
+            "{}",
+            format_pretty_list(&PieceType::Rook.psuedo_legal_moves(&game, &Square::F6))
+        );
+        println!(
+            "{:#?}",
+            PieceType::Rook.psuedo_legal_targets_fast(&game, &Square::F6)
+        );
+        assert_ne!(game.white_check_rays, EMPTY);
     }
 }
