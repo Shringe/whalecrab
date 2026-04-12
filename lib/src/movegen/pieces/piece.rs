@@ -165,9 +165,11 @@ impl Game {
             // Handle being in check
             match king_attackers.popcnt() {
                 1 => {
-                    let is_blocking = (between_two_squares(king, king_attackers.to_square())
-                        & checks)
-                        .has_square(tobb);
+                    let attacker = king_attackers.to_square();
+                    let attacking_piece = self.piece_lookup(attacker).unwrap().0;
+
+                    let is_blocking = attacking_piece.is_ray_piece()
+                        && (between_two_squares(king, attacker) & checks).has_square(tobb);
                     let is_capturing = m.is_capture();
                     let is_capturing_attacking_piece =
                         is_capturing && king_attackers.has_square(tobb);
@@ -628,5 +630,14 @@ Available moves: {}
             PieceType::Rook.psuedo_legal_targets_fast(&game, &Square::F6)
         );
         assert_ne!(game.white_check_rays, EMPTY);
+    }
+
+    #[test]
+    fn does_not_try_to_block_wrong_piece() {
+        let fen = "4k3/3R4/q7/pP2Pb1p/1P4P1/6n1/4K1p1/2q5 w - - 9 74";
+        let mut game = Game::from_fen(fen).unwrap();
+        let moves = game.legal_moves();
+        let m = Move::infer(Square::D7, Square::D3, &game);
+        shouldnt_generate(&moves, &m);
     }
 }
