@@ -13,7 +13,6 @@ use std::{
 };
 
 use clap::Parser;
-use whalecrab_engine::{platform_timer, timers::MoveTimer};
 
 use crate::boat::Boat;
 
@@ -47,7 +46,7 @@ fn main() {
         }
     };
 
-    for _ in 0..boat.args.threads {
+    for _ in 1..boat.args.threads {
         let boat = boat.clone();
         let _ = thread::spawn(move || {
             boat.sail();
@@ -61,28 +60,8 @@ fn main() {
         );
     }
 
-    let timer = platform_timer!(boat.args.time);
-    loop {
-        if timer.over() {
-            log::info!("Time is up");
-            break;
-        }
-        if boat.term.load(Ordering::Relaxed) {
-            log::info!("Termination signal received");
-            break;
-        }
-        if boat.positions.load(Ordering::Relaxed) >= boat.args.positions {
-            log::info!("Maximum amount of positions reached");
-            break;
-        }
-        if boat.errors.load(Ordering::Relaxed) >= boat.args.quit_after {
-            log::info!("Maximum amount of errors reached");
-            break;
-        }
-        thread::sleep(Duration::from_millis(5));
-    }
-
-    boat.term.store(true, Ordering::Relaxed);
+    boat.sail();
+    let _ = std::panic::take_hook();
     log::info!("Finishing program...");
 
     thread::sleep(Duration::from_millis(50));

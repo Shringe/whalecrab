@@ -7,6 +7,7 @@ use std::{
 };
 
 use rand::{Rng, SeedableRng, rngs::SmallRng, seq::IndexedRandom};
+use whalecrab_engine::{platform_timer, timers::MoveTimer};
 use whalecrab_lib::position::game::{Game, State};
 
 use crate::{
@@ -32,29 +33,41 @@ impl Boat {
         let mut game =
             Game::from_fen(&self.args.fen.clone().unwrap_or_default()).unwrap_or_default();
 
-        macro_rules! save_position {
-            ($error:expr) => {{
-                let errors = self.errors.fetch_add(1, Ordering::Relaxed);
-                log::debug!("Found error #{} at Position:\n{:#?}", errors, game);
+        let timer = platform_timer!(self.args.time);
+        while !self.term.load(Ordering::Relaxed) {
+            if timer.over() {
+                log::info!("Time is up");
+                break;
             }
 
-            let (error, context) = $error.to_error_type_and_string();
-            let entry = database::Entry {
-                seed,
-                positions: self.positions.load(Ordering::Relaxed),
-                fen: game.to_fen(),
-                error,
-                context,
-            };
+            let positions = self.positions.fetch_add(1, Ordering::Relaxed);
+            log::trace!("Position #{}", positions);
+            if positions >= self.args.positions {
+                log::info!("Maximum amount of positions reached");
+                break;
+            }
 
-            log::trace!("Adding entry to dataset: {:#?}", entry);
-            self.dataset.insert(seed, entry);};
-        }
+            macro_rules! save_position {
+                ($error:expr) => {{
+                    let errors = self.errors.fetch_add(1, Ordering::Relaxed);
+                    log::debug!("Found error #{} at Position:\n{:#?}", errors, game);
+                    if errors >= self.args.quit_after {
+                        log::info!("Maximum amount of errors reached");
+                        break;
+                    }
 
-        while !self.term.load(Ordering::Relaxed) {
-            {
-                let positions = self.positions.fetch_add(1, Ordering::Relaxed);
-                log::trace!("Position #{}", positions);
+                    let (error, context) = $error.to_error_type_and_string();
+                    let entry = database::Entry {
+                        seed,
+                        positions,
+                        fen: game.to_fen(),
+                        error,
+                        context,
+                    };
+
+                    log::trace!("Adding entry to dataset: {:#?}", entry);
+                    self.dataset.insert(seed, entry);
+                }};
             }
 
             let moves = game.legal_moves();
@@ -94,6 +107,7 @@ impl Boat {
             rng = SmallRng::seed_from_u64(seed.into());
         }
 
+        self.term.store(true, Ordering::Relaxed);
         log::info!("Quiting on seed {}", seed);
     }
 }
