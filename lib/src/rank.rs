@@ -44,6 +44,18 @@ impl Rank {
         unsafe { std::mem::transmute::<u8, Rank>(val) }
     }
 
+    pub const fn from_int(val: u8) -> Option<Rank> {
+        if val > 7 {
+            None
+        } else {
+            unsafe { Some(Rank::from_int_unchecked(val)) }
+        }
+    }
+
+    pub const fn to_int(self) -> u8 {
+        self as u8
+    }
+
     /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
     /// around.
     #[inline]

@@ -36,6 +36,18 @@ impl File {
         unsafe { std::mem::transmute::<u8, File>(val) }
     }
 
+    pub const fn from_int(val: u8) -> Option<File> {
+        if val > 7 {
+            None
+        } else {
+            unsafe { Some(File::from_int_unchecked(val)) }
+        }
+    }
+
+    pub const fn to_int(self) -> u8 {
+        self as u8
+    }
+
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     #[inline]
     pub fn from_index(i: usize) -> File {
