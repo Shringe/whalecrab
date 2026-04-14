@@ -67,15 +67,51 @@ fn main() {
     thread::sleep(Duration::from_millis(50));
     let positions = boat.positions.load(Ordering::Relaxed);
     let errors = boat.errors.load(Ordering::Relaxed);
-    let ratio = (errors as u64)
-        .saturating_mul(1_000_000)
-        .saturating_div(positions);
-    log::info!("Total number of positions searched:      {}", positions);
-    log::info!("Total number of errors found:            {}", errors);
-    log::info!("Number of errors per million positions:  {}", ratio);
+    display_results(positions, errors);
 
     log::info!("Saving dataset to {}", boat.args.database_path.display());
     boat.dataset
         .save(&boat.args.database_path)
         .expect("Failed to save the dataset");
+}
+
+fn display_results(positions: u64, errors: u32) {
+    let quadrillion = 1_000_000_000_000_000;
+    let trillion = 1_000_000_000_000;
+    let billion = 1_000_000_000;
+    let million = 1_000_000;
+    let thousand = 1000;
+
+    let per_quadrillion = (errors as u128 * quadrillion) / positions as u128;
+
+    let line = if per_quadrillion >= trillion {
+        format!(
+            "Number of errors per thousand positions:     {}",
+            per_quadrillion / trillion
+        )
+    } else if per_quadrillion >= billion {
+        format!(
+            "Number of errors per million positions:      {}",
+            per_quadrillion / billion
+        )
+    } else if per_quadrillion >= million {
+        format!(
+            "Number of errors per billion positions:      {}",
+            per_quadrillion / million
+        )
+    } else if per_quadrillion >= thousand {
+        format!(
+            "Number of errors per trillion positions:     {}",
+            per_quadrillion / thousand
+        )
+    } else {
+        format!(
+            "Number of errors per quadrillion positions:  {}",
+            per_quadrillion
+        )
+    };
+
+    log::info!("Total number of positions searched:          {}", positions);
+    log::info!("Total number of errors found:                {}", errors);
+    log::info!("{}", line);
 }
