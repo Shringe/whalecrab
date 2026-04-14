@@ -1478,7 +1478,7 @@ dependencies = [
 
 [[package]]
 name = "whalecrab_engine"
-version = "0.0.0"
+version = "1.5.3"
 dependencies = [
  "criterion",
  "whalecrab_lib",
