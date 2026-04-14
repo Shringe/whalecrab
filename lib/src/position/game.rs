@@ -963,7 +963,7 @@ impl Game {
         }
 
         for to in capture_right & promotion_mask {
-            let from = unsafe { to.uleft_unchecked() };
+            let from = unsafe { to.uright_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -976,7 +976,7 @@ impl Game {
         }
 
         for to in capture_left & promotion_mask {
-            let from = unsafe { to.uright_unchecked() };
+            let from = unsafe { to.uleft_unchecked() };
             let m = Move::Promotion {
                 from: from.get_file(),
                 to: to.get_file(),
@@ -1036,12 +1036,10 @@ impl Game {
                     // Generating grouped pawn moves when there are no pawns
                     // can be slow
                     if num_pawns != 0 {
-                        // TODO: fix and reenable grouped pawn move generation
-                        push_moves!(moves, PieceType::Pawn, self.white_pawns);
-                        // self.generate_grouped_psuedo_legal_white_pawn_moves(
-                        //     &mut moves,
-                        //     &mut counter,
-                        // );
+                        self.generate_grouped_psuedo_legal_white_pawn_moves(
+                            &mut moves,
+                            &mut counter,
+                        );
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves!(moves, PieceType::Bishop, self.white_bishops);
@@ -1064,11 +1062,10 @@ impl Game {
                 let mut moves = Vec::with_capacity(capacity);
                 unsafe {
                     if num_pawns != 0 {
-                        push_moves!(moves, PieceType::Pawn, self.black_pawns);
-                        // self.generate_grouped_psuedo_legal_black_pawn_moves(
-                        //     &mut moves,
-                        //     &mut counter,
-                        // );
+                        self.generate_grouped_psuedo_legal_black_pawn_moves(
+                            &mut moves,
+                            &mut counter,
+                        );
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves!(moves, PieceType::Bishop, self.black_bishops);
