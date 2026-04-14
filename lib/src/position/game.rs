@@ -211,12 +211,15 @@ impl Game {
         self.panic_logger.push(msg.to_string());
     }
 
-    /// Dumps the recent logs to stderr if cfg!(feature = "panic_logger")
-    pub fn dump_logs(&self) {
-        #[cfg(feature = "panic_logger")]
-        {
-            let logs = self.panic_logger.retrieve();
-            eprintln!("Recent logs:\n{}", logs);
+    /// Rectrieves recent logs from the log buffer. if not cfg!(feature = "panic_logger"), then
+    /// prints an error message to stderr
+    pub fn retrieve_logs(&self) -> String {
+        if cfg!(feature = "panic_logger") {
+            self.panic_logger.retrieve()
+        } else {
+            let msg = "feature panic_logger is not enabled".to_string();
+            eprintln!("{}", msg);
+            msg
         }
     }
 

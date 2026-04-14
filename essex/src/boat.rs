@@ -6,6 +6,7 @@ use std::{
     },
 };
 
+use colored::Colorize;
 use rand::{Rng, SeedableRng, rngs::SmallRng, seq::IndexedRandom};
 use whalecrab_engine::{platform_timer, timers::MoveTimer};
 use whalecrab_lib::position::game::{Game, State};
@@ -50,7 +51,7 @@ impl Boat {
             macro_rules! save_position {
                 ($error:expr) => {{
                     let errors = self.errors.fetch_add(1, Ordering::Relaxed);
-                    log::debug!("Found error #{} at Position:\n{:#?}", errors, game);
+                    log::trace!("Found error #{} at Position:\n{:#?}", errors, game);
                     if errors >= self.args.quit_after {
                         log::info!("Maximum amount of errors reached");
                         break;
@@ -74,7 +75,7 @@ impl Boat {
             let Some(m) = moves.choose(&mut rng) else {
                 log::trace!("No moves found. {:?}", game.state);
                 if game.state == State::InProgress {
-                    log::debug!("Game finished and was in progress!");
+                    log::trace!("Game finished and was in progress!");
                     save_position!(database::ErrorInfo::FinishedInProgress {
                         state: format!("{:?}", game.state)
                     });
@@ -93,7 +94,9 @@ impl Boat {
                 continue;
             };
 
-            log::debug!("Found error {:?}", e);
+            log::trace!("Found error {:?}", e);
+            let logs = game.retrieve_logs();
+            log::debug!("Recent logs:\n{}", logs.red());
 
             save_position!(database::ErrorInfo::PanicOnMove {
                 m: m.to_string(),
@@ -108,6 +111,6 @@ impl Boat {
         }
 
         self.term.store(true, Ordering::Relaxed);
-        log::info!("Quiting on seed {}", seed);
+        log::trace!("Quiting on seed {}", seed);
     }
 }

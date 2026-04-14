@@ -16,6 +16,8 @@ use crate::{
 impl Game {
     /// Plays a move on the board
     pub fn play(&mut self, m: &Move) {
+        self.log(format!("Playing move: {:?} on {:?}", m, self));
+
         #[cfg(debug_assertions)]
         {
             let from = m.from(self.turn);

@@ -3,10 +3,6 @@ name = "whalecrab_lib"
 version.workspace = true
 edition.workspace = true
 
-# TODO: remove logging default feature
-[features]
-default = ["panic_logger"]
-
 [[bench]]
 name = "movegen"
 harness = false
