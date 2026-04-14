@@ -112,22 +112,61 @@ impl Engine {
         self.transposition_table.clear();
     }
 
-    /// Score material based on its value and position on the board
-    fn score_material(&self) -> Score {
+    fn score_white_material_positive(&self) -> Score {
         let mut score = Score::default();
+
+        score += material_value(PieceType::Pawn) * self.game.white_pawns.popcnt() as i32;
+        score += material_value(PieceType::Knight) * self.game.white_knights.popcnt() as i32;
+        score += material_value(PieceType::Bishop) * self.game.white_bishops.popcnt() as i32;
+        score += material_value(PieceType::Rook) * self.game.white_rooks.popcnt() as i32;
+        score += material_value(PieceType::Queen) * self.game.white_queens.popcnt() as i32;
+        score += material_value(PieceType::King) * self.game.white_kings.popcnt() as i32;
+
+        score
+    }
+
+    fn score_black_material_positive(&self) -> Score {
+        let mut score = Score::default();
+
+        score += material_value(PieceType::Pawn) * self.game.black_pawns.popcnt() as i32;
+        score += material_value(PieceType::Knight) * self.game.black_knights.popcnt() as i32;
+        score += material_value(PieceType::Bishop) * self.game.black_bishops.popcnt() as i32;
+        score += material_value(PieceType::Rook) * self.game.black_rooks.popcnt() as i32;
+        score += material_value(PieceType::Queen) * self.game.black_queens.popcnt() as i32;
+        score += material_value(PieceType::King) * self.game.black_kings.popcnt() as i32;
+
+        score
+    }
+
+    fn midgame_to_lategame_ratio(&self, material_score: Score) -> f64 {
+        let max_material = material_value(PieceType::Queen) * 1
+            + material_value(PieceType::Rook) * 2
+            + material_value(PieceType::Bishop) * 2
+            + material_value(PieceType::Knight) * 2
+            + material_value(PieceType::Pawn) * 8;
+
+        let material_ratio =
+            material_score.min(max_material).to_int() as f64 / max_material.to_int() as f64;
+        let clock_penalty = (self.game.full_move_clock as f64 / 400.0).min(0.2);
+
+        (material_ratio - clock_penalty).clamp(0.0, 1.0)
+    }
+
+    /// Score material based on its value and position on the board
+    fn score_pieces(&self) -> Score {
+        let white_material_score = self.score_white_material_positive();
+        let black_material_score = self.score_black_material_positive();
+        let ratio = self.midgame_to_lategame_ratio(white_material_score + black_material_score);
+        let mut score = white_material_score - black_material_score;
 
         for sq in self.game.occupied {
             let (piece, color) = self.game.piece_lookup(sq).unwrap();
-
             match color {
                 PieceColor::White => {
-                    score += material_value(piece);
-                    score += square_value(piece, sq, color);
+                    score += square_value(piece, sq, color, ratio);
                 }
-
                 PieceColor::Black => {
-                    score -= material_value(piece);
-                    score -= square_value(piece, sq, color);
+                    score -= square_value(piece, sq, color, ratio);
                 }
             }
         }
@@ -243,7 +282,7 @@ impl Engine {
 
         let mut score = Score::default();
 
-        score += self.score_material();
+        score += self.score_pieces();
         score += self.score_attackers();
         score += self.score_king_safety();
         score += self.score_castling_rights();
