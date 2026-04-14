@@ -19,7 +19,7 @@ codegen-units = 16
 lto = "thin"
 
 # Useful for speeding up essex
-[profile.release-assertions]
+[profile.canary]
 inherits = "bench"
 debug-assertions = true
 strip = false
