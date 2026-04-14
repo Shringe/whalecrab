@@ -128,19 +128,6 @@ pub struct PieceMoveInfo {
     pub check_rays: BitBoard,
 }
 
-/// Gen a bitboard containing every square set between two square indexes, non inclusive
-fn between_two_squares(from: Square, to: Square) -> BitBoard {
-    let mut out = EMPTY;
-
-    for sq in !EMPTY {
-        if sq.to_int() > from.to_int() && sq.to_int() < to.to_int() {
-            out |= BitBoard::from_square(sq);
-        }
-    }
-
-    out
-}
-
 impl Game {
     /// Filters out psuedo_legal moves that are found to be illegal
     pub fn legal_moves_filter(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
@@ -168,8 +155,15 @@ impl Game {
                     let attacker = king_attackers.to_square();
                     let attacking_piece = self.piece_lookup(attacker).unwrap().0;
 
-                    let is_blocking = attacking_piece.is_ray_piece()
-                        && (between_two_squares(king, attacker) & checks).has_square(tobb);
+                    let is_blocking = !is_moving_king
+                        && attacking_piece.is_ray_piece()
+                        && attacker.path_to(king)
+                            & attacking_piece
+                                .psuedo_legal_targets_fast(self, &attacker)
+                                .targets
+                            & tobb
+                            != EMPTY;
+
                     let is_capturing = m.is_capture();
                     let is_capturing_attacking_piece =
                         is_capturing && king_attackers.has_square(tobb);
@@ -206,8 +200,9 @@ impl Game {
                         ..
                     }
                 ),
-                "The king is capturable! {}",
-                m
+                "The king is capturable! {}, {:?}",
+                m,
+                self
             );
 
             legal.push(m);
