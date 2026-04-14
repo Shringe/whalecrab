@@ -5,6 +5,9 @@ use std::{
     str::FromStr,
 };
 
+#[cfg(feature = "logging")]
+use logging::BufLogger;
+
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
@@ -73,6 +76,8 @@ pub struct Game {
     pub black_check_rays: BitBoard,
     pub legal_moves: Option<Vec<Move>>,
     pub(crate) piece_table: PieceTable,
+    #[cfg(feature = "logging")]
+    logger: BufLogger,
 }
 
 impl PartialEq for Game {
@@ -138,6 +143,7 @@ impl Default for Game {
             position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
+            logger: BufLogger::new(),
         };
 
         game.initialize();
@@ -198,6 +204,21 @@ impl fmt::Debug for Game {
 }
 
 impl Game {
+    /// Pushes a log to the log buffer if cfg!(feature = "logging")
+    pub fn log<S: ToString>(&mut self, msg: S) {
+        #[cfg(feature = "logging")]
+        self.logger.push(msg.to_string());
+    }
+
+    /// Dumps the recent logs to stderr if cfg!(feature = "logging")
+    pub fn dump_logs(&self) {
+        #[cfg(feature = "logging")]
+        {
+            let logs = self.logger.retrieve();
+            eprintln!("Recent logs:\n{}", logs);
+        }
+    }
+
     // Piece getters
     pub fn get_attacks(&self, color: &PieceColor) -> &BitBoard {
         get_attacks!(self, color)
@@ -263,6 +284,8 @@ impl Game {
             position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
+            #[cfg(feature = "logging")]
+            logger: BufLogger::new(),
         }
     }
 

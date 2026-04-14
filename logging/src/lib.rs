@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct BufLogger {
     buffer: [String; 256],
     counter: u8,

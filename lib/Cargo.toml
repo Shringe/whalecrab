@@ -3,6 +3,10 @@ name = "whalecrab_lib"
 version.workspace = true
 edition.workspace = true
 
+# TODO: remove logging default feature
+[features]
+default = ["logging"]
+
 [[bench]]
 name = "movegen"
 harness = false
@@ -17,3 +21,6 @@ harness = false
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
+
+[dependencies]
+logging = { path = "../logging", optional = true }
