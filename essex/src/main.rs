@@ -9,7 +9,7 @@ use std::{
         atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use clap::Parser;
@@ -60,14 +60,16 @@ fn main() {
         );
     }
 
+    let start = Instant::now();
     boat.sail();
     let _ = std::panic::take_hook();
+    let time_spent = start.elapsed();
     log::info!("Finishing program...");
 
     thread::sleep(Duration::from_millis(50));
     let positions = boat.positions.load(Ordering::Relaxed);
     let errors = boat.errors.load(Ordering::Relaxed);
-    display_results(positions, errors);
+    display_results(positions, errors, time_spent);
 
     log::info!("Saving dataset to {}", boat.args.database_path.display());
     boat.dataset
@@ -75,7 +77,7 @@ fn main() {
         .expect("Failed to save the dataset");
 }
 
-fn display_results(positions: u64, errors: u32) {
+fn display_results(positions: u64, errors: u32, time_spent: Duration) {
     let quadrillion = 1_000_000_000_000_000;
     let trillion = 1_000_000_000_000;
     let billion = 1_000_000_000;
@@ -111,6 +113,8 @@ fn display_results(positions: u64, errors: u32) {
         )
     };
 
+    let elapsed = humantime::Duration::from(time_spent);
+    log::info!("Total time spent searching:                  {}", elapsed);
     log::info!("Total number of positions searched:          {}", positions);
     log::info!("Total number of errors found:                {}", errors);
     log::info!("{}", line);
