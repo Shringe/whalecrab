@@ -9,6 +9,7 @@ use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::position::game::Game;
 use crate::rank::Rank;
 
+#[derive(Debug, PartialEq)]
 pub enum Direction {
     North,
     South,
@@ -320,6 +321,58 @@ impl Square {
         bb.has_square(BitBoard::from_square(*self))
     }
 
+    /// Gets the direction to another square if possible
+    pub fn direction_to(self, to: Square) -> Option<Direction> {
+        if self == to {
+            return None;
+        }
+
+        let src_rank = self.get_rank();
+        let src_file = self.get_file();
+        let dst_rank = to.get_rank();
+        let dst_file = to.get_file();
+
+        let rank_dist = dst_rank.to_int().abs_diff(src_rank.to_int());
+        let file_dist = dst_file.to_int().abs_diff(src_file.to_int());
+
+        let diagonal = rank_dist == file_dist;
+        let same_rank = rank_dist == 0;
+        let same_file = file_dist == 0;
+        let above = dst_rank > src_rank;
+        let right = dst_file > src_file;
+
+        match (same_rank, same_file, above, right) {
+            (true, false, _, true) => Some(Direction::East),
+            (true, false, _, false) => Some(Direction::West),
+            (false, true, true, _) => Some(Direction::North),
+            (false, true, false, _) => Some(Direction::South),
+            (false, false, true, true) if diagonal => Some(Direction::NorthEast),
+            (false, false, true, false) if diagonal => Some(Direction::NorthWest),
+            (false, false, false, true) if diagonal => Some(Direction::SouthEast),
+            (false, false, false, false) if diagonal => Some(Direction::SouthWest),
+            _ => None,
+        }
+    }
+
+    /// Finds the straight exclusive path to another square if one exists
+    pub fn path_to(self, to: Square) -> BitBoard {
+        let mut path = EMPTY;
+        let Some(direction) = self.direction_to(to) else {
+            return path;
+        };
+
+        let mut current = self;
+        while let Some(forward) = current.walk(&direction)
+            && forward != to
+        {
+            let forwardbb = BitBoard::from_square(forward);
+            path |= forwardbb;
+            current = forward;
+        }
+
+        path
+    }
+
     /// Moves one square in a direction. Useful for ray pieces.
     pub fn walk(&self, direction: &Direction) -> Option<Square> {
         match direction {
@@ -556,5 +609,36 @@ mod tests {
                 assert_eq!(sq.get_file(), file);
             }
         }
+    }
+
+    #[test]
+    fn direction_to() {
+        let source = Square::E4;
+
+        for (dest, expected) in [
+            (Square::H4, Some(Direction::East)),
+            (Square::A4, Some(Direction::West)),
+            (Square::E8, Some(Direction::North)),
+            (Square::E1, Some(Direction::South)),
+            (Square::H7, Some(Direction::NorthEast)),
+            (Square::B7, Some(Direction::NorthWest)),
+            (Square::H1, Some(Direction::SouthEast)),
+            (Square::B1, Some(Direction::SouthWest)),
+            (Square::E4, None),
+            (Square::F6, None),
+        ] {
+            let actual = source.direction_to(dest);
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn path_to() {
+        let source = Square::E7;
+        let destination = Square::B4;
+        let squares = vec![Square::D6, Square::C5];
+        let expected = BitBoard::from_square_vec(squares);
+        let actual = source.path_to(destination);
+        assert_eq!(actual, expected);
     }
 }
