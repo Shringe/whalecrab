@@ -208,7 +208,7 @@ impl fmt::Debug for Game {
 
 impl Game {
     /// Pushes a log to the log buffer if cfg!(feature = "panic_logger")
-    pub fn log<S: ToString>(&self, msg: S) {
+    pub(crate) fn log<S: ToString>(&self, msg: S) {
         #[cfg(feature = "panic_logger")]
         self.panic_logger.borrow_mut().push(msg.to_string());
     }
@@ -223,6 +223,13 @@ impl Game {
             eprintln!("{}", msg);
             msg
         }
+    }
+
+    /// Prints the logs to stderr
+    #[cfg(test)]
+    pub(crate) fn dump_logs(&self) {
+        let logs = self.retrieve_logs();
+        eprintln!("{}", logs);
     }
 
     // Piece getters
