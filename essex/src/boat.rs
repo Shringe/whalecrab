@@ -37,14 +37,14 @@ impl Boat {
         let timer = platform_timer!(self.args.time);
         while !self.term.load(Ordering::Relaxed) {
             if timer.over() {
-                log::info!("Time is up");
+                log::debug!("Time is up");
                 break;
             }
 
             let positions = self.positions.fetch_add(1, Ordering::Relaxed);
             log::trace!("Position #{}", positions);
             if positions >= self.args.positions {
-                log::info!("Maximum amount of positions reached");
+                log::debug!("Maximum amount of positions reached");
                 break;
             }
 
@@ -53,7 +53,7 @@ impl Boat {
                     let errors = self.errors.fetch_add(1, Ordering::Relaxed);
                     log::trace!("Found error #{} at Position:\n{:#?}", errors, game);
                     if errors >= self.args.quit_after {
-                        log::info!("Maximum amount of errors reached");
+                        log::debug!("Maximum amount of errors reached");
                         break;
                     }
 

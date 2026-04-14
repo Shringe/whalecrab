@@ -46,12 +46,14 @@ fn main() {
         }
     };
 
-    for _ in 1..boat.args.threads {
-        let boat = boat.clone();
-        let _ = thread::spawn(move || {
-            boat.sail();
-        });
-    }
+    let handles: Vec<_> = (1..boat.args.threads)
+        .map(|_| {
+            let boat = boat.clone();
+            thread::spawn(move || {
+                boat.sail();
+            })
+        })
+        .collect();
 
     if let Err(e) = register_hooks(&boat.term) {
         log::error!(
@@ -63,13 +65,15 @@ fn main() {
     let start = Instant::now();
     boat.sail();
     let _ = std::panic::take_hook();
-    let time_spent = start.elapsed();
-    log::info!("Finishing program...");
 
-    thread::sleep(Duration::from_millis(50));
+    log::info!("Finishing program...");
+    for handle in handles {
+        let _ = handle.join();
+    }
+
     let positions = boat.positions.load(Ordering::Relaxed);
     let errors = boat.errors.load(Ordering::Relaxed);
-    display_results(positions, errors, time_spent);
+    display_results(positions, errors, start.elapsed());
 
     log::info!("Saving dataset to {}", boat.args.database_path.display());
     boat.dataset
