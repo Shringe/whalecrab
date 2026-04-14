@@ -101,6 +101,21 @@ pub fn shouldnt_generate(moves: &Vec<Move>, m: &Move) {
     );
 }
 
+/// Assert that the two move lists are equal. The move lists do not need to be sorted
+#[track_caller]
+pub fn assert_meq(mut actual: Vec<Move>, mut expected: Vec<Move>) {
+    let key = |m: &Move| unsafe { std::mem::transmute::<Move, u32>(*m) };
+    actual.sort_by_key(key);
+    expected.sort_by_key(key);
+    assert_eq!(
+        actual,
+        expected,
+        "\nActual: {}\nExpected: {}",
+        format_pretty_list(&actual),
+        format_pretty_list(&expected)
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{position::game::STARTING_FEN, square::Square};
