@@ -754,10 +754,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
-name = "logging"
-version = "1.5.3"
-
-[[package]]
 name = "lru"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -810,6 +806,10 @@ name = "oorandom"
 version = "11.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
+
+[[package]]
+name = "panic_logger"
+version = "1.5.3"
 
 [[package]]
 name = "parking_lot"
@@ -1493,7 +1493,7 @@ name = "whalecrab_lib"
 version = "1.5.3"
 dependencies = [
  "criterion",
- "logging",
+ "panic_logger",
 ]
 
 [[package]]

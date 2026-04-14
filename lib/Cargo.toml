@@ -5,7 +5,7 @@ edition.workspace = true
 
 # TODO: remove logging default feature
 [features]
-default = ["logging"]
+default = ["panic_logger"]
 
 [[bench]]
 name = "movegen"
@@ -23,4 +23,4 @@ harness = false
 criterion = { version = "0.7.0", features = ["html_reports"] }
 
 [dependencies]
-logging = { path = "../logging", optional = true }
+panic_logger = { path = "../panic_logger", optional = true }

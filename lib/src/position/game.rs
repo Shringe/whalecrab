@@ -5,8 +5,8 @@ use std::{
     str::FromStr,
 };
 
-#[cfg(feature = "logging")]
-use logging::BufLogger;
+#[cfg(feature = "panic_logger")]
+use panic_logger::BufLogger;
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
@@ -76,8 +76,8 @@ pub struct Game {
     pub black_check_rays: BitBoard,
     pub legal_moves: Option<Vec<Move>>,
     pub(crate) piece_table: PieceTable,
-    #[cfg(feature = "logging")]
-    logger: BufLogger,
+    #[cfg(feature = "panic_logger")]
+    panic_logger: BufLogger,
 }
 
 impl PartialEq for Game {
@@ -143,7 +143,8 @@ impl Default for Game {
             position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
-            logger: BufLogger::new(),
+            #[cfg(feature = "panic_logger")]
+            panic_logger: BufLogger::new(),
         };
 
         game.initialize();
@@ -204,17 +205,17 @@ impl fmt::Debug for Game {
 }
 
 impl Game {
-    /// Pushes a log to the log buffer if cfg!(feature = "logging")
+    /// Pushes a log to the log buffer if cfg!(feature = "panic_logger")
     pub fn log<S: ToString>(&mut self, msg: S) {
-        #[cfg(feature = "logging")]
-        self.logger.push(msg.to_string());
+        #[cfg(feature = "panic_logger")]
+        self.panic_logger.push(msg.to_string());
     }
 
-    /// Dumps the recent logs to stderr if cfg!(feature = "logging")
+    /// Dumps the recent logs to stderr if cfg!(feature = "panic_logger")
     pub fn dump_logs(&self) {
-        #[cfg(feature = "logging")]
+        #[cfg(feature = "panic_logger")]
         {
-            let logs = self.logger.retrieve();
+            let logs = self.panic_logger.retrieve();
             eprintln!("Recent logs:\n{}", logs);
         }
     }
@@ -284,8 +285,8 @@ impl Game {
             position_history: PositionHistory::new(),
             legal_moves: None,
             piece_table: PieceTable::new(),
-            #[cfg(feature = "logging")]
-            logger: BufLogger::new(),
+            #[cfg(feature = "panic_logger")]
+            panic_logger: BufLogger::new(),
         }
     }
 

@@ -1,0 +1,5 @@
+[package]
+name = "panic_logger"
+description = "Debug logging functionality used by essex to better trace errors in lib"
+version.workspace = true
+edition.workspace = true

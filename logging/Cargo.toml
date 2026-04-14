@@ -1,5 +1,0 @@
-[package]
-name = "logging"
-description = "Debug logging functionality used by essex to better trace errors in lib lib"
-version.workspace = true
-edition.workspace = true
