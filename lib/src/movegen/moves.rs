@@ -190,19 +190,25 @@ impl Move {
                 PieceColor::White => Square::make_square(Rank::Fourth, at),
                 PieceColor::Black => Square::make_square(Rank::Fifth, at),
             },
-            Move::CaptureEnPassant { .. } => game.en_passant_target.expect(
-                "A CaptureEnpassant move was created despite there being no en_passant target on the board",
-            ),
+            Move::CaptureEnPassant { .. } => game.en_passant_target.unwrap_or(Square::E1),
             Move::Promotion { to, .. } => match game.turn {
                 PieceColor::White => Square::make_square(Rank::Eighth, to),
                 PieceColor::Black => Square::make_square(Rank::First, to),
-            }
+            },
             Move::Castle { side } => match (game.turn, side) {
-                (PieceColor::White, CastleSide::Queenside) => castling::WHITE_CASTLE_QUEENSIDE_KING_TO,
-                (PieceColor::White, CastleSide::Kingside) => castling::WHITE_CASTLE_KINGSIDE_KING_TO,
-                (PieceColor::Black, CastleSide::Queenside) => castling::BLACK_CASTLE_QUEENSIDE_KING_TO,
-                (PieceColor::Black, CastleSide::Kingside) => castling::BLACK_CASTLE_KINGSIDE_KING_TO,
-            }
+                (PieceColor::White, CastleSide::Queenside) => {
+                    castling::WHITE_CASTLE_QUEENSIDE_KING_TO
+                }
+                (PieceColor::White, CastleSide::Kingside) => {
+                    castling::WHITE_CASTLE_KINGSIDE_KING_TO
+                }
+                (PieceColor::Black, CastleSide::Queenside) => {
+                    castling::BLACK_CASTLE_QUEENSIDE_KING_TO
+                }
+                (PieceColor::Black, CastleSide::Kingside) => {
+                    castling::BLACK_CASTLE_KINGSIDE_KING_TO
+                }
+            },
         }
     }
 
