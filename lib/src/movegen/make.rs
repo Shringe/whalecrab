@@ -16,7 +16,13 @@ use crate::{
 impl Game {
     /// Plays a move on the board
     pub fn play(&mut self, m: &Move) {
-        self.log(format!("Playing move: {:?} on {:?}", m, self));
+        self.log(format!(
+            "Playing move: {:?} on {:?}. From piece: {:?}, to piece: {:?}",
+            m,
+            self,
+            self.piece_lookup(m.from(self.turn)),
+            self.piece_lookup(m.to(self))
+        ));
 
         #[cfg(debug_assertions)]
         {
@@ -42,6 +48,27 @@ impl Game {
 
         self.capture_position();
 
+        // This is a macro to avoid borrow-checker shenanigans that a lambda would have
+        macro_rules! revoke_castling_rights {
+            ($sq:expr) => {
+                match $sq {
+                    castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM => {
+                        self.castling_rights.revoke_black_kingside()
+                    }
+                    castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM => {
+                        self.castling_rights.revoke_black_queenside()
+                    }
+                    castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM => {
+                        self.castling_rights.revoke_white_kingside()
+                    }
+                    castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM => {
+                        self.castling_rights.revoke_white_queenside()
+                    }
+                    _ => {}
+                }
+            };
+        }
+
         match m {
             Move::Normal { from, to, capture } => {
                 let frombb = BitBoard::from_square(*from);
@@ -60,26 +87,6 @@ impl Game {
                 add_piece!(self, pieces, tobb, *to, piece, color);
 
                 // Revoking appropriate castling rights
-                macro_rules! revoke_castling_rights {
-                    ($sq:expr) => {
-                        match $sq {
-                            castling::BLACK_CASTLE_KINGSIDE_ROOK_FROM => {
-                                self.castling_rights.revoke_black_kingside()
-                            }
-                            castling::BLACK_CASTLE_QUEENSIDE_ROOK_FROM => {
-                                self.castling_rights.revoke_black_queenside()
-                            }
-                            castling::WHITE_CASTLE_KINGSIDE_ROOK_FROM => {
-                                self.castling_rights.revoke_white_kingside()
-                            }
-                            castling::WHITE_CASTLE_QUEENSIDE_ROOK_FROM => {
-                                self.castling_rights.revoke_white_queenside()
-                            }
-                            _ => {}
-                        }
-                    };
-                }
-
                 match piece {
                     PieceType::King => match color {
                         PieceColor::White => {
@@ -179,6 +186,8 @@ impl Game {
                 // Add promoted piece to new square
                 let promoted_pieces = get_pieces_mut!(self, piece, &color);
                 add_piece!(self, promoted_pieces, tobb, to, *piece, color);
+
+                revoke_castling_rights!(to);
             }
             Move::Castle { side } => match &self.turn {
                 PieceColor::White => {
@@ -617,5 +626,15 @@ mod tests {
             "The pawn was not moved back to {from}"
         );
         assert_eq!(game.piece_lookup(to), None, "Something is still in {to}");
+    }
+
+    #[test]
+    fn promotion_capture_revokes_castling_rights() {
+        let fen = "4k3/2p1r3/r1n2p2/pq6/NPPpPBp1/1P1P3P/1Q1N2p1/1R2KB1R b K - 0 28";
+        let mut game = Game::from_fen(fen).unwrap();
+        let m = Move::infer(Square::G2, Square::H1, &game);
+        assert!(game.castling_rights.white_kingside());
+        game.play(&m);
+        assert!(!game.castling_rights.white_kingside());
     }
 }
