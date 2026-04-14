@@ -208,6 +208,7 @@ impl Game {
             legal.push(m);
         }
 
+        self.log(format!("Legal moves: {:#?}", legal));
         debug_assert!(
             self.white_kings != EMPTY && self.black_kings != EMPTY,
             "There is no king! {:#?} {:?}",

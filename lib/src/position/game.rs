@@ -7,6 +7,8 @@ use std::{
 
 #[cfg(feature = "panic_logger")]
 use panic_logger::BufLogger;
+#[cfg(feature = "panic_logger")]
+use std::cell::RefCell;
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
@@ -77,7 +79,7 @@ pub struct Game {
     pub legal_moves: Option<Vec<Move>>,
     pub(crate) piece_table: PieceTable,
     #[cfg(feature = "panic_logger")]
-    panic_logger: BufLogger,
+    panic_logger: RefCell<BufLogger>,
 }
 
 impl PartialEq for Game {
@@ -144,7 +146,7 @@ impl Default for Game {
             legal_moves: None,
             piece_table: PieceTable::new(),
             #[cfg(feature = "panic_logger")]
-            panic_logger: BufLogger::new(),
+            panic_logger: RefCell::new(BufLogger::new()),
         };
 
         game.initialize();
@@ -206,16 +208,16 @@ impl fmt::Debug for Game {
 
 impl Game {
     /// Pushes a log to the log buffer if cfg!(feature = "panic_logger")
-    pub fn log<S: ToString>(&mut self, msg: S) {
+    pub fn log<S: ToString>(&self, msg: S) {
         #[cfg(feature = "panic_logger")]
-        self.panic_logger.push(msg.to_string());
+        self.panic_logger.borrow_mut().push(msg.to_string());
     }
 
     /// Rectrieves recent logs from the log buffer. if not cfg!(feature = "panic_logger"), then
     /// prints an error message to stderr
     pub fn retrieve_logs(&self) -> String {
         if cfg!(feature = "panic_logger") {
-            self.panic_logger.retrieve()
+            self.panic_logger.borrow().retrieve()
         } else {
             let msg = "feature panic_logger is not enabled".to_string();
             eprintln!("{}", msg);
@@ -289,7 +291,7 @@ impl Game {
             legal_moves: None,
             piece_table: PieceTable::new(),
             #[cfg(feature = "panic_logger")]
-            panic_logger: BufLogger::new(),
+            panic_logger: RefCell::new(BufLogger::new()),
         }
     }
 
