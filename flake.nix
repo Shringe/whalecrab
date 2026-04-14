@@ -21,7 +21,7 @@
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
           makeCratePackage =
-            name: pname:
+            name: pname: profile:
             pkgs.rustPlatform.buildRustPackage {
               inherit version name pname;
               src = self;
@@ -29,6 +29,7 @@
 
               # It is highly recommended to build with native optimizations
               RUSTFLAGS = "-C target-cpu=native";
+              buildType = profile;
 
               # Ensure only the necessary dependencies get built
               cargoTestFlags = [
@@ -43,8 +44,10 @@
         in
         {
           packages = {
-            tui = makeCratePackage "tui" "whalecrab_tui";
-            uci = makeCratePackage "uci" "whalecrab_uci";
+            tui = makeCratePackage "tui" "whalecrab_tui" "release";
+            uci = makeCratePackage "uci" "whalecrab_uci" "release";
+            tui_canary = makeCratePackage "tui" "whalecrab_tui" "canary";
+            uci_canary = makeCratePackage "uci" "whalecrab_uci" "canary";
           };
 
           devShells.default = pkgs.mkShell {
@@ -71,6 +74,8 @@
       overlay = final: prev: {
         whalecrab_tui = systemOutputs.packages.${prev.system}.tui;
         whalecrab_uci = systemOutputs.packages.${prev.system}.uci;
+        whalecrab_tui_canary = systemOutputs.packages.${prev.system}.tui_canary;
+        whalecrab_uci_canary = systemOutputs.packages.${prev.system}.uci_canary;
       };
     };
 }
