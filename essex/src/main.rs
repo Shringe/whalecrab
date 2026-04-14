@@ -13,6 +13,7 @@ use std::{
 };
 
 use clap::Parser;
+use colored::Colorize;
 
 use crate::boat::Boat;
 
@@ -92,27 +93,32 @@ fn display_results(positions: u64, errors: u32, time_spent: Duration) {
 
     let line = if per_quadrillion >= trillion {
         format!(
-            "Number of errors per thousand positions:     {}",
+            "Number of errors per {} positions:     {}",
+            "thousand".red(),
             per_quadrillion / trillion
         )
     } else if per_quadrillion >= billion {
         format!(
-            "Number of errors per million positions:      {}",
+            "Number of errors per {} positions:      {}",
+            "million".yellow(),
             per_quadrillion / billion
         )
     } else if per_quadrillion >= million {
         format!(
-            "Number of errors per billion positions:      {}",
+            "Number of errors per {} positions:      {}",
+            "billion".green(),
             per_quadrillion / million
         )
     } else if per_quadrillion >= thousand {
         format!(
-            "Number of errors per trillion positions:     {}",
+            "Number of errors per {} positions:     {}",
+            "trillion".cyan(),
             per_quadrillion / thousand
         )
     } else {
         format!(
-            "Number of errors per quadrillion positions:  {}",
+            "Number of errors per {} positions:  {}",
+            "quadrillion".bright_cyan(),
             per_quadrillion
         )
     };
