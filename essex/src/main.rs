@@ -51,7 +51,7 @@ fn main() {
         .map(|_| {
             let boat = boat.clone();
             thread::spawn(move || {
-                boat.sail();
+                boat.sail(None);
             })
         })
         .collect();
@@ -64,7 +64,7 @@ fn main() {
     }
 
     let start = Instant::now();
-    boat.sail();
+    boat.sail(boat.args.seed);
     let _ = std::panic::take_hook();
 
     log::info!("Finishing program...");

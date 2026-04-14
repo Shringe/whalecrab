@@ -26,8 +26,8 @@ pub struct Boat {
 }
 
 impl Boat {
-    pub fn sail(&self) {
-        let mut seed = self.args.seed.unwrap_or_else(|| rand::rng().next_u32());
+    pub fn sail(&self, starting_seed: Option<u32>) {
+        let mut seed = starting_seed.unwrap_or_else(|| rand::rng().next_u32());
         log::trace!("Seed: {}", seed);
         let mut rng = SmallRng::seed_from_u64(seed.into());
 
@@ -105,9 +105,9 @@ impl Boat {
             });
 
             game = Game::default();
-            seed = rand::rng().next_u32();
-            log::trace!("New Seed: {}", seed);
+            seed = rng.next_u32();
             rng = SmallRng::seed_from_u64(seed.into());
+            log::trace!("New Seed: {}", seed);
         }
 
         self.term.store(true, Ordering::Relaxed);
