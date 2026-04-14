@@ -208,6 +208,7 @@ impl fmt::Debug for Game {
 
 impl Game {
     /// Pushes a log to the log buffer if cfg!(feature = "panic_logger")
+    #[allow(unused)]
     pub(crate) fn log<S: ToString>(&self, msg: S) {
         #[cfg(feature = "panic_logger")]
         self.panic_logger.borrow_mut().push(msg.to_string());
@@ -216,9 +217,11 @@ impl Game {
     /// Rectrieves recent logs from the log buffer. if not cfg!(feature = "panic_logger"), then
     /// prints an error message to stderr
     pub fn retrieve_logs(&self) -> String {
-        if cfg!(feature = "panic_logger") {
-            self.panic_logger.borrow().retrieve()
-        } else {
+        #[cfg(feature = "panic_logger")]
+        return self.panic_logger.borrow().retrieve();
+
+        #[cfg(not(feature = "panic_logger"))]
+        {
             let msg = "feature panic_logger is not enabled".to_string();
             eprintln!("{}", msg);
             msg
