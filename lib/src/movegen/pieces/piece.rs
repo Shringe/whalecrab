@@ -215,8 +215,6 @@ impl Game {
             self
         );
 
-        // TODO: remove
-        legal.shrink_to_fit();
         legal
     }
 }
