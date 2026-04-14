@@ -208,7 +208,6 @@ impl Game {
             legal.push(m);
         }
 
-        self.log(format!("Legal moves: {:#?}", legal));
         debug_assert!(
             self.white_kings != EMPTY && self.black_kings != EMPTY,
             "There is no king! {:#?} {:?}",
@@ -230,7 +229,7 @@ mod tests {
         movegen::moves::moves_to_targets_vec,
         position::game::State,
         square::Square,
-        test_utils::{format_pretty_list, should_generate, shouldnt_generate},
+        test_utils::{assert_meq, format_pretty_list, should_generate, shouldnt_generate},
     };
 
     use super::*;
@@ -635,5 +634,20 @@ Available moves: {}
         let moves = game.legal_moves();
         let m = Move::infer(Square::D7, Square::D3, &game);
         shouldnt_generate(&moves, &m);
+    }
+
+    #[test]
+    fn white_must_move_king_after_discovered() {
+        let fen = "rn5b/3K1k1r/p2p1p1p/Pb2q2P/p5P1/1P6/6PR/8 w - - 7 54";
+        let mut game = Game::from_fen(fen).unwrap();
+        let actual = game.legal_moves();
+        let expected = vec![
+            Move::infer(Square::D7, Square::C7, &game),
+            Move::infer(Square::D7, Square::C8, &game),
+            Move::infer(Square::D7, Square::D8, &game),
+        ];
+
+        game.dump_logs();
+        assert_meq(actual, expected);
     }
 }

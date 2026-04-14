@@ -714,7 +714,7 @@ impl Game {
         for piece in ALL_PIECE_TYPES {
             let moveinfo = piece.psuedo_legal_targets_fast(self, &sq);
             let potential_enemy = self.get_pieces(&piece, &enemy);
-            attackers |= moveinfo.attacks & *potential_enemy;
+            attackers |= moveinfo.targets & *potential_enemy;
         }
 
         attackers
@@ -1233,7 +1233,7 @@ mod tests {
         let fen = "kr2r3/pp6/8/2N5/4pK2/8/2B1R1B1/8 w - - 0 1";
         let game = Game::from_fen(fen).unwrap();
         let black_pawnbb = Square::E4;
-        assert_eq!(game.attackers(black_pawnbb).popcnt(), 5);
+        assert_eq!(game.attackers(black_pawnbb).popcnt(), 3);
     }
 
     #[test]

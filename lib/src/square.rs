@@ -641,16 +641,4 @@ mod tests {
         let actual = source.path_to(destination);
         assert_eq!(actual, expected);
     }
-
-    #[test]
-    fn rook_check_ray_doesnt_go_through_own_king() {
-        let fen = "rn5b/3K1k1r/p2p1p1p/Pb2q2P/p5P1/1P6/6PR/8 w - - 7 54";
-        let game = Game::from_fen(fen).unwrap();
-        let rook = Square::H7;
-        let expected = BitBoard::from_square(rook.left().unwrap());
-        let actual = rook.rook_psuedo_legal_targets(&game).check_rays;
-
-        game.dump_logs();
-        assert_eq!(actual, expected);
-    }
 }
