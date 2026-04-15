@@ -6,7 +6,7 @@ use crate::{
     platform_timer,
     score::Score,
     timers::{MoveTimer, infinite::Infinite},
-    transposition_table::TranspositionTableEntry,
+    transposition_table::{NodeType, TranspositionTableEntry},
 };
 use whalecrab_lib::{
     movegen::{
@@ -140,6 +140,7 @@ impl Engine {
             true
         };
 
+        let mut node_type = NodeType::Exact;
         let mut result = SearchResult::new(Score::MIN, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
@@ -155,6 +156,7 @@ impl Engine {
             }
 
             if node.score >= beta {
+                node_type = NodeType::Cut;
                 break;
             }
         }
@@ -164,6 +166,7 @@ impl Engine {
                 best_move: result.best_move,
                 depth,
                 score: result.info.score,
+                node_type,
             };
             self.transposition_table.insert(self.game.hash, entry);
         }
@@ -201,6 +204,7 @@ impl Engine {
             true
         };
 
+        let mut node_type = NodeType::Exact;
         let mut result = SearchResult::new(Score::MAX, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
@@ -216,6 +220,7 @@ impl Engine {
             }
 
             if node.score <= alpha {
+                node_type = NodeType::All;
                 break;
             }
         }
@@ -225,6 +230,7 @@ impl Engine {
                 best_move: result.best_move,
                 depth,
                 score: result.info.score,
+                node_type,
             };
             self.transposition_table.insert(self.game.hash, entry);
         }
@@ -266,6 +272,7 @@ impl Engine {
                         best_move: result.best_move,
                         depth,
                         score: result.info.score,
+                        node_type: NodeType::Exact,
                     };
                     self.transposition_table.insert(self.game.hash, entry);
                 }
