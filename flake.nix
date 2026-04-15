@@ -20,34 +20,47 @@
 
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
+
           makeCratePackage =
-            name: pname: profile:
-            pkgs.rustPlatform.buildRustPackage {
-              inherit version name pname;
-              src = self;
-              cargoLock.lockFile = ./Cargo.lock;
+            name: pname: extraAttrs:
+            pkgs.rustPlatform.buildRustPackage (
+              {
+                inherit version name pname;
+                src = self;
+                cargoLock.lockFile = ./Cargo.lock;
 
-              # It is highly recommended to build with native optimizations
-              RUSTFLAGS = "-C target-cpu=native";
-              buildType = profile;
+                # It is highly recommended to build with native optimizations
+                RUSTFLAGS = "-C target-cpu=native";
 
-              # Ensure only the necessary dependencies get built
-              cargoTestFlags = [
-                "--package"
-                name
-              ];
-              cargoBuildFlags = [
-                "--package"
-                name
+                # Ensure only the necessary dependencies get built
+                cargoTestFlags = [
+                  "--package"
+                  name
+                ];
+                cargoBuildFlags = [
+                  "--package"
+                  name
+                ];
+              }
+              // extraAttrs
+            );
+
+          makeCratePackageCanary =
+            name: pname:
+            makeCratePackage name pname {
+              buildType = "canary";
+              buildNoDefaultFeatures = true;
+              buildFeatures = [
+                "panic_logger"
               ];
             };
         in
         {
           packages = {
-            tui = makeCratePackage "tui" "whalecrab_tui" "release";
-            uci = makeCratePackage "uci" "whalecrab_uci" "release";
-            tui_canary = makeCratePackage "tui" "whalecrab_tui" "canary";
-            uci_canary = makeCratePackage "uci" "whalecrab_uci" "canary";
+            tui = makeCratePackage "tui" "whalecrab_tui" { };
+            uci = makeCratePackage "uci" "whalecrab_uci" { };
+            tui_canary = makeCratePackageCanary "tui" "whalecrab_tui";
+            uci_canary = makeCratePackageCanary "uci" "whalecrab_uci";
           };
 
           devShells.default = pkgs.mkShell {

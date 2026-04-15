@@ -5,6 +5,7 @@ edition.workspace = true
 
 [features]
 default = ["is-terminal"]
+panic_logger = ["whalecrab_lib/panic_logger"]
 
 [dependencies]
 whalecrab_lib = { path = "../lib" }
