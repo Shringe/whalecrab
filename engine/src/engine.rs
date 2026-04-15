@@ -135,6 +135,10 @@ impl Engine {
                 };
             }
 
+            if entry.node_type == NodeType::Cut {
+                alpha = alpha.max(entry.score);
+            }
+
             depth > entry.depth
         } else {
             true
@@ -197,6 +201,10 @@ impl Engine {
                     depth,
                     nodes: 1,
                 };
+            }
+
+            if entry.node_type == NodeType::All {
+                beta = beta.min(entry.score);
             }
 
             depth > entry.depth
