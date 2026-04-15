@@ -546,11 +546,12 @@ mod tests {
         let fen = "r3r1k1/pbP2p1p/6pb/8/P1Q5/3B1qP1/2R2P1P/1R4K1 b - - 1 37";
         let mut engine = Engine::from_fen(fen).unwrap();
         let expected = Move::infer(Square::F3, Square::H1, &engine.game);
-        let result = engine.minimax(&Infinite, 2);
-        eprintln!("{}", result);
-        engine.game.play(&expected);
-        eprintln!("{:#?}", engine.game.legal_moves());
-        eprintln!("{}", engine.grade_position());
-        assert_eq!(result.best_move.unwrap(), expected);
+
+        for n in 2..=4 {
+            eprintln!("Depth: {}", n);
+            let result = engine.minimax(&Infinite, n);
+            eprintln!("{}", result);
+            assert_eq!(result.best_move.unwrap(), expected);
+        }
     }
 }
