@@ -70,14 +70,17 @@ fn main() {
 
     #[cfg(feature = "panic_logger")]
     {
+        use crate::logging::ansi::Colorize;
         use std::panic;
-        panic::set_hook(Box::new(|e| anxiety!("Whalecrab panicked: {:?}", e)));
+        panic::set_hook(Box::new(|e| {
+            anxiety!("Whalecrab panicked: {}", format!("{:?}", e).red())
+        }));
         if let Err(e) = panic::catch_unwind(panic::AssertUnwindSafe(|| {
             uci.watch(stdin);
         })) {
             let logs = uci.engine.game.retrieve_logs();
-            anxiety!("Whalecrab panicked with {:?}", e);
-            anxiety!("Recent logs from whalecrab_lib:\n{}", logs);
+            anxiety!("Whalecrab panicked with: {}", format!("{:?}", e).red());
+            anxiety!("Recent logs from whalecrab_lib:\n{}", logs.red());
         }
     }
 

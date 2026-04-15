@@ -8,6 +8,8 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+use crate::logging::ansi::Colorize;
+
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)*) => {
@@ -46,7 +48,8 @@ macro_rules! send {
         if let Some(interactive) = $crate::logging::INTERACTIVE.get()
             && *interactive
         {
-            println!("{}", $crate::logging::ansi::color(&msg, $crate::logging::ansi::GREEN));
+            use $crate::logging::ansi::Colorize;
+            println!("{}", msg.green());
         } else {
             println!("{}", msg);
         };
@@ -217,9 +220,9 @@ impl Logger {
         }
     }
 
-    fn log_with_prefix(prefix: &str, prefix_color: &str, msg: &str) {
-        let text_prefix = prefix;
-        let ansi_prefix = ansi::color(prefix, prefix_color);
+    fn log_with_prefix(prefix: &str, msg: &str) {
+        let text_prefix = prefix.decolorize();
+        let ansi_prefix = prefix;
 
         let prefix_lines = |msg: &str, prefix: &str| {
             msg.lines()
@@ -229,32 +232,38 @@ impl Logger {
                 + "\n"
         };
 
-        let text_prefixed = prefix_lines(msg, text_prefix);
-        let ansi_prefixed = prefix_lines(msg, &ansi_prefix);
+        let text_prefixed = prefix_lines(&msg.decolorize(), &text_prefix);
+        let ansi_prefixed = prefix_lines(msg, ansi_prefix);
 
-        eprint!("{}", ansi_prefixed);
+        if let Some(interactive) = INTERACTIVE.get()
+            && *interactive
+        {
+            eprint!("{}", ansi_prefixed);
+        } else {
+            eprint!("{}", text_prefixed);
+        }
+
         Self::write_to(&MAIN_WRITER, &text_prefixed);
         Self::write_to(&MAIN_ANSI_WRITER, &ansi_prefixed);
     }
 
     pub fn log(msg: &str) {
-        Self::log_with_prefix("Logger", ansi::YELLOW, msg);
+        Self::log_with_prefix(&"Logger".yellow(), msg);
     }
 
     pub fn received(msg: &str) {
-        Self::log_with_prefix("Received", ansi::CYAN, msg);
+        Self::log_with_prefix(&"Received".cyan(), msg);
         Self::write_to(&RECEIVED_WRITER, msg);
     }
 
     pub fn sent(msg: &str) {
-        Self::log_with_prefix("Sent", ansi::MAGENTA, msg);
+        Self::log_with_prefix(&"Sent".magenta(), msg);
         Self::write_to(&SENT_WRITER, msg);
     }
 
     #[cfg(feature = "panic_logger")]
     pub fn anxiety(msg: &str) {
-        // TODO: make anxiety message body red
-        Self::log_with_prefix("Anxiety", ansi::BLUE, msg);
+        Self::log_with_prefix(&"Anxiety".blue(), msg);
         Self::write_to(&ANXIETY_WRITER, msg);
     }
 }
