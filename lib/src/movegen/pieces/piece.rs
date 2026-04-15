@@ -648,4 +648,17 @@ Available moves: {}
         game.dump_logs();
         assert_meq(actual, expected);
     }
+
+    #[test]
+    fn black_king_can_recapture_attacker() {
+        let fen = "kQ6/p7/Pp6/1P6/4p3/4R3/4P1p1/6K1 b - - 0 1";
+        let mut game = Game::from_fen(fen).unwrap();
+        let expected = vec![Move::Normal {
+            from: Square::A8,
+            to: Square::B8,
+            capture: Some(PieceType::Queen),
+        }];
+        assert_eq!(game.state, State::InProgress);
+        assert_meq(game.legal_moves(), expected);
+    }
 }
