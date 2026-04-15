@@ -2,20 +2,18 @@ use std::{collections::HashMap, time::Duration};
 
 use crate::{
     move_result::{SearchInfo, SearchResult},
-    piece_eval::{material_value, square_value},
+    piece_eval::material_value,
     platform_timer,
     score::Score,
     timers::{MoveTimer, infinite::Infinite},
     transposition_table::TranspositionTableEntry,
 };
 use whalecrab_lib::{
-    file::File,
     movegen::{
         moves::Move,
         pieces::piece::{PieceColor, PieceType},
     },
-    position::game::{Game, State},
-    square::Square,
+    position::game::Game,
 };
 
 /// Plays a move, gets the score from the given method, and then unplays the move and returns that
@@ -110,184 +108,6 @@ impl Engine {
     /// testing and benchmarking purposes
     pub fn clear_persistant_cache(&mut self) {
         self.transposition_table.clear();
-    }
-
-    fn score_white_material_positive(&self) -> Score {
-        let mut score = Score::default();
-
-        score += material_value(PieceType::Pawn) * self.game.white_pawns.popcnt() as i32;
-        score += material_value(PieceType::Knight) * self.game.white_knights.popcnt() as i32;
-        score += material_value(PieceType::Bishop) * self.game.white_bishops.popcnt() as i32;
-        score += material_value(PieceType::Rook) * self.game.white_rooks.popcnt() as i32;
-        score += material_value(PieceType::Queen) * self.game.white_queens.popcnt() as i32;
-        score += material_value(PieceType::King) * self.game.white_kings.popcnt() as i32;
-
-        score
-    }
-
-    fn score_black_material_positive(&self) -> Score {
-        let mut score = Score::default();
-
-        score += material_value(PieceType::Pawn) * self.game.black_pawns.popcnt() as i32;
-        score += material_value(PieceType::Knight) * self.game.black_knights.popcnt() as i32;
-        score += material_value(PieceType::Bishop) * self.game.black_bishops.popcnt() as i32;
-        score += material_value(PieceType::Rook) * self.game.black_rooks.popcnt() as i32;
-        score += material_value(PieceType::Queen) * self.game.black_queens.popcnt() as i32;
-        score += material_value(PieceType::King) * self.game.black_kings.popcnt() as i32;
-
-        score
-    }
-
-    fn midgame_to_lategame_ratio(&self, material_score: Score) -> f64 {
-        let max_material = material_value(PieceType::Queen) * 1
-            + material_value(PieceType::Rook) * 2
-            + material_value(PieceType::Bishop) * 2
-            + material_value(PieceType::Knight) * 2
-            + material_value(PieceType::Pawn) * 8;
-
-        let material_ratio =
-            material_score.min(max_material).to_int() as f64 / max_material.to_int() as f64;
-        let clock_penalty = (self.game.full_move_clock as f64 / 400.0).min(0.2);
-
-        (material_ratio - clock_penalty).clamp(0.0, 1.0)
-    }
-
-    /// Score material based on its value and position on the board
-    fn score_pieces(&self) -> Score {
-        let white_material_score = self.score_white_material_positive();
-        let black_material_score = self.score_black_material_positive();
-        let ratio = self.midgame_to_lategame_ratio(white_material_score + black_material_score);
-        let mut score = white_material_score - black_material_score;
-
-        for sq in self.game.occupied {
-            let (piece, color) = self.game.piece_lookup(sq).unwrap();
-            match color {
-                PieceColor::White => {
-                    score += square_value(piece, sq, color, ratio);
-                }
-                PieceColor::Black => {
-                    score -= square_value(piece, sq, color, ratio);
-                }
-            }
-        }
-
-        score
-    }
-
-    /// Scores king safety. Primarily based on whether the king has friendly pawns next to him.
-    fn score_king_safety(&self) -> Score {
-        let mut score = Score::default();
-
-        let calculate_pawn_area = |king: &Square| {
-            let file = king.get_file();
-            let mut pawn_area = file.mask();
-            if file > File::A {
-                pawn_area |= file.left().mask();
-            }
-            if file < File::H {
-                pawn_area |= file.right().mask();
-            }
-            pawn_area
-        };
-
-        let white_king = self.game.white_kings.to_square();
-        let white_pawn_area = calculate_pawn_area(&white_king);
-        score += Score::new(
-            ((white_pawn_area & self.game.white_pawns).popcnt() * 15)
-                .try_into()
-                .unwrap(),
-        );
-
-        let black_king = self.game.black_kings.to_square();
-        let black_pawn_area = calculate_pawn_area(&black_king);
-        score -= Score::new(
-            ((black_pawn_area & self.game.black_pawns).popcnt() * 15)
-                .try_into()
-                .unwrap(),
-        );
-
-        score
-    }
-
-    /// Scores the position castling rights
-    fn score_castling_rights(&self) -> Score {
-        let mut score = Score::default();
-        let value = 2;
-
-        if self.game.castling_rights.white_queenside() {
-            score += Score::new(value);
-        }
-
-        if self.game.castling_rights.white_kingside() {
-            score += Score::new(value);
-        }
-
-        if self.game.castling_rights.black_queenside() {
-            score -= Score::new(value);
-        }
-
-        if self.game.castling_rights.black_kingside() {
-            score -= Score::new(value);
-        }
-
-        score
-    }
-
-    /// Scores both attackers and defenders
-    fn score_attackers(&self) -> Score {
-        let mut score = Score::default();
-
-        score += Score::new(
-            ((self.game.white_attacks & self.game.occupied).popcnt() * 10)
-                .try_into()
-                .unwrap(),
-        );
-        score -= Score::new(
-            ((self.game.black_attacks & self.game.occupied).popcnt() * 10)
-                .try_into()
-                .unwrap(),
-        );
-
-        score
-    }
-
-    /// Grades the postion. For example, -1.0 means black is wining by a pawn's worth of value
-    pub fn grade_position(&mut self) -> Score {
-        // if let Some(pre) = self.transposition_table.get(&self.game.hash) {
-        //     return *pre;
-        // }
-
-        macro_rules! end {
-            ($score: expr) => {{
-                // self.transposition_table.insert(self.game.hash, $score);
-                return $score;
-            }};
-        }
-
-        // State
-        match self.game.state {
-            State::InProgress => {}
-            State::Checkmate => {
-                end!(match self.game.turn {
-                    PieceColor::White => Score::MIN,
-                    PieceColor::Black => Score::MAX,
-                })
-            }
-            State::Stalemate => end!(Score::default()),
-            // TODO. Timing out should result in a win for the opponent if the opponent has
-            // sufficent checkmating material
-            State::Timeout => end!(Score::default()),
-            State::Repetition => end!(Score::default()),
-        }
-
-        let mut score = Score::default();
-
-        score += self.score_pieces();
-        score += self.score_attackers();
-        score += self.score_king_safety();
-        score += self.score_castling_rights();
-
-        end!(score)
     }
 
     fn maxi<T: MoveTimer>(
@@ -472,7 +292,7 @@ mod tests {
     use crate::timers::elapsed::Elapsed;
 
     use super::*;
-    use whalecrab_lib::{movegen::pieces::piece::PieceType, square::Square};
+    use whalecrab_lib::{movegen::pieces::piece::PieceType, position::game::State, square::Square};
 
     /// Used for determining cache hit/miss
     fn time_grading(engine: &mut Engine) -> (Score, Duration) {
@@ -726,7 +546,11 @@ mod tests {
         let fen = "r3r1k1/pbP2p1p/6pb/8/P1Q5/3B1qP1/2R2P1P/1R4K1 b - - 1 37";
         let mut engine = Engine::from_fen(fen).unwrap();
         let expected = Move::infer(Square::F3, Square::H1, &engine.game);
-        let actual = engine.minimax(&Infinite, 2).best_move.unwrap();
-        assert_eq!(actual, expected);
+        let result = engine.minimax(&Infinite, 2);
+        eprintln!("{}", result);
+        engine.game.play(&expected);
+        eprintln!("{:#?}", engine.game.legal_moves());
+        eprintln!("{}", engine.grade_position());
+        assert_eq!(result.best_move.unwrap(), expected);
     }
 }
