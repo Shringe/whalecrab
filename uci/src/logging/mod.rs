@@ -1,3 +1,4 @@
+#[allow(unused)]
 pub mod ansi;
 
 use std::{
@@ -28,6 +29,14 @@ macro_rules! sent {
     };
 }
 
+/// Used to log panic messages
+#[macro_export]
+macro_rules! anxiety {
+    ($($arg:tt)*) => {
+        $crate::logging::Logger::anxiety(&(format!($($arg)*) + "\n"))
+    };
+}
+
 /// Acts like a sent!() + println!(), but with special formatting if the interface is interactive
 #[macro_export]
 macro_rules! send {
@@ -48,6 +57,8 @@ static MAIN_ANSI_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static MAIN_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static SENT_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 static RECEIVED_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
+#[cfg(feature = "panic_logger")]
+static ANXIETY_WRITER: OnceLock<Mutex<BufWriter<File>>> = OnceLock::new();
 
 pub static INTERACTIVE: OnceLock<bool> = OnceLock::new();
 
@@ -67,19 +78,26 @@ pub fn check_for_interactive_session(stdin: &Stdin) {
 
 /// Flush all log files
 pub fn flush() {
-    for (writer, name) in [
-        (MAIN_WRITER.get(), "main.log"),
-        (SENT_WRITER.get(), "sent.log"),
-        (RECEIVED_WRITER.get(), "received.log"),
-        (MAIN_ANSI_WRITER.get(), "main.ans"),
-    ] {
+    let flush = |writer: Option<&Mutex<BufWriter<File>>>, name| {
         if let Some(w) = writer
             && let Ok(mut w) = w.lock()
             && let Err(e) = w.flush()
         {
             eprintln!("Failed to flush {}: {}", name, e);
         }
+    };
+
+    for (writer, name) in [
+        (MAIN_WRITER.get(), "main.log"),
+        (SENT_WRITER.get(), "sent.log"),
+        (RECEIVED_WRITER.get(), "received.log"),
+        (MAIN_ANSI_WRITER.get(), "main.ans"),
+    ] {
+        flush(writer, name);
     }
+
+    #[cfg(feature = "panic_logger")]
+    flush(ANXIETY_WRITER.get(), "anxiety.log");
 }
 
 /// Flushes the logger any time an instance of this type is dropped.
@@ -184,6 +202,8 @@ impl Logger {
         init_writer(&SENT_WRITER, "sent.log");
         init_writer(&RECEIVED_WRITER, "received.log");
         init_writer(&MAIN_ANSI_WRITER, "main.ans");
+        #[cfg(feature = "panic_logger")]
+        init_writer(&ANXIETY_WRITER, "anxiety.log");
 
         log!("Initialized logger at {}", dir.display());
         Self
@@ -229,5 +249,12 @@ impl Logger {
     pub fn sent(msg: &str) {
         Self::log_with_prefix("Sent", ansi::MAGENTA, msg);
         Self::write_to(&SENT_WRITER, msg);
+    }
+
+    #[cfg(feature = "panic_logger")]
+    pub fn anxiety(msg: &str) {
+        // TODO: make anxiety message body red
+        Self::log_with_prefix("Anxiety", ansi::BLUE, msg);
+        Self::write_to(&ANXIETY_WRITER, msg);
     }
 }

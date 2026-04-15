@@ -67,5 +67,22 @@ fn main() {
 
     let stdin = io::stdin();
     logging::check_for_interactive_session(&stdin);
-    uci.watch(stdin);
+
+    #[cfg(feature = "panic_logger")]
+    {
+        use std::panic;
+        panic::set_hook(Box::new(|e| anxiety!("Whalecrab panicked: {:?}", e)));
+        if let Err(e) = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            uci.watch(stdin);
+        })) {
+            let logs = uci.engine.game.retrieve_logs();
+            anxiety!("Whalecrab panicked with {:?}", e);
+            anxiety!("Recent logs from whalecrab_lib:\n{}", logs);
+        }
+    }
+
+    #[cfg(not(feature = "panic_logger"))]
+    {
+        uci.watch(stdin);
+    }
 }
