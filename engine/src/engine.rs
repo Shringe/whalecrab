@@ -720,4 +720,13 @@ mod tests {
             assert!(engine_move.is_some())
         }
     }
+
+    #[test]
+    fn should_find_mate_in_one() {
+        let fen = "r3r1k1/pbP2p1p/6pb/8/P1Q5/3B1qP1/2R2P1P/1R4K1 b - - 1 37";
+        let mut engine = Engine::from_fen(fen).unwrap();
+        let expected = Move::infer(Square::F3, Square::H1, &engine.game);
+        let actual = engine.minimax(&Infinite, 2).best_move.unwrap();
+        assert_eq!(actual, expected);
+    }
 }
