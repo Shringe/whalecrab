@@ -126,7 +126,19 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(&self.game.hash);
-        let better_than_existing = existing.is_none_or(|e| depth > e.depth);
+        let better_than_existing = if let Some(entry) = existing {
+            if depth == entry.depth {
+                return SearchInfo {
+                    score: entry.score,
+                    depth,
+                    nodes: 1,
+                };
+            }
+
+            depth > entry.depth
+        } else {
+            true
+        };
 
         let mut result = SearchResult::new(Score::MIN, depth);
 
@@ -151,6 +163,7 @@ impl Engine {
             let entry = TranspositionTableEntry {
                 best_move: result.best_move,
                 depth,
+                score: result.info.score,
             };
             self.transposition_table.insert(self.game.hash, entry);
         }
@@ -174,7 +187,19 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(&self.game.hash);
-        let better_than_existing = existing.is_none_or(|e| depth > e.depth);
+        let better_than_existing = if let Some(entry) = existing {
+            if depth == entry.depth {
+                return SearchInfo {
+                    score: entry.score,
+                    depth,
+                    nodes: 1,
+                };
+            }
+
+            depth > entry.depth
+        } else {
+            true
+        };
 
         let mut result = SearchResult::new(Score::MAX, depth);
 
@@ -199,6 +224,7 @@ impl Engine {
             let entry = TranspositionTableEntry {
                 best_move: result.best_move,
                 depth,
+                score: result.info.score,
             };
             self.transposition_table.insert(self.game.hash, entry);
         }
@@ -236,7 +262,11 @@ impl Engine {
                 }
 
                 if better_than_existing {
-                    let entry = TranspositionTableEntry { best_move: result.best_move, depth };
+                    let entry = TranspositionTableEntry {
+                        best_move: result.best_move,
+                        depth,
+                        score: result.info.score,
+                    };
                     self.transposition_table.insert(self.game.hash, entry);
                 }
 
