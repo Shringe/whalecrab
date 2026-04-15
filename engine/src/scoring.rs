@@ -169,37 +169,45 @@ impl Engine {
             + self.score_white_castling_rights()
     }
 
-    /// Grades the postion. For example, -1.0 means black is winning by a pawn's worth of value
-    pub fn grade_position(&mut self) -> Score {
-        macro_rules! end {
-            ($score: expr) => {{
-                return $score;
-            }};
-        }
-
-        // State
+    /// This is meant to be called on states other than InProgress. InProgress will return 0.0
+    fn score_state(&self, for_color: PieceColor) -> Score {
         match self.game.state {
-            State::InProgress => {}
-            State::Checkmate => {
-                end!(match self.game.turn {
-                    PieceColor::White => Score::MIN,
-                    PieceColor::Black => Score::MAX,
-                })
-            }
-            State::Stalemate => end!(Score::default()),
+            State::Checkmate => match for_color {
+                PieceColor::White => Score::MAX,
+                PieceColor::Black => Score::MIN,
+            },
+            State::Stalemate => Score::default(),
             // TODO. Timing out should result in a win for the opponent if the opponent has
             // sufficent checkmating material
-            State::Timeout => end!(Score::default()),
-            State::Repetition => end!(Score::default()),
+            State::Timeout => Score::default(),
+            State::Repetition => Score::default(),
+            _ => Score::default(),
+        }
+    }
+
+    /// Grades the position for white
+    pub fn grade_position(&mut self) -> Score {
+        if self.game.state != State::InProgress {
+            return self.score_state(PieceColor::White);
         }
 
         let white_material = self.score_white_material();
         let black_material = self.score_black_material();
         let ratio = self.midgame_to_lategame_ratio(white_material + black_material);
 
-        let score =
-            self.score_white(white_material, ratio) - self.score_black(black_material, ratio);
+        self.score_white(white_material, ratio) - self.score_black(black_material, ratio)
+    }
 
-        end!(score)
+    /// Grades the position for the current player's turn
+    pub fn grade_position_relative(&mut self) -> Score {
+        if self.game.state != State::InProgress {
+            return self.score_state(self.game.turn);
+        }
+
+        let white_material = self.score_white_material();
+        let black_material = self.score_black_material();
+        let ratio = self.midgame_to_lategame_ratio(white_material + black_material);
+
+        self.score_white(white_material, ratio) + self.score_black(black_material, ratio)
     }
 }
