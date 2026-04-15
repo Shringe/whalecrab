@@ -379,6 +379,13 @@ mod tests {
         );
     }
 
+    #[track_caller]
+    fn should_play(engine: &mut Engine, expected: Move, depth: u16) {
+        let result = engine.search(Duration::MAX, depth);
+        let actual = result.best_move.expect("The engine did not play a move");
+        assert_eq!(actual, expected, "\n{}", result);
+    }
+
     #[test]
     fn iterative_deepening_should_take_the_right_amount_of_time_on_elapsed() {
         assert_iterative_deepening_timing(Elapsed::now);
@@ -598,5 +605,14 @@ mod tests {
             eprintln!("{}", result);
             assert_eq!(result.best_move.unwrap(), expected);
         }
+    }
+
+    #[test]
+    fn should_find_mate_in_3() {
+        let fen = "kb5Q/p7/Pp6/1P6/4p3/4R3/4P1p1/6K1 w - - 0 1";
+        let mut engine = Engine::from_fen(fen).unwrap();
+        let expected = Move::infer(Square::E3, Square::H3, &engine.game);
+        eprintln!("Possible moves: {:#?}", engine.game.legal_moves());
+        should_play(&mut engine, expected, 7);
     }
 }
