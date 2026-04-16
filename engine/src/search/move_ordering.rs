@@ -41,7 +41,7 @@ pub fn order_moves(mut moves: Vec<Move>, existing: &Option<&TranspositionTableEn
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::engine::Engine;
 
     use super::*;

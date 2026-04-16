@@ -55,7 +55,7 @@ impl Colorize for str {}
 impl Colorize for String {}
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]

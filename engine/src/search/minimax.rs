@@ -223,7 +223,7 @@ impl Engine {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use whalecrab_lib::{movegen::moves::Move, square::Square};
 
     use crate::timers::infinite::Infinite;

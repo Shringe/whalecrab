@@ -44,7 +44,7 @@ impl Engine {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::time::Instant;
 
     use crate::timers::elapsed::Elapsed;
