@@ -1,88 +1,13 @@
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
-use crate::{
-    move_result::{SearchInfo, SearchResult},
-    piece_eval::material_value,
-    platform_timer,
-    score::Score,
-    timers::{MoveTimer, infinite::Infinite},
-    transposition_table::{NodeType, TranspositionTableEntry},
-};
-use whalecrab_lib::{
-    movegen::{
-        moves::Move,
-        pieces::piece::{PieceColor, PieceType},
-    },
-    position::game::Game,
-};
-
-/// Plays a move, gets the score from the given method, and then unplays the move and returns that
-/// score. Also does expensive validity checks in debug builds.
-macro_rules! search_move {
-    ($self:expr, $move:expr, $method:ident($($args:expr),*)) => {{
-        #[cfg(debug_assertions)]
-        let before = $self.game.clone();
-
-        $self.game.play(&$move);
-
-        #[cfg(debug_assertions)]
-        let during = $self.game.clone();
-
-        let score = $self.$method($($args),*);
-        $self.game.unplay($move);
-
-        #[cfg(debug_assertions)]
-        assert_eq!(
-            $self.game, before,
-            "State changed after playing and unplaying {}\n  Before: {:?}\n  During: {:?}\n   After: {:?}\n",
-            $move, before, during, $self.game
-        );
-
-        score
-    }};
-}
-
-/// Scores a move. This can be used for move ordering
-fn score_move(m: &Move, best: Option<&Move>) -> Score {
-    if Some(m) == best {
-        return Score::MIN;
-    }
-
-    match m {
-        Move::Promotion {
-            piece,
-            capture: Some(capture),
-            ..
-        } => Score::new(-5000) - material_value(*piece) - material_value(*capture),
-        Move::Promotion {
-            piece,
-            capture: None,
-            ..
-        } => Score::new(-5000) - material_value(*piece),
-        Move::CaptureEnPassant { .. } => Score::new(-2000) - material_value(PieceType::Pawn),
-        Move::Normal {
-            capture: Some(capture),
-            ..
-        } => Score::new(-2000) - material_value(*capture),
-        Move::Castle { .. } => Score::new(-500),
-        _ => Score::new(0),
-    }
-}
-
-/// Orders the moves for better minimax pruning
-fn order_moves(mut moves: Vec<Move>, existing: &Option<&TranspositionTableEntry>) -> Vec<Move> {
-    let best_move = existing.and_then(|e| e.best_move.as_ref());
-
-    moves.sort_unstable_by_key(|m| score_move(m, best_move));
-
-    moves
-}
+use crate::transposition_table::TranspositionTableEntry;
+use whalecrab_lib::position::game::Game;
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
-    transposition_table: HashMap<u64, TranspositionTableEntry>,
+    pub(crate) transposition_table: HashMap<u64, TranspositionTableEntry>,
 }
 
 impl Engine {
@@ -109,315 +34,20 @@ impl Engine {
     pub fn clear_persistant_cache(&mut self) {
         self.transposition_table.clear();
     }
-
-    #[cfg(test)]
-    fn maxi_without_pruning<T: MoveTimer>(&mut self, depth: u16, timer: &T) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let mut result = SearchResult::new(Score::MIN, depth);
-
-        for m in self.game.legal_moves() {
-            let node = search_move!(self, &m, mini_without_pruning(depth - 1, timer));
-            result += &node;
-
-            if node.score > result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-            }
-        }
-
-        result.info
-    }
-
-    #[cfg(test)]
-    fn mini_without_pruning<T: MoveTimer>(&mut self, depth: u16, timer: &T) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let mut result = SearchResult::new(Score::MAX, depth);
-
-        for m in self.game.legal_moves() {
-            let node = search_move!(self, &m, maxi_without_pruning(depth - 1, timer));
-            result += &node;
-
-            if node.score < result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-            }
-        }
-
-        result.info
-    }
-
-    #[cfg(test)]
-    pub fn minimax_without_pruning<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
-        macro_rules! search_loop {
-            ($best_score:expr, $cmp:tt, $search:ident) => {{
-                let mut result = SearchResult::new($best_score, 0);
-
-                for m in self.game.legal_moves() {
-                    let node = search_move!(self, &m, $search(depth, timer));
-                    if timer.over() {
-                        break;
-                    }
-
-                    result += &node;
-
-                    if node.score $cmp result.info.score {
-                        result.info.score = node.score;
-                        result.best_move = Some(m);
-                    }
-                }
-
-                result
-            }};
-        }
-
-        match self.game.turn {
-            PieceColor::White => search_loop!(Score::MIN, >, mini_without_pruning),
-            PieceColor::Black => search_loop!(Score::MAX, <, maxi_without_pruning),
-        }
-    }
-
-    fn maxi<T: MoveTimer>(
-        &mut self,
-        mut alpha: Score,
-        beta: Score,
-        depth: u16,
-        timer: &T,
-    ) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let existing = self.transposition_table.get(&self.game.hash);
-        let better_than_existing = if let Some(entry) = existing {
-            if depth == entry.depth {
-                return SearchInfo {
-                    score: entry.score,
-                    depth,
-                    nodes: 1,
-                };
-            }
-
-            if entry.node_type == NodeType::Cut {
-                alpha = alpha.max(entry.score);
-            }
-
-            depth > entry.depth
-        } else {
-            true
-        };
-
-        let mut node_type = NodeType::Exact;
-        let mut result = SearchResult::new(Score::MIN, depth);
-
-        for m in order_moves(self.game.legal_moves(), &existing) {
-            let node = search_move!(self, &m, mini(alpha, beta, depth - 1, timer));
-            result += &node;
-
-            if node.score > result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-                if node.score > alpha {
-                    alpha = node.score;
-                }
-            }
-
-            if node.score >= beta {
-                node_type = NodeType::Cut;
-                break;
-            }
-        }
-
-        if better_than_existing {
-            let entry = TranspositionTableEntry {
-                best_move: result.best_move,
-                depth,
-                score: result.info.score,
-                node_type,
-            };
-            self.transposition_table.insert(self.game.hash, entry);
-        }
-
-        result.info
-    }
-
-    fn mini<T: MoveTimer>(
-        &mut self,
-        alpha: Score,
-        mut beta: Score,
-        depth: u16,
-        timer: &T,
-    ) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let existing = self.transposition_table.get(&self.game.hash);
-        let better_than_existing = if let Some(entry) = existing {
-            if depth == entry.depth {
-                return SearchInfo {
-                    score: entry.score,
-                    depth,
-                    nodes: 1,
-                };
-            }
-
-            if entry.node_type == NodeType::All {
-                beta = beta.min(entry.score);
-            }
-
-            depth > entry.depth
-        } else {
-            true
-        };
-
-        let mut node_type = NodeType::Exact;
-        let mut result = SearchResult::new(Score::MAX, depth);
-
-        for m in order_moves(self.game.legal_moves(), &existing) {
-            let node = search_move!(self, &m, maxi(alpha, beta, depth - 1, timer));
-            result += &node;
-
-            if node.score < result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-                if node.score < beta {
-                    beta = node.score;
-                }
-            }
-
-            if node.score <= alpha {
-                node_type = NodeType::All;
-                break;
-            }
-        }
-
-        if better_than_existing {
-            let entry = TranspositionTableEntry {
-                best_move: result.best_move,
-                depth,
-                score: result.info.score,
-                node_type,
-            };
-            self.transposition_table.insert(self.game.hash, entry);
-        }
-
-        result.info
-    }
-
-    /// Continues searching at the given depth until the search finishes or the timer is over
-    pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
-        let mut alpha = Score::MIN;
-        let mut beta = Score::MAX;
-
-        macro_rules! search_loop {
-            ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
-                let existing = self.transposition_table.get(&self.game.hash);
-                let better_than_existing = existing.is_none_or(|e| depth > e.depth);
-
-                let mut result = SearchResult::new($best_score, 0);
-
-                for m in order_moves(self.game.legal_moves(), &existing) {
-                    let node = search_move!(self, &m, $search(alpha, beta, depth, timer));
-                    if timer.over() {
-                        break;
-                    }
-
-                    result += &node;
-
-                    if node.score $cmp result.info.score {
-                        result.info.score = node.score;
-                        result.best_move = Some(m);
-                        if node.score $cmp $prune {
-                            $prune = node.score;
-                        }
-                    }
-                }
-
-                if better_than_existing {
-                    let entry = TranspositionTableEntry {
-                        best_move: result.best_move,
-                        depth,
-                        score: result.info.score,
-                        node_type: NodeType::Exact,
-                    };
-                    self.transposition_table.insert(self.game.hash, entry);
-                }
-
-                result
-            }};
-        }
-
-        match self.game.turn {
-            PieceColor::White => search_loop!(Score::MIN, >, mini, alpha),
-            PieceColor::Black => search_loop!(Score::MAX, <, maxi, beta),
-        }
-    }
-
-    /// Same as `search` but you can use your own timer
-    pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u16) -> SearchResult {
-        let mut depth = 0;
-        let mut result = SearchResult::default();
-
-        loop {
-            let node = self.minimax(timer, depth);
-            result += &node;
-
-            if node.best_move.is_none() || timer.over() {
-                break;
-            }
-
-            result.best_move = node.best_move;
-            result.info.score = node.info.score;
-
-            if depth == max_depth {
-                break;
-            }
-            depth += 1;
-        }
-
-        result
-    }
-
-    /// Searches for the best move in the position until the depth is reached or the duration is up
-    pub fn search(&mut self, duration: Duration, max_depth: u16) -> SearchResult {
-        if duration == Duration::MAX {
-            self.search_with_timer(&Infinite, max_depth)
-        } else {
-            self.search_with_timer(&platform_timer!(duration), max_depth)
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use std::time::{Duration, Instant};
 
-    use crate::timers::elapsed::Elapsed;
+    use crate::{score::Score, timers::infinite::Infinite};
 
     use super::*;
-    use whalecrab_lib::{movegen::pieces::piece::PieceType, position::game::State, square::Square};
+    use whalecrab_lib::{
+        movegen::{moves::Move, pieces::piece::PieceType},
+        position::game::State,
+        square::Square,
+    };
 
     /// Used for determining cache hit/miss
     fn time_grading(engine: &mut Engine) -> (Score, Duration) {
@@ -428,58 +58,10 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_iterative_deepening_timing<T: MoveTimer, M: FnOnce(Duration) -> T>(make_timer: M) {
-        let mut engine = Engine::default();
-
-        let duration = Duration::from_millis(1000);
-        let min = Duration::from_micros((duration.as_micros() as f64 * 0.98) as u64);
-        let max = Duration::from_micros((duration.as_micros() as f64 * 1.02) as u64);
-
-        let timer = make_timer(duration);
-        let now = Instant::now();
-        assert!(!timer.over());
-        let _ = engine.search_with_timer(&timer, u16::MAX);
-        assert!(timer.over());
-        let elapsed = now.elapsed();
-
-        assert!(
-            elapsed > min,
-            "iterative_deepening for {:?} should have completed after {:?}, but took {:?}",
-            duration,
-            min,
-            elapsed
-        );
-
-        assert!(
-            elapsed < max,
-            "iterative_deepening for {:?} should have completed within {:?}, but took {:?}",
-            duration,
-            max,
-            elapsed
-        );
-    }
-
-    #[track_caller]
     fn should_play(engine: &mut Engine, expected: Move, depth: u16) {
         let result = engine.search(Duration::MAX, depth);
         let actual = result.best_move.expect("The engine did not play a move");
         assert_eq!(actual, expected, "\n{}", result);
-    }
-
-    #[test]
-    fn iterative_deepening_should_take_the_right_amount_of_time_on_elapsed() {
-        assert_iterative_deepening_timing(Elapsed::now);
-    }
-
-    #[test]
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    fn iterative_deepening_should_take_the_right_amount_of_time_on_rdtsc() {
-        assert_iterative_deepening_timing(crate::timers::rdtsc::Rdtsc::now);
-    }
-
-    #[test]
-    fn iterative_deepening_should_take_the_right_amount_of_time_on_platform() {
-        assert_iterative_deepening_timing(|duration| platform_timer!(duration));
     }
 
     #[test]
@@ -490,14 +72,6 @@ mod tests {
         let after = engine.game;
         println!("Score: {:?}", grade);
         assert_eq!(before, after);
-    }
-
-    #[test]
-    fn iterative_deepening_finds_a_move() {
-        let mut engine = Engine::default();
-        let duration = Duration::from_millis(200);
-        let best_move = engine.search(duration, u16::MAX).best_move;
-        assert!(best_move.is_some());
     }
 
     #[test]
@@ -522,32 +96,6 @@ mod tests {
             last = game;
             last_score = score;
         }
-    }
-
-    #[test]
-    fn minimax_engine_takes_queen() {
-        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
-        let mut engine = Engine::from_fen(starting).unwrap();
-        let looking_for = Move::infer(Square::C1, Square::G5, &engine.game);
-        let result = engine
-            .minimax(&Infinite, 2)
-            .best_move
-            .expect("No moves found");
-        println!("State: {:?}", engine.game.state);
-        assert_eq!(result, looking_for);
-    }
-
-    #[test]
-    fn minimax_engine_saves_queen() {
-        let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
-        let mut engine = Engine::from_fen(starting).unwrap();
-        let black_queens_before = engine.game.black_queens.popcnt();
-        let result = engine
-            .minimax(&Infinite, 2)
-            .best_move
-            .expect("No moves found");
-        engine.game.play(&result);
-        assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
 
     #[test]
@@ -622,17 +170,6 @@ mod tests {
         let _ = engine.game.legal_moves();
         let _ = engine.minimax(&Infinite, 2).best_move;
         assert_eq!(before, engine.game);
-    }
-
-    #[test]
-    fn sort_moves_keeps_all_moves() {
-        let mut engine = Engine::default();
-        let moves = engine.game.legal_moves();
-        let sorted = order_moves(moves.clone(), &None);
-        for sortedm in &sorted {
-            assert!(moves.contains(sortedm));
-        }
-        assert_eq!(sorted.len(), moves.len());
     }
 
     #[test]
