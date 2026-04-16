@@ -338,4 +338,33 @@ mod test {
         engine.game.play(&result);
         assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
+
+    #[ignore]
+    #[test]
+    fn canary_minimax_pruning_should_be_lossless() {
+        let mut engine = Engine::default();
+        for depth in 0..5 {
+            let actual = engine.minimax(&Infinite, depth);
+            let expected = engine.minimax_without_pruning(&Infinite, depth);
+            assert_eq!(
+                actual, expected,
+                "Minimax pruning is not lossless at depth {}",
+                depth
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn canary_minimax_pruning_should_be_lossless_depth_4() {
+        let mut engine = Engine::default();
+        let depth = 4;
+        let actual = engine.minimax(&Infinite, depth);
+        let expected = engine.minimax_without_pruning(&Infinite, depth);
+        assert_eq!(
+            actual, expected,
+            "Minimax pruning is not lossless at depth {}",
+            depth
+        );
+    }
 }

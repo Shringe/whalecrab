@@ -15,6 +15,12 @@ pub struct SearchInfo {
     pub nodes: u64,
 }
 
+impl PartialEq for SearchInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.score == other.score && self.depth == other.depth
+    }
+}
+
 impl SearchInfo {
     pub const fn new(score: Score, depth: u16) -> Self {
         Self {
@@ -54,7 +60,7 @@ impl fmt::Display for SearchInfo {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct SearchResult {
     pub best_move: Option<Move>,
     pub info: SearchInfo,

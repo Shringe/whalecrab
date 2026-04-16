@@ -18,7 +18,18 @@ inherits = "release"
 codegen-units = 16
 lto = "thin"
 
-# Useful for speeding up essex
+# Useful for speeding up essex and debugging long searches.
+#
+# Tests prefixed with `canary_` should be ran with this profile, usually because they would be too slow to run without optimizations.
+# You can run only canary tests using the bellow command:
+# ```sh
+# cargo test --profile canary canary_ -- --ignored
+# ```
+#
+# Or, run all tests including canary:
+# ```sh
+# cargo test --profile canary -- --include-ignored
+# ```
 [profile.canary]
 inherits = "bench"
 debug-assertions = true
