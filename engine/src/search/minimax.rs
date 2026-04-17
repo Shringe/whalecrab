@@ -59,13 +59,14 @@ impl Engine {
                     depth,
                     nodes: 1,
                 };
+            } else if depth > entry.depth {
+                if alpha > entry.score {
+                    alpha = entry.score;
+                }
+                false
+            } else {
+                true
             }
-
-            if entry.node_type == NodeType::Cut {
-                alpha = alpha.max(entry.score);
-            }
-
-            depth > entry.depth
         } else {
             true
         };
@@ -127,13 +128,14 @@ impl Engine {
                     depth,
                     nodes: 1,
                 };
+            } else if depth > entry.depth {
+                if beta < entry.score {
+                    beta = entry.score;
+                }
+                false
+            } else {
+                true
             }
-
-            if entry.node_type == NodeType::All {
-                beta = beta.min(entry.score);
-            }
-
-            depth > entry.depth
         } else {
             true
         };
@@ -313,6 +315,17 @@ mod tests {
         }
     }
 
+    #[track_caller]
+    fn assert_minimax_pruning_is_lossless(engine: &mut Engine, depth: u16) {
+        let actual = engine.minimax(&Infinite, depth);
+        let expected = engine.minimax_without_pruning(&Infinite, depth);
+        assert_eq!(
+            actual, expected,
+            "Minimax pruning is not lossless at depth {}",
+            depth
+        );
+    }
+
     #[test]
     fn minimax_engine_takes_queen() {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
@@ -342,29 +355,18 @@ mod tests {
     #[ignore]
     #[test]
     fn canary_minimax_pruning_should_be_lossless() {
-        let mut engine = Engine::default();
-        for depth in 0..5 {
-            let actual = engine.minimax(&Infinite, depth);
-            let expected = engine.minimax_without_pruning(&Infinite, depth);
-            assert_eq!(
-                actual, expected,
-                "Minimax pruning is not lossless at depth {}",
-                depth
-            );
+        let fen = "k7/pp6/4n3/8/3K1Q2/8/8/R7 w - - 1 2";
+        let mut engine = Engine::from_fen(fen).unwrap();
+        for depth in 0..=5 {
+            assert_minimax_pruning_is_lossless(&mut engine, depth);
         }
     }
 
     #[ignore]
     #[test]
-    fn canary_minimax_pruning_should_be_lossless_depth_4() {
+    fn canary_minimax_pruning_should_be_lossless_depth_3_to_4() {
         let mut engine = Engine::default();
-        let depth = 4;
-        let actual = engine.minimax(&Infinite, depth);
-        let expected = engine.minimax_without_pruning(&Infinite, depth);
-        assert_eq!(
-            actual, expected,
-            "Minimax pruning is not lossless at depth {}",
-            depth
-        );
+        assert_minimax_pruning_is_lossless(&mut engine, 3);
+        assert_minimax_pruning_is_lossless(&mut engine, 4);
     }
 }
