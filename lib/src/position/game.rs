@@ -556,7 +556,7 @@ impl Game {
 
     // Game initializers
     /// Initalizes the game. This should only be called inside of constructors
-    fn initialize(&mut self) {
+    pub(crate) fn initialize(&mut self) {
         self.populate_piece_table();
         self.refresh();
         self.seen_positions.insert(self.hash, 1);

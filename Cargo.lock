@@ -1504,6 +1504,7 @@ version = "1.5.5"
 dependencies = [
  "criterion",
  "panic_logger",
+ "rand 0.10.0",
 ]
 
 [[package]]

@@ -15,8 +15,13 @@ harness = false
 name = "piece_iteration"
 harness = false
 
+[features]
+# TODO: remove default features
+default = ["rand"]
+
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
 
 [dependencies]
 panic_logger = { path = "../panic_logger", optional = true }
+rand = { version = "0.10.0", optional = true }
