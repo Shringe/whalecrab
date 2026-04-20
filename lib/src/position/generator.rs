@@ -2,7 +2,7 @@ use rand::{Rng, RngExt, SeedableRng, rngs::SmallRng};
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    position::{game::Game, legality::GameValidator},
+    position::{game::Game, legality::Ruleset},
     square::Square,
 };
 
@@ -26,7 +26,7 @@ impl GameGenerator {
     }
 
     /// Creates a new game that is not checked for legality
-    pub fn next_maybe_legal_game(&mut self) -> Game {
+    pub fn next_psuedo_legal_game(&mut self) -> Game {
         let mut game = Game::empty();
 
         let num_pieces = self.rng.random_range(2..33);
@@ -75,11 +75,11 @@ impl GameGenerator {
         game
     }
 
-    /// Generates maybe legal games and returns the first legal game found
-    pub fn next_legal_game(&mut self, validator: &GameValidator) -> Game {
+    /// Generates psuedo legal games and returns the first legal game found
+    pub fn next_legal_game(&mut self, ruleset: &Ruleset) -> Game {
         loop {
-            let game = self.next_maybe_legal_game();
-            if validator.validate(&game) {
+            let game = self.next_psuedo_legal_game();
+            if ruleset.judge(&game).innocent() {
                 return game;
             }
         }
