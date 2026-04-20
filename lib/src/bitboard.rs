@@ -84,30 +84,30 @@ impl fmt::Display for BitBoard {
 pub const EMPTY: BitBoard = BitBoard(0);
 
 impl BitBoard {
-    pub const INITIAL_BLACK_PAWN: BitBoard =
+    pub const INITIAL_BLACK_PAWNS: BitBoard =
         BitBoard(0b00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_BLACK_KNIGHT: BitBoard =
+    pub const INITIAL_BLACK_KNIGHTS: BitBoard =
         BitBoard(0b01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_BLACK_BISHOP: BitBoard =
+    pub const INITIAL_BLACK_BISHOPS: BitBoard =
         BitBoard(0b00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_BLACK_ROOK: BitBoard =
+    pub const INITIAL_BLACK_ROOKS: BitBoard =
         BitBoard(0b10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_BLACK_QUEEN: BitBoard =
+    pub const INITIAL_BLACK_QUEENS: BitBoard =
         BitBoard(0b00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
-    pub const INITIAL_BLACK_KING: BitBoard =
+    pub const INITIAL_BLACK_KINGS: BitBoard =
         BitBoard(0b00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
 
-    pub const INITIAL_WHITE_PAWN: BitBoard =
+    pub const INITIAL_WHITE_PAWNS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000);
-    pub const INITIAL_WHITE_KNIGHT: BitBoard =
+    pub const INITIAL_WHITE_KNIGHTS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010);
-    pub const INITIAL_WHITE_BISHOP: BitBoard =
+    pub const INITIAL_WHITE_BISHOPS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100);
-    pub const INITIAL_WHITE_ROOK: BitBoard =
+    pub const INITIAL_WHITE_ROOKS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001);
-    pub const INITIAL_WHITE_QUEEN: BitBoard =
+    pub const INITIAL_WHITE_QUEENS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000);
-    pub const INITIAL_WHITE_KING: BitBoard =
+    pub const INITIAL_WHITE_KINGS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000);
 
     /// Construct a new bitboard from a u64
@@ -167,7 +167,7 @@ impl BitBoard {
 
     /// Count the number of `Squares` set in this `BitBoard`
     #[inline]
-    pub fn popcnt(&self) -> u32 {
+    pub const fn popcnt(&self) -> u32 {
         self.0.count_ones()
     }
 

@@ -111,19 +111,19 @@ impl Hash for Game {
 impl Default for Game {
     fn default() -> Self {
         let mut game = Self {
-            white_pawns: BitBoard::INITIAL_WHITE_PAWN,
-            white_knights: BitBoard::INITIAL_WHITE_KNIGHT,
-            white_bishops: BitBoard::INITIAL_WHITE_BISHOP,
-            white_rooks: BitBoard::INITIAL_WHITE_ROOK,
-            white_queens: BitBoard::INITIAL_WHITE_QUEEN,
-            white_kings: BitBoard::INITIAL_WHITE_KING,
+            white_pawns: BitBoard::INITIAL_WHITE_PAWNS,
+            white_knights: BitBoard::INITIAL_WHITE_KNIGHTS,
+            white_bishops: BitBoard::INITIAL_WHITE_BISHOPS,
+            white_rooks: BitBoard::INITIAL_WHITE_ROOKS,
+            white_queens: BitBoard::INITIAL_WHITE_QUEENS,
+            white_kings: BitBoard::INITIAL_WHITE_KINGS,
 
-            black_pawns: BitBoard::INITIAL_BLACK_PAWN,
-            black_knights: BitBoard::INITIAL_BLACK_KNIGHT,
-            black_bishops: BitBoard::INITIAL_BLACK_BISHOP,
-            black_rooks: BitBoard::INITIAL_BLACK_ROOK,
-            black_queens: BitBoard::INITIAL_BLACK_QUEEN,
-            black_kings: BitBoard::INITIAL_BLACK_KING,
+            black_pawns: BitBoard::INITIAL_BLACK_PAWNS,
+            black_knights: BitBoard::INITIAL_BLACK_KNIGHTS,
+            black_bishops: BitBoard::INITIAL_BLACK_BISHOPS,
+            black_rooks: BitBoard::INITIAL_BLACK_ROOKS,
+            black_queens: BitBoard::INITIAL_BLACK_QUEENS,
+            black_kings: BitBoard::INITIAL_BLACK_KINGS,
 
             castling_rights: CastlingRights::default(),
             en_passant_target: None,
@@ -496,7 +496,7 @@ impl Game {
         if let Some(moves) = &self.legal_moves
             && moves.is_empty()
         {
-            self.state = if self.is_in_check() {
+            self.state = if self.is_in_check(self.turn) {
                 State::Checkmate
             } else {
                 State::Stalemate
@@ -691,9 +691,9 @@ impl Game {
     }
 
     // Game/state queries
-    /// Checks if the current player's king is in check
-    pub fn is_in_check(&self) -> bool {
-        match self.turn {
+    /// Checks if the player's king is in check
+    pub fn is_in_check(&self, color: PieceColor) -> bool {
+        match color {
             PieceColor::White => self.black_attacks.has_square(self.white_kings),
             PieceColor::Black => self.white_attacks.has_square(self.black_kings),
         }

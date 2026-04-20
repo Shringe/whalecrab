@@ -2,7 +2,7 @@ use rand::{Rng, RngExt, SeedableRng, rngs::SmallRng};
 
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    position::game::Game,
+    position::{game::Game, legality::GameValidator},
     square::Square,
 };
 
@@ -26,7 +26,7 @@ impl GameGenerator {
     }
 
     /// Creates a new game that is not checked for legality
-    pub fn next_game_unchecked(&mut self) -> Game {
+    pub fn next_maybe_legal_game(&mut self) -> Game {
         let mut game = Game::empty();
 
         let num_pieces = self.rng.random_range(2..33);
@@ -73,6 +73,16 @@ impl GameGenerator {
 
         game.initialize();
         game
+    }
+
+    /// Generates maybe legal games and returns the first legal game found
+    pub fn next_legal_game(&mut self, validator: &GameValidator) -> Game {
+        loop {
+            let game = self.next_maybe_legal_game();
+            if validator.validate(&game) {
+                return game;
+            }
+        }
     }
 
     /// Generates a random bitboard with the specified number of bits set. Only sets bits from the

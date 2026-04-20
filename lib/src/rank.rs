@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn rank_mask() {
         let rank = Rank::Seventh;
-        let expected = BitBoard::INITIAL_BLACK_PAWN;
+        let expected = BitBoard::INITIAL_BLACK_PAWNS;
         let actual = rank.mask();
         assert_eq!(actual, expected);
     }
