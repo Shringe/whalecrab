@@ -224,6 +224,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
+        file::File,
         movegen::moves::moves_to_targets_vec,
         position::game::State,
         square::Square,
@@ -660,5 +661,14 @@ Available moves: {}
         }];
         assert_eq!(game.state, State::InProgress);
         assert_meq(game.legal_moves(), expected);
+    }
+
+    #[test]
+    fn can_not_capture_en_passant_while_removing_both_pawns_blocking_check() {
+        let fen = "8/8/8/2rPp2K/8/8/8/k7 w - e6 0 38";
+        let mut game = Game::from_fen(fen).unwrap();
+        let m = Move::CaptureEnPassant { from: File::D };
+        let moves = game.legal_moves();
+        shouldnt_generate(&moves, &m);
     }
 }
