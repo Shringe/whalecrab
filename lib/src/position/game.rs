@@ -214,7 +214,7 @@ impl Game {
         self.panic_logger.borrow_mut().push(msg.to_string());
     }
 
-    /// Rectrieves recent logs from the log buffer. if not cfg!(feature = "panic_logger"), then
+    /// Retrieves recent logs from the log buffer. if not cfg!(feature = "panic_logger"), then
     /// prints an error message to stderr
     pub fn retrieve_logs(&self) -> String {
         #[cfg(feature = "panic_logger")]
