@@ -48,10 +48,10 @@ fn main() {
     };
 
     let handles: Vec<_> = (1..boat.args.threads)
-        .map(|_| {
+        .map(|t| {
             let boat = boat.clone();
             thread::spawn(move || {
-                boat.sail(None);
+                boat.sail(boat.args.seed.map(|seed| seed.wrapping_add(t.into())));
             })
         })
         .collect();

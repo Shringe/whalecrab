@@ -105,7 +105,10 @@ impl Boat {
             });
 
             game = Game::default();
-            seed = rng.next_u32();
+            // Skip seeds with existing entries
+            while self.dataset.get(&seed).is_some() {
+                seed = rng.next_u32();
+            }
             rng = SmallRng::seed_from_u64(seed.into());
             log::trace!("New Seed: {}", seed);
         }
