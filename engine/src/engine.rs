@@ -1,20 +1,22 @@
-use std::collections::HashMap;
+use std::sync::OnceLock;
 
-use crate::transposition_table::TranspositionTableEntry;
+use crate::transposition_table::TranspositionTable;
 use whalecrab_lib::position::game::Game;
+
+pub static TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES: OnceLock<usize> = OnceLock::new();
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
-    pub(crate) transposition_table: HashMap<u64, TranspositionTableEntry>,
+    pub(crate) transposition_table: TranspositionTable,
 }
 
 impl Engine {
     pub fn from_game(game: Game) -> Engine {
         Engine {
             game,
-            transposition_table: HashMap::new(),
+            transposition_table: TranspositionTable::default(),
         }
     }
 
