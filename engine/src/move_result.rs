@@ -10,7 +10,7 @@ pub struct SearchInfo {
     /// The best score from a search
     pub score: Score,
     /// The maximum depth reached in a search
-    pub depth: u16,
+    pub depth: u8,
     /// The number of nodes a searched evaluated
     pub nodes: u64,
 }
@@ -22,7 +22,7 @@ impl PartialEq for SearchInfo {
 }
 
 impl SearchInfo {
-    pub const fn new(score: Score, depth: u16) -> Self {
+    pub const fn new(score: Score, depth: u8) -> Self {
         Self {
             score,
             depth,
@@ -67,7 +67,7 @@ pub struct SearchResult {
 }
 
 impl SearchResult {
-    pub const fn new(score: Score, depth: u16) -> SearchResult {
+    pub const fn new(score: Score, depth: u8) -> SearchResult {
         SearchResult {
             best_move: None,
             info: SearchInfo::new(score, depth),

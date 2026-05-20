@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[track_caller]
-    fn should_play(engine: &mut Engine, expected: Move, depth: u16) {
+    fn should_play(engine: &mut Engine, expected: Move, depth: u8) {
         let result = engine.search(Duration::MAX, depth);
         let actual = result.best_move.expect("The engine did not play a move");
         assert_eq!(actual, expected, "\n{}", result);

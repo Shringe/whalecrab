@@ -98,7 +98,7 @@ impl App {
             };
 
             if let PlayerType::Engine { search_time } = player {
-                let m = self.engine.search(search_time, u16::MAX).best_move?;
+                let m = self.engine.search(search_time, u8::MAX).best_move?;
                 self.play_move(&m);
                 return Some(true);
             }
@@ -241,7 +241,7 @@ impl App {
         if self.engine_suggestions {
             self.engine_suggestion = self
                 .engine
-                .search(self.engine_search_time, u16::MAX)
+                .search(self.engine_search_time, u8::MAX)
                 .best_move;
         }
     }

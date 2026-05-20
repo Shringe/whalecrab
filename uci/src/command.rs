@@ -55,7 +55,7 @@ pub enum UciCommand {
         /// The amount of moves left in the time control
         movestogo: Option<u16>,
         /// The maximum depth to search
-        depth: Option<u16>,
+        depth: Option<u8>,
     },
     SetOption {
         name: String,
@@ -146,6 +146,9 @@ impl FromStr for UciCommand {
                     parse_parameter_first(line, key).and_then(|s| s.parse::<u16>().ok())
                 };
 
+                let parse_u8 =
+                    |key: &str| parse_parameter_first(line, key).and_then(|s| s.parse::<u8>().ok());
+
                 Ok(Self::Go {
                     movetime: parse_duration("movetime"),
                     wtime: parse_duration("wtime"),
@@ -153,7 +156,7 @@ impl FromStr for UciCommand {
                     winc: parse_increment("winc"),
                     binc: parse_increment("binc"),
                     movestogo: parse_u16("movestogo"),
-                    depth: parse_u16("depth"),
+                    depth: parse_u8("depth"),
                 })
             }
             "setoption" => {

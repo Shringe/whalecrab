@@ -25,7 +25,7 @@ pub enum UciHandleAction {
 /// Stores the state of the uci interface
 pub struct UciInterface {
     pub engine: Engine,
-    pub depth: u16,
+    pub depth: u8,
     pub duration: Duration,
     /// The last score the engine came up with
     last_score: Score,
@@ -112,7 +112,7 @@ impl UciInterface {
             }
 
             UciCommand::SetOption { name, value } => match name.to_lowercase().as_str() {
-                "depth" => match value.parse::<u16>() {
+                "depth" => match value.parse::<u8>() {
                     Ok(depth) => {
                         log!("Setting depth to {}", depth);
                         self.depth = depth

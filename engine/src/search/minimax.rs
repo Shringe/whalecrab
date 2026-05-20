@@ -40,7 +40,7 @@ impl Engine {
         &mut self,
         mut alpha: Score,
         beta: Score,
-        depth: u16,
+        depth: u8,
         timer: &T,
     ) -> SearchInfo {
         if depth == 0 || timer.over() {
@@ -109,7 +109,7 @@ impl Engine {
         &mut self,
         alpha: Score,
         mut beta: Score,
-        depth: u16,
+        depth: u8,
         timer: &T,
     ) -> SearchInfo {
         if depth == 0 || timer.over() {
@@ -175,7 +175,7 @@ impl Engine {
     }
 
     /// Continues searching at the given depth until the search finishes or the timer is over
-    pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u16) -> SearchResult {
+    pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u8) -> SearchResult {
         let mut alpha = Score::MIN;
         let mut beta = Score::MAX;
 
@@ -233,7 +233,7 @@ mod tests {
     use super::*;
 
     impl Engine {
-        fn maxi_without_pruning<T: MoveTimer>(&mut self, depth: u16, timer: &T) -> SearchInfo {
+        fn maxi_without_pruning<T: MoveTimer>(&mut self, depth: u8, timer: &T) -> SearchInfo {
             if depth == 0 || timer.over() {
                 return SearchInfo {
                     score: self.grade_position(),
@@ -257,7 +257,7 @@ mod tests {
             result.info
         }
 
-        fn mini_without_pruning<T: MoveTimer>(&mut self, depth: u16, timer: &T) -> SearchInfo {
+        fn mini_without_pruning<T: MoveTimer>(&mut self, depth: u8, timer: &T) -> SearchInfo {
             if depth == 0 || timer.over() {
                 return SearchInfo {
                     score: self.grade_position(),
@@ -284,7 +284,7 @@ mod tests {
         pub fn minimax_without_pruning<T: MoveTimer>(
             &mut self,
             timer: &T,
-            depth: u16,
+            depth: u8,
         ) -> SearchResult {
             macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident) => {{
@@ -316,7 +316,7 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_minimax_pruning_is_lossless(engine: &mut Engine, depth: u16) {
+    fn assert_minimax_pruning_is_lossless(engine: &mut Engine, depth: u8) {
         let actual = engine.minimax(&Infinite, depth);
         let expected = engine.minimax_without_pruning(&Infinite, depth);
         assert_eq!(

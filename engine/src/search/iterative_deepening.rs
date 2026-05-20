@@ -9,7 +9,7 @@ use crate::{
 
 impl Engine {
     /// Same as `search` but you can use your own timer
-    pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u16) -> SearchResult {
+    pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u8) -> SearchResult {
         let mut depth = 0;
         let mut result = SearchResult::default();
 
@@ -34,7 +34,7 @@ impl Engine {
     }
 
     /// Searches for the best move in the position until the depth is reached or the duration is up
-    pub fn search(&mut self, duration: Duration, max_depth: u16) -> SearchResult {
+    pub fn search(&mut self, duration: Duration, max_depth: u8) -> SearchResult {
         if duration == Duration::MAX {
             self.search_with_timer(&Infinite, max_depth)
         } else {
@@ -62,7 +62,7 @@ mod tests {
         let timer = make_timer(duration);
         let now = Instant::now();
         assert!(!timer.over());
-        let _ = engine.search_with_timer(&timer, u16::MAX);
+        let _ = engine.search_with_timer(&timer, u8::MAX);
         assert!(timer.over());
         let elapsed = now.elapsed();
 
@@ -103,7 +103,7 @@ mod tests {
     fn iterative_deepening_finds_a_move() {
         let mut engine = Engine::default();
         let duration = Duration::from_millis(200);
-        let best_move = engine.search(duration, u16::MAX).best_move;
+        let best_move = engine.search(duration, u8::MAX).best_move;
         assert!(best_move.is_some());
     }
 }
