@@ -5,7 +5,7 @@ use crate::{
 
 /// Non-restoreable information needed to undo a move.
 /// You can pack this type by calling UnRestoreable::pack().
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub(crate) struct UnRestoreable {
     pub(crate) castling_rights: CastlingRights,
     pub(crate) en_passant_target: Option<Square>,
@@ -43,6 +43,7 @@ impl PackedUnRestoreable {
     const EN_PASSANT_MASK: u16 = 0xF;
     const EN_PASSANT_SENTINEL: u16 = 8;
     const HALF_MOVE_OFFSET: u16 = 8;
+    const UNINITIALIZED: PackedUnRestoreable = PackedUnRestoreable(u16::MAX);
 
     fn unpack(self, turn: PieceColor) -> UnRestoreable {
         let castling_rights =
@@ -74,22 +75,38 @@ impl PackedUnRestoreable {
 }
 
 #[derive(Clone)]
-pub(crate) struct PositionHistory(Vec<PackedUnRestoreable>);
+pub(crate) struct PositionHistory {
+    history: [PackedUnRestoreable; 256],
+    counter: u8,
+    len: u8,
+}
 
 impl PositionHistory {
     pub(crate) const fn new() -> PositionHistory {
-        PositionHistory(Vec::new())
+        PositionHistory {
+            history: [PackedUnRestoreable::UNINITIALIZED; 256],
+            counter: 0,
+            len: 0,
+        }
     }
 
     /// Packs and stores `unrestoreable` for the given `turn`
     pub(crate) fn push(&mut self, unrestoreable: UnRestoreable) {
-        self.0.push(unrestoreable.pack());
+        self.history[self.counter as usize] = unrestoreable.pack();
+        self.counter = self.counter.wrapping_add(1);
+        self.len = self.len.saturating_add(1);
     }
 
     /// Pops and unpacks the last stored position for the given `turn`.
     /// `turn` must be the active player at the time the position was pushed.
     pub(crate) fn pop(&mut self, turn: PieceColor) -> Option<UnRestoreable> {
-        Some(self.0.pop()?.unpack(turn))
+        if self.len == 0 {
+            None
+        } else {
+            self.counter = self.counter.wrapping_sub(1);
+            self.len = self.len.saturating_sub(1);
+            Some(self.history[self.counter as usize].unpack(turn))
+        }
     }
 }
 
@@ -160,6 +177,20 @@ mod tests {
                 en_passant_target: None,
             },
             PieceColor::White,
+        );
+    }
+
+    #[test]
+    fn pop_after_wrap_returns_previous_entry() {
+        let mut history = PositionHistory::new();
+        for _ in 0..=256 {
+            history.push(UnRestoreable::default());
+        }
+
+        assert!(history.pop(PieceColor::White).is_some());
+        assert!(
+            history.pop(PieceColor::White).is_some(),
+            "second pop after wrap is empty"
         );
     }
 }
