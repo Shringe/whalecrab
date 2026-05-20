@@ -23,7 +23,7 @@ fn bench(c: &mut Criterion) {
     for seconds in 1..=10 {
         let duration = Duration::from_secs(seconds);
 
-        let result = engine.search(duration, u16::MAX);
+        let result = engine.search(duration, u8::MAX);
         group.throughput(Throughput::Elements(result.info.nodes));
 
         println!("{}", format_header(&format!(" {} seconds ", seconds)));

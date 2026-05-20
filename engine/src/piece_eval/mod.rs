@@ -62,7 +62,7 @@ pub fn square_value(piece_type: PieceType, sq: Square, color: PieceColor, ratio:
     let ratio_midgame = 1.0 - ratio_endgame;
     let score = midgame as f64 * ratio_midgame + endgame as f64 * ratio_endgame;
 
-    Score::new(score as i32)
+    Score::new(score as i16)
 }
 
 #[cfg(test)]

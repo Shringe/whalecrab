@@ -14,11 +14,11 @@ impl Engine {
     fn score_white_material(&self) -> Score {
         let mut score = Score::default();
 
-        score += material_value(PieceType::Pawn) * self.game.white_pawns.popcnt() as i32;
-        score += material_value(PieceType::Knight) * self.game.white_knights.popcnt() as i32;
-        score += material_value(PieceType::Bishop) * self.game.white_bishops.popcnt() as i32;
-        score += material_value(PieceType::Rook) * self.game.white_rooks.popcnt() as i32;
-        score += material_value(PieceType::Queen) * self.game.white_queens.popcnt() as i32;
+        score += material_value(PieceType::Pawn) * self.game.white_pawns.popcnt() as i16;
+        score += material_value(PieceType::Knight) * self.game.white_knights.popcnt() as i16;
+        score += material_value(PieceType::Bishop) * self.game.white_bishops.popcnt() as i16;
+        score += material_value(PieceType::Rook) * self.game.white_rooks.popcnt() as i16;
+        score += material_value(PieceType::Queen) * self.game.white_queens.popcnt() as i16;
 
         score
     }
@@ -26,11 +26,11 @@ impl Engine {
     fn score_black_material(&self) -> Score {
         let mut score = Score::default();
 
-        score += material_value(PieceType::Pawn) * self.game.black_pawns.popcnt() as i32;
-        score += material_value(PieceType::Knight) * self.game.black_knights.popcnt() as i32;
-        score += material_value(PieceType::Bishop) * self.game.black_bishops.popcnt() as i32;
-        score += material_value(PieceType::Rook) * self.game.black_rooks.popcnt() as i32;
-        score += material_value(PieceType::Queen) * self.game.black_queens.popcnt() as i32;
+        score += material_value(PieceType::Pawn) * self.game.black_pawns.popcnt() as i16;
+        score += material_value(PieceType::Knight) * self.game.black_knights.popcnt() as i16;
+        score += material_value(PieceType::Bishop) * self.game.black_bishops.popcnt() as i16;
+        score += material_value(PieceType::Rook) * self.game.black_rooks.popcnt() as i16;
+        score += material_value(PieceType::Queen) * self.game.black_queens.popcnt() as i16;
 
         score
     }
@@ -89,7 +89,7 @@ impl Engine {
 
         let white_king = self.game.white_kings.to_square();
         let white_pawn_area = calculate_pawn_area(&white_king);
-        Score::new(((white_pawn_area & self.game.white_pawns).popcnt() * 15) as i32)
+        Score::new(((white_pawn_area & self.game.white_pawns).popcnt() * 15) as i16)
     }
 
     /// Scores king safety. Primarily based on whether the king has friendly pawns next to him.
@@ -108,7 +108,7 @@ impl Engine {
 
         let black_king = self.game.black_kings.to_square();
         let black_pawn_area = calculate_pawn_area(&black_king);
-        Score::new(((black_pawn_area & self.game.black_pawns).popcnt() * 15) as i32)
+        Score::new(((black_pawn_area & self.game.black_pawns).popcnt() * 15) as i16)
     }
 
     /// Scores the position castling rights
@@ -144,11 +144,11 @@ impl Engine {
     }
 
     fn score_white_attackers(&self) -> Score {
-        Score::new(((self.game.white_attacks & self.game.occupied).popcnt() * 10) as i32)
+        Score::new(((self.game.white_attacks & self.game.occupied).popcnt() * 10) as i16)
     }
 
     fn score_black_attackers(&self) -> Score {
-        Score::new(((self.game.black_attacks & self.game.occupied).popcnt() * 10) as i32)
+        Score::new(((self.game.black_attacks & self.game.occupied).popcnt() * 10) as i16)
     }
 
     /// Score everything related to black's position
