@@ -1,12 +1,12 @@
 use crate::{
-    position::game::Game,
     movegen::moves::{Move, targets_to_moves},
+    position::game::Game,
     square::{Direction, Square},
 };
 
 use super::piece::PieceMoveInfo;
 
-const DIRECTIONS: [Direction; 4] = [
+pub const DIRECTIONS: [Direction; 4] = [
     Direction::North,
     Direction::South,
     Direction::East,

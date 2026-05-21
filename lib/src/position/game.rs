@@ -636,7 +636,7 @@ impl Game {
     }
 
     /// Fully recalculates the piece table
-    fn populate_piece_table(&mut self) {
+    pub fn populate_piece_table(&mut self) {
         // Clear the table first
         self.piece_table = PieceTable::new();
 

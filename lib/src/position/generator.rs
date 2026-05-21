@@ -7,8 +7,9 @@ use crate::{
 };
 
 /// Generates random fens for testing Game
+#[derive(Clone)]
 pub struct GameGenerator {
-    rng: SmallRng,
+    pub rng: SmallRng,
 }
 
 impl GameGenerator {
@@ -112,7 +113,7 @@ impl GameGenerator {
     }
 
     /// Generates a random bitboard with the specified number of bits set
-    fn next_bitboard_with_n_bits_set(&mut self, n: u8) -> BitBoard {
+    pub fn next_bitboard_with_n_bits_set(&mut self, n: u8) -> BitBoard {
         let valid = !EMPTY;
         self.next_bitboard_with_n_bits_set_from_valid_area(n, valid)
     }

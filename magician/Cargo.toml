@@ -1,0 +1,11 @@
+[package]
+name = "magician"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = ["whalecrab_lib/rand"]
+
+[dependencies]
+whalecrab_lib = { path = "../lib" }
+rand = { version = "0.10.0" }

@@ -83,7 +83,7 @@ impl File {
 
     /// Creates a bitboard with the entire file set
     #[inline]
-    pub fn mask(self) -> BitBoard {
+    pub const fn mask(self) -> BitBoard {
         BitBoard::new(0x0101010101010101 << self as u8)
     }
 

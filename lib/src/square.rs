@@ -6,10 +6,15 @@ use crate::file::File;
 use crate::implement_operations;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
+use crate::movegen::pieces::rook;
 use crate::position::game::Game;
 use crate::rank::Rank;
 
-#[derive(Debug, PartialEq)]
+fn mask_mask(mask: BitBoard) -> BitBoard {
+    mask & !File::A.mask() & !File::H.mask() & !Rank::First.mask() & !Rank::Eighth.mask()
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     North,
     South,
@@ -142,6 +147,18 @@ impl Square {
     pub const F8: Square = Square(61);
     pub const G8: Square = Square(62);
     pub const H8: Square = Square(63);
+
+    const fn all_squares() -> [Square; 64] {
+        let mut squares = [Square::new(0); 64];
+        let mut n = 0;
+        while n < 64 {
+            squares[n as usize] = Square::new(n);
+            n += 1;
+        }
+        squares
+    }
+
+    pub const ALL_SQUARES: [Square; 64] = Square::all_squares();
 
     pub const fn new(sq: u8) -> Square {
         Square(sq & 63)
@@ -511,6 +528,37 @@ impl Square {
         }
 
         moveinfo
+    }
+
+    /// Generates a bitboard of attacks following a specified list of blockers. Stops when a
+    /// blocker or the end of the board is is reached.
+    pub fn ray_with_blockers(self, direction: Direction, blockers: BitBoard) -> BitBoard {
+        let mut out = EMPTY;
+        let mut current = self;
+        while let Some(forward) = current.walk(&direction) {
+            let forwardbb = BitBoard::from_square(forward);
+            if blockers.has_square(forwardbb) {
+                break;
+            }
+            out |= forwardbb;
+            current = forward;
+        }
+        out
+    }
+
+    /// Generates a list of rook targets considering blockers
+    pub fn rook_attacks_with_blockers(self, blockers: BitBoard) -> BitBoard {
+        let mut out = EMPTY;
+        for direction in rook::DIRECTIONS {
+            out |= self.ray_with_blockers(direction, blockers);
+        }
+        out
+    }
+
+    /// Generates a rook mask for generating magics
+    pub fn rook_mask(self) -> BitBoard {
+        let mask = self.rook_attacks_with_blockers(EMPTY);
+        mask_mask(mask)
     }
 
     /// Generates moveinfo for ray pieces
