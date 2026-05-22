@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use rand::{RngExt, distr::uniform::SampleRange};
 use whalecrab_lib::{
     bitboard::{BitBoard, EMPTY},
@@ -26,6 +28,13 @@ fn generate_rook_blockers_and_attackers(
 fn generate_magic_rooks<R: SampleRange<u8> + Clone>(
     grng: &mut GameGenerator,
     range: R,
+) -> &'static MagicRooks {
+    ROOKS.get_or_init(|| generate_magic_rooks_owned(grng, range))
+}
+
+fn generate_magic_rooks_owned<R: SampleRange<u8> + Clone>(
+    grng: &mut GameGenerator,
+    range: R,
 ) -> MagicRooks {
     let mut magicians = [MagicRook::EMPTY; 64];
 
@@ -48,6 +57,7 @@ fn generate_magic_rooks<R: SampleRange<u8> + Clone>(
 
     magicians
 }
+
 fn next_magic<R: SampleRange<u8>>(grng: &mut GameGenerator, range: R) -> u64 {
     let num_bits = grng.rng.random_range(range);
     let magicbb = grng.next_bitboard_with_n_bits_set(num_bits);
@@ -71,6 +81,8 @@ fn validate_magic(
     }
     true
 }
+
+static ROOKS: OnceLock<MagicRooks> = OnceLock::new();
 
 type MagicRooks = [MagicRook; 64];
 
@@ -108,6 +120,12 @@ mod tests {
 
     use function_name::named;
 
+    macro_rules! seed {
+        () => {
+            GameGenerator::seeded(seed_from_function_name(function_name!()))
+        };
+    }
+
     fn seed_from_function_name(name: &str) -> u32 {
         let mut hasher = DefaultHasher::default();
         name.hash(&mut hasher);
@@ -115,21 +133,55 @@ mod tests {
         hash.try_into().unwrap_or((hash & u32::MAX as u64) as u32)
     }
 
-    macro_rules! seed {
-        () => {
-            GameGenerator::seeded(seed_from_function_name(function_name!()))
-        };
+    fn stack_recurse<F, T, State>(state: &mut State, allocate: F, n: usize)
+    where
+        F: Fn(&mut State) -> T,
+    {
+        let _t = allocate(state);
+        if n > 0 {
+            stack_recurse(state, allocate, n - 1);
+        }
     }
 
     #[test]
     #[named]
     fn rook_attacks_on_empty_board() {
         let mut grng = seed!();
+        let rooks = generate_magic_rooks(&mut grng, 1..=102);
 
-        let rooks = generate_magic_rooks(&mut grng, 12..=12);
         let sq = Square::E8;
         let expected = sq.rook_attacks_with_blockers(EMPTY);
         let actual = rooks[sq.index()].attacks(EMPTY);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    #[named]
+    #[ignore = "This is supposed to fail"]
+    fn should_overflow_stack() {
+        let mut grng = seed!();
+        stack_recurse(
+            &mut grng,
+            |grng| generate_magic_rooks_owned(grng, 1..100),
+            1000,
+        );
+    }
+
+    #[test]
+    #[named]
+    fn should_not_overflow_stack_with_static_pointers() {
+        let mut grng = seed!();
+        stack_recurse(&mut grng, |grng| generate_magic_rooks(grng, 1..100), 1000);
+    }
+
+    #[test]
+    #[named]
+    fn should_not_overflow_stack_four_tables() {
+        let mut grng = seed!();
+        stack_recurse(
+            &mut grng,
+            |grng| generate_magic_rooks_owned(grng, 1..100),
+            4,
+        );
     }
 }
