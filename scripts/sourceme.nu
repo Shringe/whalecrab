@@ -1,4 +1,4 @@
-$env.RUST_MIN_STACK = 16777216;
+$env.RUST_MIN_STACK = 16 * 1024 ** 2;
 
 const all_crates_with_tests = [
   "whalecrab_engine"
