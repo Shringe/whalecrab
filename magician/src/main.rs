@@ -112,15 +112,40 @@ fn rook_attacks(
     attacks[sq.index()][key.to_int() as usize]
 }
 
-fn main() {
-    let mut grng = GameGenerator::unseeded();
+fn main() {}
 
-    let (attack_table, magics) = find_rook_magics(&mut grng, 12..=12);
-    println!("{:#?}\n\n", &magics);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let sq = Square::E8;
-    let expected = sq.rook_attacks_with_blockers(EMPTY);
-    let actual = rook_attacks(sq, EMPTY, &attack_table, &magics);
-    assert_eq!(actual, expected);
-    eprintln!("{}\n\n{}", actual, expected);
+    use std::hash::{DefaultHasher, Hash, Hasher};
+
+    use function_name::named;
+
+    fn seed_from_function_name(name: &str) -> u32 {
+        let mut hasher = DefaultHasher::default();
+        name.hash(&mut hasher);
+        let hash = hasher.finish();
+        hash.try_into().unwrap_or((hash & u32::MAX as u64) as u32)
+    }
+
+    macro_rules! seed {
+        () => {
+            GameGenerator::seeded(seed_from_function_name(function_name!()))
+        };
+    }
+
+    #[test]
+    #[named]
+    fn rook_attacks_on_empty_board() {
+        let mut grng = seed!();
+
+        let (attack_table, magics) = find_rook_magics(&mut grng, 12..=12);
+        println!("{:#?}\n", magics);
+
+        let sq = Square::E8;
+        let expected = sq.rook_attacks_with_blockers(EMPTY);
+        let actual = rook_attacks(sq, EMPTY, &attack_table, &magics);
+        assert_eq!(actual, expected);
+    }
 }

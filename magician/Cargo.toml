@@ -9,3 +9,6 @@ default = ["whalecrab_lib/rand"]
 [dependencies]
 whalecrab_lib = { path = "../lib" }
 rand = { version = "0.10.0" }
+
+[dev-dependencies]
+function_name = "0.3.0"
