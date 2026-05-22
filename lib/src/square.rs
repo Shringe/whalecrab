@@ -174,6 +174,10 @@ impl Square {
         self.0
     }
 
+    pub const fn index(self) -> usize {
+        self.0 as usize
+    }
+
     pub fn get_rank(&self) -> Rank {
         unsafe { Rank::from_int_unchecked(self.0 >> 3) }
     }
