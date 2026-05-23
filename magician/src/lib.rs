@@ -1,11 +1,7 @@
 use std::sync::OnceLock;
 
 use rand::{RngExt, distr::uniform::SampleRange};
-use whalecrab_lib::{
-    bitboard::{BitBoard, EMPTY},
-    position::generator::GameGenerator,
-    square::Square,
-};
+use whalecrab_lib::{bitboard::BitBoard, position::generator::GameGenerator, square::Square};
 
 fn generate_rook_blockers_and_attackers(
     sq: Square,
@@ -169,11 +165,6 @@ pub struct MagicRook {{
     source
 }
 
-#[deprecated]
-fn embed_bitboard(board: BitBoard) -> String {
-    format!("BitBoard::new({}u64)", board.to_int())
-}
-
 pub fn embed_magic_rooks(source: &mut String, rooks: &MagicRooks) {
     for rook in rooks.iter() {
         rook.embed(source);
@@ -189,6 +180,7 @@ mod tests {
     use std::hash::{DefaultHasher, Hash, Hasher};
 
     use function_name::named;
+    use whalecrab_lib::bitboard::EMPTY;
 
     macro_rules! seed {
         () => {
