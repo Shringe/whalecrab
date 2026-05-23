@@ -25,13 +25,6 @@ fn generate_rook_blockers_and_attackers(
     unreachable!();
 }
 
-fn generate_magic_rooks<R: SampleRange<u8> + Clone>(
-    grng: &mut GameGenerator,
-    range: R,
-) -> &'static MagicRooks {
-    ROOKS.get_or_init(|| generate_magic_rooks_owned(grng, range))
-}
-
 fn generate_magic_rooks_owned<R: SampleRange<u8> + Clone>(
     grng: &mut GameGenerator,
     range: R,
@@ -39,11 +32,12 @@ fn generate_magic_rooks_owned<R: SampleRange<u8> + Clone>(
     let mut magicians = [MagicRook::EMPTY; 64];
 
     for sq in Square::ALL_SQUARES {
-        let mask = sq.rook_mask();
+        let mask = sq.masked_rook_attacks();
         let (baa, len) = generate_rook_blockers_and_attackers(sq, mask);
 
         loop {
             let mut rook = MagicRook::EMPTY;
+            rook.mask = mask;
             rook.magic = next_magic(grng, range.clone());
             let valid =
                 validate_magic(&mut rook.attacks, rook.magic, &baa[..len], MagicRook::SHIFT);
@@ -56,6 +50,13 @@ fn generate_magic_rooks_owned<R: SampleRange<u8> + Clone>(
     }
 
     magicians
+}
+
+fn generate_magic_rooks<R: SampleRange<u8> + Clone>(
+    grng: &mut GameGenerator,
+    range: R,
+) -> &'static MagicRooks {
+    ROOKS.get_or_init(|| generate_magic_rooks_owned(grng, range))
 }
 
 fn next_magic<R: SampleRange<u8>>(grng: &mut GameGenerator, range: R) -> u64 {
@@ -92,6 +93,16 @@ struct MagicRook {
     magic: u64,
 }
 
+impl std::fmt::Debug for MagicRook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MagicRook")
+            // .field("attacks", &self.attacks)
+            .field("mask", &self.mask)
+            .field("magic", &self.magic)
+            .finish()
+    }
+}
+
 impl MagicRook {
     const NUM_BITS: u8 = 12;
     const NUM_SUBSETS: usize = 1 << MagicRook::NUM_BITS as usize;
@@ -104,8 +115,8 @@ impl MagicRook {
     };
 
     fn attacks(&self, occupied: BitBoard) -> BitBoard {
-        let key =
-            (((occupied & self.mask) * self.magic) >> (MagicRook::SHIFT as u64)).to_int() as usize;
+        let key = (((occupied & self.mask).to_int().wrapping_mul(self.magic))
+            >> (MagicRook::SHIFT as u64)) as usize;
         self.attacks[key]
     }
 }
@@ -147,12 +158,40 @@ mod tests {
     #[named]
     fn rook_attacks_on_empty_board() {
         let mut grng = seed!();
-        let rooks = generate_magic_rooks(&mut grng, 1..=102);
+        let rooks = generate_magic_rooks(&mut grng, 12..=12);
 
-        let sq = Square::E8;
-        let expected = sq.rook_attacks_with_blockers(EMPTY);
-        let actual = rooks[sq.index()].attacks(EMPTY);
-        assert_eq!(actual, expected);
+        for sq in Square::ALL_SQUARES {
+            let blockers = EMPTY;
+            let expected = sq.rook_attacks_with_blockers(blockers);
+            let actual = rooks[sq.index()].attacks(blockers);
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    #[named]
+    fn rook_attacks_on_empty_board_with_blockers() {
+        let mut grng = seed!();
+        let rooks = generate_magic_rooks(&mut grng, 12..=12);
+        // let rooks = generate_magic_rooks_owned(&mut grng, 12..=12);
+
+        for sq in Square::ALL_SQUARES {
+            let num_blockers = grng.rng.random_range(1..MagicRook::NUM_BITS);
+            let blockers = grng.next_bitboard_with_n_bits_set(num_blockers);
+
+            let expected = sq.rook_attacks_with_blockers(blockers);
+            let actual = rooks[sq.index()].attacks(blockers);
+            assert_eq!(
+                actual,
+                expected,
+                "\n\nSquare: {}\nRook: {:#?}\nBlockers: {:#?}\nActual: {:#?}\nExpected: {:#?}\n\n",
+                sq,
+                rooks[sq.index()],
+                blockers,
+                actual,
+                expected
+            );
+        }
     }
 
     #[test]

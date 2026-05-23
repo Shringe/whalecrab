@@ -110,6 +110,14 @@ impl BitBoard {
     pub const INITIAL_WHITE_KINGS: BitBoard =
         BitBoard(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000);
 
+    /// A BitBoard containing the outer rim of the board
+    pub const EDGES: BitBoard = BitBoard::new(
+        File::A.mask().to_int()
+            | File::H.mask().to_int()
+            | Rank::First.mask().to_int()
+            | Rank::Eighth.mask().to_int(),
+    );
+
     /// Construct a new bitboard from a u64
     #[inline]
     pub const fn new(b: u64) -> BitBoard {

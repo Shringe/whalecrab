@@ -10,10 +10,6 @@ use crate::movegen::pieces::rook;
 use crate::position::game::Game;
 use crate::rank::Rank;
 
-fn mask_mask(mask: BitBoard) -> BitBoard {
-    mask & !File::A.mask() & !File::H.mask() & !Rank::First.mask() & !Rank::Eighth.mask()
-}
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     North,
@@ -178,11 +174,11 @@ impl Square {
         self.0 as usize
     }
 
-    pub fn get_rank(&self) -> Rank {
+    pub const fn get_rank(&self) -> Rank {
         unsafe { Rank::from_int_unchecked(self.0 >> 3) }
     }
 
-    pub fn get_file(&self) -> File {
+    pub const fn get_file(&self) -> File {
         unsafe { File::from_int_unchecked(self.0 & 7) }
     }
 
@@ -198,49 +194,69 @@ impl Square {
     /// # Safety
     /// `self.get_file() > File::A && self.get_rank() < Rank::Eighth`
     pub const unsafe fn uleft_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 + 7) }
+        debug_assert!(
+            self.get_file().to_int() > File::A.to_int()
+                && self.get_rank().to_int() < Rank::Eighth.to_int()
+        );
+        unsafe { Square::new_unchecked(self.0.unchecked_add(7)) }
     }
 
     /// # Safety
     /// `self.get_file() < File::H && self.get_rank() < Rank::Eighth`
     pub const unsafe fn uright_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 + 9) }
+        debug_assert!(
+            self.get_file().to_int() < File::H.to_int()
+                && self.get_rank().to_int() < Rank::Eighth.to_int()
+        );
+        unsafe { Square::new_unchecked(self.0.unchecked_add(9)) }
     }
 
     /// # Safety
     /// `self.get_file() > File::A && self.get_rank() > Rank::First`
     pub const unsafe fn dleft_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 - 9) }
+        debug_assert!(
+            self.get_file().to_int() > File::A.to_int()
+                && self.get_rank().to_int() > Rank::First.to_int()
+        );
+        unsafe { Square::new_unchecked(self.0.unchecked_sub(9)) }
     }
 
     /// # Safety
     /// `self.get_file() < File::H && self.get_rank() > Rank::First`
     pub const unsafe fn dright_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 - 7) }
+        debug_assert!(
+            self.get_file().to_int() < File::H.to_int()
+                && self.get_rank().to_int() > Rank::First.to_int()
+        );
+        unsafe { Square::new_unchecked(self.0.unchecked_sub(7)) }
     }
 
     /// # Safety
     /// `self.get_rank() < Rank::Eighth`
     pub const unsafe fn up_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 + 8) }
+        debug_assert!(self.get_rank().to_int() < Rank::Eighth.to_int());
+        unsafe { Square::new_unchecked(self.0.unchecked_add(8)) }
     }
 
     /// # Safety
     /// `self.get_rank() > Rank::First`
     pub const unsafe fn down_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 - 8) }
+        debug_assert!(self.get_rank().to_int() > Rank::First.to_int());
+        unsafe { Square::new_unchecked(self.0.unchecked_sub(8)) }
     }
 
     /// # Safety
     /// `self.get_file() > File::A`
     pub const unsafe fn left_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 - 1) }
+        debug_assert!(self.get_file().to_int() > File::A.to_int());
+        unsafe { Square::new_unchecked(self.0.unchecked_sub(1)) }
     }
 
     /// # Safety
     /// `self.get_file() < File::H`
     pub const unsafe fn right_unchecked(&self) -> Square {
-        unsafe { Square::new_unchecked(self.0 + 1) }
+        debug_assert!(self.get_file().to_int() < File::H.to_int());
+        unsafe { Square::new_unchecked(self.0.unchecked_add(1)) }
     }
 
     pub const fn uleft(&self) -> Option<Square> {
@@ -535,18 +551,18 @@ impl Square {
     }
 
     /// Generates a bitboard of attacks following a specified list of blockers. Stops when a
-    /// blocker or the end of the board is is reached.
+    /// blocker or the end of the board is is reached. Stops before reaching a blockers.
     pub fn ray_with_blockers(self, direction: Direction, blockers: BitBoard) -> BitBoard {
         let mut out = EMPTY;
-        let mut current = self;
-        while let Some(forward) = current.walk(&direction) {
-            let forwardbb = BitBoard::from_square(forward);
-            if blockers.has_square(forwardbb) {
-                break;
+        self.custom_ray2(|c| {
+            let sq = c.walk(&direction);
+            let sqbb = BitBoard::from_square(sq?);
+            out |= sqbb;
+            if blockers.has_square(sqbb) {
+                return None;
             }
-            out |= forwardbb;
-            current = forward;
-        }
+            sq
+        });
         out
     }
 
@@ -559,10 +575,40 @@ impl Square {
         out
     }
 
-    /// Generates a rook mask for generating magics
-    pub fn rook_mask(self) -> BitBoard {
-        let mask = self.rook_attacks_with_blockers(EMPTY);
-        mask_mask(mask)
+    fn custom_ray(mut self, board: &mut BitBoard, walk: impl Fn(Square) -> Option<Square>) {
+        while let Some(forward) = walk(self) {
+            let forwardbb = BitBoard::from_square(forward);
+            *board |= forwardbb;
+            self = forward;
+        }
+    }
+
+    fn custom_ray2(mut self, mut walk: impl FnMut(Square) -> Option<Square>) {
+        while let Some(forward) = walk(self) {
+            self = forward;
+        }
+    }
+
+    /// Generates rook attacks
+    pub fn masked_rook_attacks(self) -> BitBoard {
+        let mut out = EMPTY;
+
+        unsafe {
+            self.custom_ray(&mut out, |c| {
+                (c.get_file() > File::B).then(|| c.left_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_file() < File::G).then(|| c.right_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() < Rank::Seventh).then(|| c.up_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() > Rank::Second).then(|| c.down_unchecked())
+            });
+        }
+
+        out
     }
 
     /// Generates moveinfo for ray pieces
@@ -691,6 +737,16 @@ mod tests {
         let squares = vec![Square::D6, Square::C5];
         let expected = BitBoard::from_square_vec(squares);
         let actual = source.path_to(destination);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn masked_rook_attacks() {
+        let sq = Square::E1;
+        let expected = BitBoard::new(
+            0b00000000_00010000_00010000_00010000_00010000_00010000_00010000_01101110,
+        );
+        let actual = sq.masked_rook_attacks();
         assert_eq!(actual, expected);
     }
 }
