@@ -1,0 +1,4 @@
+[package]
+name = "magic_tables"
+version.workspace = true
+edition.workspace = true

@@ -9,17 +9,21 @@ use whalecrab_lib::{
 
 fn generate_rook_blockers_and_attackers(
     sq: Square,
-    mask: BitBoard,
-) -> ([(BitBoard, BitBoard); MagicRook::NUM_SUBSETS], usize) {
-    let mut baa = [(EMPTY, EMPTY); MagicRook::NUM_SUBSETS];
+    mask: u64,
+) -> ([(u64, u64); MagicRook::NUM_SUBSETS], usize) {
+    let mut baa = [(0, 0); MagicRook::NUM_SUBSETS];
 
     let mut subset = mask;
     for i in 0..MagicRook::NUM_SUBSETS {
-        baa[i] = (subset, sq.rook_attacks_with_blockers(subset));
-        if subset == EMPTY {
+        baa[i] = (
+            subset,
+            sq.rook_attacks_with_blockers(BitBoard::new(subset))
+                .to_int(),
+        );
+        if subset == 0 {
             return (baa, i + 1);
         }
-        subset = BitBoard::new(subset.to_int() - 1) & mask;
+        subset = (subset - 1) & mask;
     }
 
     unreachable!();
@@ -32,7 +36,7 @@ pub fn generate_magic_rooks_owned<R: SampleRange<u8> + Clone>(
     let mut magicians = [MagicRook::EMPTY; 64];
 
     for sq in Square::ALL_SQUARES {
-        let mask = sq.masked_rook_attacks();
+        let mask = sq.masked_rook_attacks().to_int();
         let (baa, len) = generate_rook_blockers_and_attackers(sq, mask);
 
         loop {
@@ -65,16 +69,11 @@ fn next_magic<R: SampleRange<u8>>(grng: &mut GameGenerator, range: R) -> u64 {
     magicbb.to_int()
 }
 
-fn validate_magic(
-    attack_table: &mut [BitBoard],
-    magic: u64,
-    baa: &[(BitBoard, BitBoard)],
-    shift: usize,
-) -> bool {
+fn validate_magic(attack_table: &mut [u64], magic: u64, baa: &[(u64, u64)], shift: usize) -> bool {
     for (blocker, attacker) in baa {
-        let index = blocker.to_int().wrapping_mul(magic) >> shift;
+        let index = blocker.wrapping_mul(magic) >> shift;
         let entry = &mut attack_table[index as usize];
-        if *entry == EMPTY {
+        if *entry == 0 {
             *entry = *attacker;
         } else if *entry != *attacker {
             return false;
@@ -88,8 +87,8 @@ static ROOKS: OnceLock<MagicRooks> = OnceLock::new();
 pub type MagicRooks = [MagicRook; 64];
 
 pub struct MagicRook {
-    attacks: [BitBoard; MagicRook::NUM_SUBSETS],
-    mask: BitBoard,
+    attacks: [u64; MagicRook::NUM_SUBSETS],
+    mask: u64,
     magic: u64,
 }
 
@@ -117,61 +116,77 @@ impl MagicRook {
     const SHIFT: usize = 64 - MagicRook::NUM_BITS as usize;
 
     const EMPTY: MagicRook = MagicRook {
-        attacks: [EMPTY; MagicRook::NUM_SUBSETS],
-        mask: EMPTY,
+        attacks: [0; MagicRook::NUM_SUBSETS],
+        mask: 0,
         magic: 0,
     };
 
     pub fn attacks(&self, occupied: BitBoard) -> BitBoard {
         let key = (((occupied & self.mask).to_int().wrapping_mul(self.magic))
             >> (MagicRook::SHIFT as u64)) as usize;
-        self.attacks[key]
+        BitBoard::new(self.attacks[key])
     }
 
-    pub fn embed(&self) -> String {
-        let attacks_str = self
-            .attacks
-            .iter()
-            .map(|bb| embed_bitboard(*bb))
-            .collect::<Vec<_>>()
-            .join(", ");
+    pub fn embed(&self, source: &mut String) {
+        source.push_str("MagicRook{attacks:[");
+        for pattern in self.attacks {
+            source.push_str(pattern.to_string().as_str());
+            source.push(',');
+        }
+        let _ = source.pop();
 
-        format!(
-            "MagicRook {{ attacks: [{}], mask: {}, magic: {}u64 }}",
-            attacks_str,
-            embed_bitboard(self.mask),
-            self.magic,
-        )
+        source.push_str("],mask:");
+        source.push_str(self.mask.to_string().as_str());
+        source.push_str(",magic:");
+        source.push_str(self.magic.to_string().as_str());
+        source.push('}');
     }
 }
 
+pub fn embedded_magic_rook_file(rooks: &MagicRooks) -> String {
+    let mut source = String::with_capacity(std::mem::size_of::<MagicRooks>().saturating_mul(4));
+    let types = format! {
+"pub const NUM_BITS: u8 = {};
+pub const NUM_SUBSETS: usize = 1 << NUM_BITS as usize;
+pub const SHIFT: usize = 64 - NUM_BITS as usize;
+
+pub type MagicRooks = [MagicRook; 64];
+
+pub struct MagicRook {{
+    pub attacks: [u64; NUM_SUBSETS],
+    pub mask: u64,
+    pub magic: u64,
+}}
+
+", MagicRook::NUM_BITS
+    };
+
+    source.push_str(types.as_str());
+    source.push_str("pub static ROOKS: MagicRooks = [");
+    embed_magic_rooks(&mut source, rooks);
+    source.push_str("];");
+
+    source
+}
+
+#[deprecated]
 fn embed_bitboard(board: BitBoard) -> String {
     format!("BitBoard::new({}u64)", board.to_int())
 }
 
-pub fn embed_magic_rooks(rooks: &MagicRooks) -> String {
-    let mut out = String::with_capacity(std::mem::size_of::<MagicRooks>().saturating_mul(2));
-
-    out.push_str("const ROOKS: MagicRooks = [");
-
+pub fn embed_magic_rooks(source: &mut String, rooks: &MagicRooks) {
     for rook in rooks.iter() {
-        out.push_str(&rook.embed());
-        out.push_str(", ")
+        rook.embed(source);
+        source.push(',')
     }
-
-    out.push_str("];");
-
-    out
+    let _ = source.pop();
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use std::{
-        fs,
-        hash::{DefaultHasher, Hash, Hasher},
-    };
+    use std::hash::{DefaultHasher, Hash, Hasher};
 
     use function_name::named;
 
@@ -274,6 +289,7 @@ mod tests {
     fn serialize() {
         let mut grng = seed!();
         let rooks = generate_magic_rooks(&mut grng, 12..=12);
-        let _embedded = embed_magic_rooks(rooks);
+        let mut source = String::with_capacity(std::mem::size_of::<MagicRooks>());
+        embed_magic_rooks(&mut source, rooks);
     }
 }
