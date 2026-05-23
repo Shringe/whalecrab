@@ -1,6 +1,9 @@
 use crate::{
     bitboard::BitBoard,
-    movegen::moves::{Move, targets_to_moves},
+    movegen::{
+        moves::{Move, attacks_to_moves},
+        pieces::piece::PieceType,
+    },
     position::game::Game,
     square::{Direction, Square},
 };
@@ -23,7 +26,11 @@ pub fn magic_rook_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
 
 impl Square {
     pub fn rook_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(self.rook_psuedo_legal_targets(game).targets, *self, game)
+        let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
+        let kingbb = *game.get_pieces(&PieceType::King, &color.opponent());
+        let blockers = game.occupied ^ kingbb;
+        let attacks = magic_rook_attacks(*self, blockers);
+        attacks_to_moves(attacks, *self, game)
     }
 
     pub fn rook_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {

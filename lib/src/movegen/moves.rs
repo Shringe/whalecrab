@@ -22,6 +22,32 @@ pub fn moves_to_targets(moves: &[Move], game: &Game) -> BitBoard {
     out
 }
 
+/// Converts a BitBoard of attacks into a vector of moves
+pub fn attacks_to_moves(attacks: BitBoard, from: Square, game: &Game) -> Vec<Move> {
+    let mut moves = Vec::with_capacity(attacks.popcnt() as usize);
+    let enemy_color = game.turn.opponent();
+
+    for sq in attacks {
+        if let Some((piece, color)) = game.piece_lookup(sq) {
+            if color == enemy_color {
+                moves.push(Move::Normal {
+                    from,
+                    to: sq,
+                    capture: Some(piece),
+                });
+            }
+        } else {
+            moves.push(Move::Normal {
+                from,
+                to: sq,
+                capture: None,
+            });
+        }
+    }
+
+    moves
+}
+
 /// Converts a BitBoard of targets into a vector of moves
 pub fn targets_to_moves(targets: BitBoard, from: Square, game: &Game) -> Vec<Move> {
     let mut moves = Vec::with_capacity(targets.popcnt() as usize);

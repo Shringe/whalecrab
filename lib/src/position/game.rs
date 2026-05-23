@@ -1021,6 +1021,17 @@ impl Game {
             };
         }
 
+        macro_rules! push_moves2 {
+            ($moves:expr, $piece:expr, $board:expr) => {
+                for sq in $board {
+                    let moves_for_this_piece = $piece.psuedo_legal_moves(self, &sq);
+                    for m in moves_for_this_piece {
+                        push_move_unchecked(&mut $moves, m, &mut counter);
+                    }
+                }
+            };
+        }
+
         match self.turn {
             PieceColor::White => {
                 let num_pawns = self.white_pawns.popcnt() as usize;
@@ -1043,7 +1054,7 @@ impl Game {
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves!(moves, PieceType::Bishop, self.white_bishops);
-                    push_moves!(moves, PieceType::Rook, self.white_rooks);
+                    push_moves2!(moves, PieceType::Rook, self.white_rooks);
                     push_moves!(moves, PieceType::Queen, self.white_queens);
                     push_moves!(moves, PieceType::King, self.white_kings);
                     moves.set_len(counter);
@@ -1069,7 +1080,7 @@ impl Game {
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves!(moves, PieceType::Bishop, self.black_bishops);
-                    push_moves!(moves, PieceType::Rook, self.black_rooks);
+                    push_moves2!(moves, PieceType::Rook, self.black_rooks);
                     push_moves!(moves, PieceType::Queen, self.black_queens);
                     push_moves!(moves, PieceType::King, self.black_kings);
                     moves.set_len(counter);
