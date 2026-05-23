@@ -791,6 +791,7 @@ dependencies = [
 name = "magician"
 version = "1.5.5"
 dependencies = [
+ "clap",
  "function_name",
  "rand 0.10.0",
  "whalecrab_lib",
