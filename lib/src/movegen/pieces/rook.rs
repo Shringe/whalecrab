@@ -1,4 +1,5 @@
 use crate::{
+    bitboard::BitBoard,
     movegen::moves::{Move, targets_to_moves},
     position::game::Game,
     square::{Direction, Square},
@@ -12,6 +13,13 @@ pub const DIRECTIONS: [Direction; 4] = [
     Direction::East,
     Direction::West,
 ];
+
+pub fn magic_rook_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
+    let rook = &magics::rooks::ROOKS[sq.index()];
+    let key = (((occupied.to_int() & rook.mask).wrapping_mul(rook.magic))
+        >> (magics::rooks::SHIFT as u64)) as usize;
+    BitBoard::new(rook.attacks[key])
+}
 
 impl Square {
     pub fn rook_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
