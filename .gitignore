@@ -3,5 +3,5 @@
 whalecrab_essex.csv
 
 # These are very large and should be generated locally
-/magic_tables/src/rooks.rs
-/magic_tables/src/bishops.rs
+/magics/src/rooks.rs
+/magics/src/bishops.rs

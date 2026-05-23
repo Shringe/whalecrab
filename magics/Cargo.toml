@@ -1,4 +1,4 @@
 [package]
-name = "magic_tables"
+name = "magics"
 version.workspace = true
 edition.workspace = true

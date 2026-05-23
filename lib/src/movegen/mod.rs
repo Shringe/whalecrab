@@ -1,4 +1,3 @@
-pub(crate) mod magics;
 pub mod make;
 pub mod moves;
 pub mod pieces;
