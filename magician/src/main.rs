@@ -1,10 +1,10 @@
+mod cli;
+
 use std::fs;
 
 use clap::Parser;
-use magician::{embedded_magic_rook_file, generate_magic_rooks};
+use magician::rooks::{embedded_magic_rook_file, generate_magic_rooks};
 use whalecrab_lib::position::generator::GameGenerator;
-
-mod cli;
 
 fn main() {
     let args = cli::Args::parse();
