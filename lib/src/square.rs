@@ -6,7 +6,6 @@ use crate::file::File;
 use crate::implement_operations;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
-use crate::movegen::pieces::rook;
 use crate::position::game::Game;
 use crate::rank::Rank;
 
@@ -566,16 +565,13 @@ impl Square {
         out
     }
 
-    /// Generates a list of rook targets considering blockers
-    pub fn rook_attacks_with_blockers(self, blockers: BitBoard) -> BitBoard {
-        let mut out = EMPTY;
-        for direction in rook::DIRECTIONS {
-            out |= self.ray_with_blockers(direction, blockers);
-        }
-        out
-    }
-
-    fn custom_ray(mut self, board: &mut BitBoard, walk: impl Fn(Square) -> Option<Square>) {
+    /// Helps create a custom ray by keeping track of the current square and appending to `board`
+    /// each iteration
+    pub(crate) fn custom_ray(
+        mut self,
+        board: &mut BitBoard,
+        walk: impl Fn(Square) -> Option<Square>,
+    ) {
         while let Some(forward) = walk(self) {
             let forwardbb = BitBoard::from_square(forward);
             *board |= forwardbb;
@@ -583,32 +579,11 @@ impl Square {
         }
     }
 
-    fn custom_ray2(mut self, mut walk: impl FnMut(Square) -> Option<Square>) {
+    /// Helps create a custom ray by keeping track of the current square
+    pub(crate) fn custom_ray2(mut self, mut walk: impl FnMut(Square) -> Option<Square>) {
         while let Some(forward) = walk(self) {
             self = forward;
         }
-    }
-
-    /// Generates rook attacks
-    pub fn masked_rook_attacks(self) -> BitBoard {
-        let mut out = EMPTY;
-
-        unsafe {
-            self.custom_ray(&mut out, |c| {
-                (c.get_file() > File::B).then(|| c.left_unchecked())
-            });
-            self.custom_ray(&mut out, |c| {
-                (c.get_file() < File::G).then(|| c.right_unchecked())
-            });
-            self.custom_ray(&mut out, |c| {
-                (c.get_rank() < Rank::Seventh).then(|| c.up_unchecked())
-            });
-            self.custom_ray(&mut out, |c| {
-                (c.get_rank() > Rank::Second).then(|| c.down_unchecked())
-            });
-        }
-
-        out
     }
 
     /// Generates moveinfo for ray pieces
@@ -737,16 +712,6 @@ mod tests {
         let squares = vec![Square::D6, Square::C5];
         let expected = BitBoard::from_square_vec(squares);
         let actual = source.path_to(destination);
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn masked_rook_attacks() {
-        let sq = Square::E1;
-        let expected = BitBoard::new(
-            0b00000000_00010000_00010000_00010000_00010000_00010000_00010000_01101110,
-        );
-        let actual = sq.masked_rook_attacks();
         assert_eq!(actual, expected);
     }
 }
