@@ -130,7 +130,7 @@ pub struct MagicBishop {{
     };
 
     source.push_str(types.as_str());
-    source.push_str("pub static ROOKS: MagicBishops = [");
+    source.push_str("pub static BISHOPS: MagicBishops = [");
     embed_magic_bishops(&mut source, bishops);
     source.push_str("];");
 

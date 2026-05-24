@@ -1,9 +1,9 @@
 use crate::{
-    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::PieceMoveInfo,
     },
+    position::game::Game,
     square::{ALL_DIRECTIONS, Square},
 };
 
