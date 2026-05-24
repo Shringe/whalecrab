@@ -1,12 +1,15 @@
 use crate::{
-    position::game::Game,
+    bitboard::{BitBoard, EMPTY},
+    file::File,
     movegen::moves::{Move, targets_to_moves},
+    position::game::Game,
+    rank::Rank,
     square::{Direction, Square},
 };
 
 use super::piece::PieceMoveInfo;
 
-const DIRECTIONS: [Direction; 4] = [
+pub const DIRECTIONS: [Direction; 4] = [
     Direction::NorthEast,
     Direction::SouthEast,
     Direction::NorthWest,
@@ -20,6 +23,40 @@ impl Square {
 
     pub fn bishop_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
         self.rays(&DIRECTIONS, game)
+    }
+
+    /// Generates a list of rook targets considering blockers
+    pub fn bishop_attacks_with_blockers(self, blockers: BitBoard) -> BitBoard {
+        let mut out = EMPTY;
+        for direction in DIRECTIONS {
+            out |= self.ray_with_blockers(direction, blockers);
+        }
+        out
+    }
+
+    /// Generates bishop attacks within the bounds of a magic mask
+    pub fn masked_bishop_attacks(self) -> BitBoard {
+        let mut out = EMPTY;
+
+        unsafe {
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() < Rank::Seventh && c.get_file() > File::B)
+                    .then(|| c.uleft_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() < Rank::Seventh && c.get_file() < File::G)
+                    .then(|| c.uright_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() > Rank::Second && c.get_file() > File::B).then(|| c.dleft_unchecked())
+            });
+            self.custom_ray(&mut out, |c| {
+                (c.get_rank() > Rank::Second && c.get_file() < File::G)
+                    .then(|| c.dright_unchecked())
+            });
+        }
+
+        out
     }
 }
 
@@ -56,5 +93,21 @@ mod tests {
             }
             game.play(&m);
         }
+    }
+
+    #[test]
+    fn masked_bishop_attacks() {
+        let sq = Square::E1;
+        let expected = BitBoard::from_square_vec(vec![
+            // Up left
+            Square::D2,
+            Square::C3,
+            Square::B4,
+            // Up right
+            Square::F2,
+            Square::G3,
+        ]);
+        let actual = sq.masked_bishop_attacks();
+        assert_eq!(actual, expected);
     }
 }

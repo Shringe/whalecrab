@@ -48,7 +48,7 @@ impl Square {
         out
     }
 
-    /// Generates rook attacks
+    /// Generates rook attacks within the bounds of a magic mask
     pub fn masked_rook_attacks(self) -> BitBoard {
         let mut out = EMPTY;
 
