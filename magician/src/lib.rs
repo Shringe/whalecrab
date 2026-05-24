@@ -1,3 +1,4 @@
+pub mod bishops;
 pub mod rooks;
 
 use rand::{RngExt, distr::uniform::SampleRange};

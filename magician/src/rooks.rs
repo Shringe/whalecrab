@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::{ops::RangeInclusive, sync::OnceLock};
 
 use whalecrab_lib::{bitboard::BitBoard, position::generator::GameGenerator, square::Square};
 
@@ -71,12 +71,13 @@ impl std::fmt::Debug for MagicRook {
 }
 
 impl MagicRook {
-    const NUM_BITS: u8 = 12;
-    const NUM_SUBSETS: usize = 1 << MagicRook::NUM_BITS as usize;
-    const SHIFT: usize = 64 - MagicRook::NUM_BITS as usize;
+    pub const BIT_RANGE: RangeInclusive<u8> = Self::NUM_BITS..=Self::NUM_BITS;
+    const NUM_BITS: u8 = 9;
+    const NUM_SUBSETS: usize = 1 << Self::NUM_BITS as usize;
+    const SHIFT: usize = 64 - Self::NUM_BITS as usize;
 
-    const EMPTY: MagicRook = MagicRook {
-        attacks: [0; MagicRook::NUM_SUBSETS],
+    const EMPTY: Self = Self {
+        attacks: [0; Self::NUM_SUBSETS],
         mask: 0,
         magic: 0,
     };
