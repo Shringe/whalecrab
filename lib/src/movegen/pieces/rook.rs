@@ -1,7 +1,10 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
-    movegen::moves::{Move, attacks_to_moves},
+    movegen::{
+        moves::{Move, attacks_to_moves},
+        pieces::piece::PieceColor,
+    },
     position::game::Game,
     rank::Rank,
     square::{Direction, Square},

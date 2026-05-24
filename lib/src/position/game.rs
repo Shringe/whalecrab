@@ -16,8 +16,11 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::Move,
-        pieces::piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
+        moves::{Move, lazy_attacks_to_moves},
+        pieces::{
+            piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
+            rook::magic_rook_attacks,
+        },
     },
     position::{
         castling::CastlingRights,
@@ -1029,10 +1032,9 @@ impl Game {
         }
 
         macro_rules! push_moves2 {
-            ($moves:expr, $piece:expr, $board:expr) => {
+            ($moves:expr, $board:expr, $attacks:ident, $kingless:expr) => {
                 for sq in $board {
-                    let moves_for_this_piece = $piece.psuedo_legal_moves(self, &sq);
-                    for m in moves_for_this_piece {
+                    for m in lazy_attacks_to_moves($attacks(sq, $kingless), sq, self) {
                         push_move_unchecked(&mut $moves, m, &mut counter);
                     }
                 }
@@ -1049,6 +1051,7 @@ impl Game {
                     + self.white_queens.popcnt() as usize * 27
                     + self.white_kings.popcnt() as usize * 8;
                 let capacity = maximum_move_count;
+                let kingless_bb = self.occupied ^ self.white_kings;
                 let mut moves = Vec::with_capacity(capacity);
                 unsafe {
                     // Generating grouped pawn moves when there are no pawns
@@ -1061,7 +1064,7 @@ impl Game {
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves!(moves, PieceType::Bishop, self.white_bishops);
-                    push_moves2!(moves, PieceType::Rook, self.white_rooks);
+                    push_moves2!(moves, self.white_rooks, magic_rook_attacks, kingless_bb);
                     push_moves!(moves, PieceType::Queen, self.white_queens);
                     push_moves!(moves, PieceType::King, self.white_kings);
                     moves.set_len(counter);
@@ -1077,6 +1080,7 @@ impl Game {
                     + self.black_queens.popcnt() as usize * 27
                     + self.black_kings.popcnt() as usize * 8;
                 let capacity = maximum_move_count;
+                let kingless_bb = self.occupied ^ self.white_kings;
                 let mut moves = Vec::with_capacity(capacity);
                 unsafe {
                     if num_pawns != 0 {
@@ -1087,7 +1091,7 @@ impl Game {
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves!(moves, PieceType::Bishop, self.black_bishops);
-                    push_moves2!(moves, PieceType::Rook, self.black_rooks);
+                    push_moves2!(moves, self.black_rooks, magic_rook_attacks, kingless_bb);
                     push_moves!(moves, PieceType::Queen, self.black_queens);
                     push_moves!(moves, PieceType::King, self.black_kings);
                     moves.set_len(counter);

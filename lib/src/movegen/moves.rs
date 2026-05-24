@@ -22,29 +22,35 @@ pub fn moves_to_targets(moves: &[Move], game: &Game) -> BitBoard {
     out
 }
 
-/// Converts a BitBoard of attacks into a vector of moves
-pub fn attacks_to_moves(attacks: BitBoard, from: Square, game: &Game) -> Vec<Move> {
-    let mut moves = Vec::with_capacity(attacks.popcnt() as usize);
+pub fn lazy_attacks_to_moves(
+    attacks: BitBoard,
+    from: Square,
+    game: &Game,
+) -> impl Iterator<Item = Move> {
     let enemy_color = game.turn.opponent();
-
-    for sq in attacks {
-        if let Some((piece, color)) = game.piece_lookup(sq) {
-            if color == enemy_color {
-                moves.push(Move::Normal {
-                    from,
-                    to: sq,
-                    capture: Some(piece),
-                });
-            }
-        } else {
-            moves.push(Move::Normal {
+    attacks
+        .into_iter()
+        .filter_map(move |sq| match game.piece_lookup(sq) {
+            None => Some(Move::Normal {
                 from,
                 to: sq,
                 capture: None,
-            });
-        }
-    }
+            }),
+            Some((piece, color)) if color == enemy_color => Some(Move::Normal {
+                from,
+                to: sq,
+                capture: Some(piece),
+            }),
+            Some(_) => None,
+        })
+}
 
+// Converts a BitBoard of attacks into  vector of moves
+pub fn attacks_to_moves(attacks: BitBoard, from: Square, game: &Game) -> Vec<Move> {
+    let mut moves = Vec::with_capacity(attacks.popcnt() as usize);
+    for m in lazy_attacks_to_moves(attacks, from, game) {
+        moves.push(m);
+    }
     moves
 }
 

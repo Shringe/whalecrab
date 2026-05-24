@@ -9,6 +9,7 @@ use crate::{
 
 impl Square {
     pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+        // TODO: Implement magics
         targets_to_moves(self.queen_psuedo_legal_targets(game).targets, *self, game)
     }
 
