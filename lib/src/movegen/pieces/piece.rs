@@ -28,14 +28,14 @@ impl PieceColor {
         }
     }
 
-    pub fn opponent(&self) -> PieceColor {
+    pub const fn opponent(&self) -> PieceColor {
         match self {
             PieceColor::White => PieceColor::Black,
             PieceColor::Black => PieceColor::White,
         }
     }
 
-    pub fn final_rank(&self) -> Rank {
+    pub const fn final_rank(&self) -> Rank {
         match self {
             PieceColor::White => Rank::Eighth,
             PieceColor::Black => Rank::First,

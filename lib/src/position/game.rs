@@ -262,6 +262,13 @@ impl Game {
     pub fn get_pieces_mut(&mut self, piece: &PieceType, color: &PieceColor) -> &mut BitBoard {
         get_pieces_mut!(self, piece, color)
     }
+    /// Finds the king for the given position
+    pub fn get_king(&self, color: PieceColor) -> &BitBoard {
+        match color {
+            PieceColor::White => &self.white_kings,
+            PieceColor::Black => &self.black_kings,
+        }
+    }
 
     // Constructors
     pub fn empty() -> Self {

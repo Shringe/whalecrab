@@ -1,10 +1,7 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
-    movegen::{
-        moves::{Move, attacks_to_moves},
-        pieces::piece::PieceType,
-    },
+    movegen::moves::{Move, attacks_to_moves},
     position::game::Game,
     rank::Rank,
     square::{Direction, Square},
@@ -27,12 +24,14 @@ pub fn magic_bishop_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
 }
 
 impl Square {
-    pub fn bishop_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+    pub fn bishop_psuedo_legal_attacks(&self, game: &Game) -> BitBoard {
         let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
-        let kingbb = *game.get_pieces(&PieceType::King, &color.opponent());
-        let blockers = game.occupied ^ kingbb;
-        let attacks = magic_bishop_attacks(*self, blockers);
-        attacks_to_moves(attacks, *self, game)
+        let blockers = game.occupied ^ *game.get_king(color.opponent());
+        magic_bishop_attacks(*self, blockers)
+    }
+
+    pub fn bishop_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
+        attacks_to_moves(self.bishop_psuedo_legal_attacks(game), *self, game)
     }
 
     pub fn bishop_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
