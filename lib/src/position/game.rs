@@ -26,7 +26,7 @@ use crate::{
         },
     },
     position::{
-        castling::CastlingRights,
+        castling::{self, CastlingRights},
         piece_table::PieceTable,
         previous::{PositionHistory, UnRestoreable},
     },
@@ -275,6 +275,30 @@ impl Game {
             PieceColor::White => &self.white_kings,
             PieceColor::Black => &self.black_kings,
         }
+    }
+
+    /// Whether white can legally castle queenside
+    pub fn can_white_castle_queenside(&self) -> bool {
+        self.castling_rights.white_queenside()
+            && self.occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+    }
+
+    /// Whether white can legally castle kingside
+    pub fn can_white_castle_kingside(&self) -> bool {
+        self.castling_rights.white_kingside()
+            && self.occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
+    }
+
+    /// Whether black can legally castle queenside
+    pub fn can_black_castle_queenside(&self) -> bool {
+        self.castling_rights.black_queenside()
+            && self.occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+    }
+
+    /// Whether black can legally castle kingside
+    pub fn can_black_castle_kingside(&self) -> bool {
+        self.castling_rights.black_kingside()
+            && self.occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
     }
 
     // Constructors

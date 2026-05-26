@@ -1,12 +1,11 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
-    movegen::{
-        moves::{Move, targets_to_moves},
-        pieces::piece::PieceColor,
+    movegen::{moves::Move, pieces::piece::PieceColor},
+    position::{
+        castling::{self, CastleSide},
+        game::Game,
     },
-    position::castling,
-    position::game::Game,
     square::Square,
 };
 
@@ -14,10 +13,29 @@ use super::piece::PieceMoveInfo;
 
 pub const MAXIMUM_MOVE_COUNT: u32 = 8;
 
+static ATTACKS: [BitBoard; 64] = {
+    let mut table = [EMPTY; 64];
+    let mut n = 0;
+    while n < 64 {
+        let sq = Square::new(n);
+        let sqbb = BitBoard::from_square(sq);
+        table[sq.index()] = psuedo_legal_attacks(sqbb);
+        n += 1;
+    }
+    table
+};
+
+const fn psuedo_legal_attacks(sqbb: BitBoard) -> BitBoard {
+    let left = (sqbb.to_int() >> 1) & !File::H.mask().to_int();
+    let right = (sqbb.to_int() << 1) & !File::A.mask().to_int();
+    let middle_three = left | sqbb.to_int() | right;
+    BitBoard::new((middle_three >> 8) | (middle_three << 8) | (middle_three ^ sqbb.to_int()))
+}
+
 impl Square {
     /// King safety not considered.
     pub fn king_psuedo_legal_moves(self, game: &Game) -> Vec<Move> {
-        targets_to_moves(self.king_psuedo_legal_targets(game).targets, self, game)
+        self.lazy_king_pseudo_legal_moves(game).collect()
     }
 
     pub fn king_psuedo_legal_targets(self, game: &Game) -> PieceMoveInfo {
@@ -67,6 +85,57 @@ impl Square {
         }
 
         moveinfo
+    }
+
+    pub fn lazy_king_pseudo_legal_moves(self, game: &Game) -> impl Iterator<Item = Move> {
+        let color = game.turn;
+
+        let (enemy_occupied, castling_moves) = match color {
+            PieceColor::White => (
+                game.black_occupied,
+                [
+                    game.can_white_castle_queenside().then_some(Move::Castle {
+                        side: CastleSide::Queenside,
+                    }),
+                    game.can_white_castle_kingside().then_some(Move::Castle {
+                        side: CastleSide::Kingside,
+                    }),
+                ]
+                .into_iter()
+                .flatten(),
+            ),
+            PieceColor::Black => (
+                game.white_occupied,
+                [
+                    game.can_black_castle_queenside().then_some(Move::Castle {
+                        side: CastleSide::Queenside,
+                    }),
+                    game.can_black_castle_kingside().then_some(Move::Castle {
+                        side: CastleSide::Kingside,
+                    }),
+                ]
+                .into_iter()
+                .flatten(),
+            ),
+        };
+
+        let attacks = ATTACKS[self.index()];
+        let captures = attacks & enemy_occupied;
+        let walks = attacks & !game.occupied;
+
+        let capture_moves = captures.into_iter().map(move |sq| Move::Normal {
+            from: self,
+            to: sq,
+            capture: Some(unsafe { game.piece_lookup(sq).unwrap_unchecked().0 }),
+        });
+
+        let walk_moves = walks.into_iter().map(move |sq| Move::Normal {
+            from: self,
+            to: sq,
+            capture: None,
+        });
+
+        (castling_moves).chain(capture_moves).chain(walk_moves)
     }
 }
 

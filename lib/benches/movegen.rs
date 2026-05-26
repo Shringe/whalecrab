@@ -5,7 +5,7 @@ use whalecrab_lib::{
         moves::Move,
         pieces::{
             self,
-            piece::{ALL_PIECE_TYPES, PieceColor},
+            piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
         },
     },
     vectors::UnsafeVec,
