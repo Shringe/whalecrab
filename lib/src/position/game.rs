@@ -16,7 +16,7 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::{Move, UnsafeVec, lazy_attacks_to_moves},
+        moves::{Move, lazy_attacks_to_moves},
         pieces::{
             self,
             bishop::magic_bishop_attacks,
@@ -32,6 +32,7 @@ use crate::{
     },
     rank::Rank,
     square::Square,
+    vectors::{UnsafeVec, Vector},
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -753,12 +754,7 @@ impl Game {
         self.piece_table.get(sq)
     }
 
-    /// # Safety
-    /// `moves` must have enough capacity.
-    pub unsafe fn generate_grouped_psuedo_legal_white_pawn_moves(
-        &self,
-        moves: &mut UnsafeVec<Move>,
-    ) {
+    pub fn generate_grouped_psuedo_legal_white_pawn_moves<V: Vector<Move>>(&self, moves: &mut V) {
         let twice_mask = Rank::Fourth.mask();
         let promotion_mask = Rank::Eighth.mask();
         let unoccupied = !self.occupied;
@@ -792,16 +788,12 @@ impl Game {
                 to,
                 capture: None,
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for sq in twice {
             let m = Move::CreateEnPassant { at: sq.get_file() };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for sq in promotions {
@@ -812,9 +804,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: None,
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_right & !promotion_mask {
@@ -824,9 +814,7 @@ impl Game {
                 to,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_left & !promotion_mask {
@@ -836,9 +824,7 @@ impl Game {
                 to,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_right & promotion_mask {
@@ -849,9 +835,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_left & promotion_mask {
@@ -862,9 +846,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         if let Some(target) = self.en_passant_target {
@@ -875,9 +857,7 @@ impl Game {
                     let m = Move::CaptureEnPassant {
                         from: sq.get_file(),
                     };
-                    unsafe {
-                        moves.push_unchecked(m);
-                    }
+                    moves.push(m);
                 }
             };
             process_target(target.dleft());
@@ -885,12 +865,7 @@ impl Game {
         }
     }
 
-    /// # Safety
-    /// `moves` must have enough capacity.
-    pub unsafe fn generate_grouped_psuedo_legal_black_pawn_moves(
-        &self,
-        moves: &mut UnsafeVec<Move>,
-    ) {
+    pub fn generate_grouped_psuedo_legal_black_pawn_moves<V: Vector<Move>>(&self, moves: &mut V) {
         let twice_mask = Rank::Fifth.mask();
         let promotion_mask = Rank::First.mask();
         let unoccupied = !self.occupied;
@@ -922,16 +897,12 @@ impl Game {
                 to,
                 capture: None,
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for sq in twice {
             let m = Move::CreateEnPassant { at: sq.get_file() };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for sq in promotions {
@@ -942,9 +913,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: None,
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_right & !promotion_mask {
@@ -954,9 +923,7 @@ impl Game {
                 to,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_left & !promotion_mask {
@@ -966,9 +933,7 @@ impl Game {
                 to,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_right & promotion_mask {
@@ -979,9 +944,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         for to in capture_left & promotion_mask {
@@ -992,9 +955,7 @@ impl Game {
                 piece: PieceType::Queen,
                 capture: get_piece!(to),
             };
-            unsafe {
-                moves.push_unchecked(m);
-            }
+            moves.push(m);
         }
 
         if let Some(target) = self.en_passant_target {
@@ -1005,9 +966,7 @@ impl Game {
                     let m = Move::CaptureEnPassant {
                         from: sq.get_file(),
                     };
-                    unsafe {
-                        moves.push_unchecked(m);
-                    }
+                    moves.push(m);
                 }
             };
             process_target(target.uleft());
@@ -1115,12 +1074,13 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use crate::bitboard::{BitBoard, EMPTY};
-    use crate::movegen::moves::{Move, UnsafeVec};
+    use crate::movegen::moves::Move;
     use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::position::game::Game;
     use crate::position::game::{STARTING_FEN, State};
     use crate::square::Square;
     use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
+    use crate::vectors::UnsafeVec;
 
     #[test]
     fn white_gets_checkmated() {
@@ -1466,9 +1426,7 @@ mod tests {
         }
 
         let mut grouped = UnsafeVec::with_capacity(100);
-        unsafe {
-            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped);
-        }
+        game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped);
         let grouped = grouped.finish();
 
         println!(
@@ -1497,9 +1455,7 @@ mod tests {
         }
 
         let mut grouped = UnsafeVec::with_capacity(100);
-        unsafe {
-            game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped);
-        }
+        game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped);
         let grouped = grouped.finish();
 
         println!(

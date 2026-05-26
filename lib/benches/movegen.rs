@@ -1,8 +1,14 @@
 mod common;
 use criterion::Criterion;
-use whalecrab_lib::movegen::{
-    moves::Move,
-    pieces::piece::{ALL_PIECE_TYPES, PieceColor},
+use whalecrab_lib::{
+    movegen::{
+        moves::Move,
+        pieces::{
+            self,
+            piece::{ALL_PIECE_TYPES, PieceColor},
+        },
+    },
+    vectors::UnsafeVec,
 };
 
 macro_rules! bench_piece_method {
@@ -52,14 +58,11 @@ fn bench(c: &mut Criterion) {
     });
 
     c.bench_function("Generate grouped pawn moves", |b| {
-        let capacity = game.white_pawns.popcnt() * 4;
+        let capacity = game.white_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT;
         b.iter(|| {
-            let mut counter = 0;
-            let mut moves = Vec::with_capacity(capacity as usize);
-            unsafe {
-                game.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves, &mut counter);
-                moves.set_len(counter);
-            }
+            let mut moves = UnsafeVec::with_capacity(capacity as usize);
+            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves);
+            let _ = moves.finish();
         });
     });
 

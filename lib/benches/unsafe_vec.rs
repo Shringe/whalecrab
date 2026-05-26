@@ -1,7 +1,7 @@
 mod common;
 
 use criterion::Criterion;
-use whalecrab_lib::{movegen::moves::UnsafeVec, square::Square};
+use whalecrab_lib::{square::Square, vectors::UnsafeVec};
 
 fn bench(c: &mut Criterion) {
     let item = Square::E5;
