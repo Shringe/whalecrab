@@ -70,24 +70,25 @@ pub fn targets_to_moves(targets: BitBoard, from: Square, game: &Game) -> Vec<Mov
 /// capacity is fully known at runtime.
 /// This type should not be dropped without `UnsafeVec::finish()` being called first.
 #[derive(Debug)]
-pub(crate) struct UnsafeVec<T> {
+pub struct UnsafeVec<T> {
     list: Vec<T>,
     counter: usize,
 }
 
 impl<T> UnsafeVec<T> {
-    pub(crate) fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
             list: Vec::with_capacity(capacity),
             counter: 0,
         }
     }
 
-    /// # Safety: Don't push more items than capacity
-    pub(crate) unsafe fn push_unchecked(&mut self, item: T) {
+    /// # Safety
+    /// Don't push more items than the capacity
+    pub unsafe fn push_unchecked(&mut self, item: T) {
         debug_assert!(
             self.counter < self.list.capacity(),
-            "Tried to push too many items to an UnsafeList! Index: {:?}, Capacity: {:?}",
+            "Tried to push too many items to an UnsafeVec! Index: {:?}, Capacity: {:?}",
             self.counter,
             self.list.capacity()
         );
@@ -98,7 +99,7 @@ impl<T> UnsafeVec<T> {
         }
     }
 
-    pub(crate) fn finish(mut self) -> Vec<T> {
+    pub fn finish(mut self) -> Vec<T> {
         unsafe { self.list.set_len(self.counter) };
         self.list
     }

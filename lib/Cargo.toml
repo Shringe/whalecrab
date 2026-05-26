@@ -15,6 +15,10 @@ harness = false
 name = "piece_iteration"
 harness = false
 
+[[bench]]
+name = "unsafe_vec"
+harness = false
+
 [features]
 # TODO: remove default features
 default = ["rand"]
