@@ -77,4 +77,15 @@ mod tests {
         let actual = v;
         assert_eq!(actual, expected);
     }
+
+    fn push_to_vector<V: Vector<T>, T>(v: &mut V, item: T) {
+        v.push(item);
+    }
+
+    #[test]
+    fn vector_push_with_vec_is_not_recursive() {
+        let mut v = Vec::with_capacity(1);
+        push_to_vector(&mut v, 5u8);
+        assert_eq!(v, vec![5u8]);
+    }
 }
