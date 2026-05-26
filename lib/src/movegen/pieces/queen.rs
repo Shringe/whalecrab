@@ -1,16 +1,26 @@
 use crate::{
+    bitboard::BitBoard,
     movegen::{
-        moves::{Move, targets_to_moves},
-        pieces::piece::PieceMoveInfo,
+        moves::{Move, attacks_to_moves},
+        pieces::{bishop::magic_bishop_attacks, piece::PieceMoveInfo, rook::magic_rook_attacks},
     },
     position::game::Game,
     square::{ALL_DIRECTIONS, Square},
 };
 
+pub fn magic_queen_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
+    magic_rook_attacks(sq, occupied) | magic_bishop_attacks(sq, occupied)
+}
+
 impl Square {
+    pub fn queen_psuedo_legal_attacks(&self, game: &Game) -> BitBoard {
+        let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
+        let blockers = game.occupied ^ *game.get_king(color.opponent());
+        magic_queen_attacks(*self, blockers)
+    }
+
     pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        // TODO: Implement magics
-        targets_to_moves(self.queen_psuedo_legal_targets(game).targets, *self, game)
+        attacks_to_moves(self.queen_psuedo_legal_attacks(game), *self, game)
     }
 
     pub fn queen_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {

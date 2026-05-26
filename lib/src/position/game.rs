@@ -18,7 +18,9 @@ use crate::{
     movegen::{
         moves::{Move, lazy_attacks_to_moves},
         pieces::{
+            bishop::magic_bishop_attacks,
             piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
+            queen::magic_queen_attacks,
             rook::magic_rook_attacks,
         },
     },
@@ -1063,9 +1065,9 @@ impl Game {
                         );
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
-                    push_moves!(moves, PieceType::Bishop, self.white_bishops);
+                    push_moves2!(moves, self.white_bishops, magic_bishop_attacks, kingless_bb);
                     push_moves2!(moves, self.white_rooks, magic_rook_attacks, kingless_bb);
-                    push_moves!(moves, PieceType::Queen, self.white_queens);
+                    push_moves2!(moves, self.white_queens, magic_queen_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.white_kings);
                     moves.set_len(counter);
                 }
@@ -1090,9 +1092,9 @@ impl Game {
                         );
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
-                    push_moves!(moves, PieceType::Bishop, self.black_bishops);
+                    push_moves2!(moves, self.black_bishops, magic_bishop_attacks, kingless_bb);
                     push_moves2!(moves, self.black_rooks, magic_rook_attacks, kingless_bb);
-                    push_moves!(moves, PieceType::Queen, self.black_queens);
+                    push_moves2!(moves, self.black_queens, magic_queen_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.black_kings);
                     moves.set_len(counter);
                 }
