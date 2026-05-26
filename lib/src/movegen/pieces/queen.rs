@@ -8,6 +8,8 @@ use crate::{
     square::{ALL_DIRECTIONS, Square},
 };
 
+pub const MAXIMUM_MOVE_COUNT: u32 = 27;
+
 pub fn magic_queen_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
     magic_rook_attacks(sq, occupied) | magic_bishop_attacks(sq, occupied)
 }

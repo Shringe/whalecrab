@@ -16,8 +16,9 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::{Move, lazy_attacks_to_moves},
+        moves::{Move, UnsafeVec, lazy_attacks_to_moves},
         pieces::{
+            self,
             bishop::magic_bishop_attacks,
             piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
             queen::magic_queen_attacks,
@@ -753,12 +754,10 @@ impl Game {
     }
 
     /// # Safety
-    /// The counter must be set to the current length of `moves`, `moves` must have
-    /// enough capacity, and `moves.set_len(counter)` must be called after.
+    /// `moves` must have enough capacity.
     pub unsafe fn generate_grouped_psuedo_legal_white_pawn_moves(
         &self,
-        moves: &mut Vec<Move>,
-        counter: &mut usize,
+        moves: &mut UnsafeVec<Move>,
     ) {
         let twice_mask = Rank::Fourth.mask();
         let promotion_mask = Rank::Eighth.mask();
@@ -794,14 +793,14 @@ impl Game {
                 capture: None,
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
         for sq in twice {
             let m = Move::CreateEnPassant { at: sq.get_file() };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -814,7 +813,7 @@ impl Game {
                 capture: None,
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -826,7 +825,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -838,7 +837,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -851,7 +850,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -864,7 +863,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -877,7 +876,7 @@ impl Game {
                         from: sq.get_file(),
                     };
                     unsafe {
-                        push_move_unchecked(moves, m, counter);
+                        moves.push_unchecked(m);
                     }
                 }
             };
@@ -887,12 +886,10 @@ impl Game {
     }
 
     /// # Safety
-    /// The counter must be set to the current length of `moves`, `moves` must have
-    /// enough capacity, and `moves.set_len(counter)` must be called after.
+    /// `moves` must have enough capacity.
     pub unsafe fn generate_grouped_psuedo_legal_black_pawn_moves(
         &self,
-        moves: &mut Vec<Move>,
-        counter: &mut usize,
+        moves: &mut UnsafeVec<Move>,
     ) {
         let twice_mask = Rank::Fifth.mask();
         let promotion_mask = Rank::First.mask();
@@ -926,14 +923,14 @@ impl Game {
                 capture: None,
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
         for sq in twice {
             let m = Move::CreateEnPassant { at: sq.get_file() };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -946,7 +943,7 @@ impl Game {
                 capture: None,
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -958,7 +955,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -970,7 +967,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -983,7 +980,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -996,7 +993,7 @@ impl Game {
                 capture: get_piece!(to),
             };
             unsafe {
-                push_move_unchecked(moves, m, counter);
+                moves.push_unchecked(m);
             }
         }
 
@@ -1009,7 +1006,7 @@ impl Game {
                         from: sq.get_file(),
                     };
                     unsafe {
-                        push_move_unchecked(moves, m, counter);
+                        moves.push_unchecked(m);
                     }
                 }
             };
@@ -1018,16 +1015,33 @@ impl Game {
         }
     }
 
+    pub const fn maximum_white_move_count(&self) -> u32 {
+        self.white_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT
+            + self.white_knights.popcnt() * pieces::knight::MAXIMUM_MOVE_COUNT
+            + self.white_bishops.popcnt() * pieces::bishop::MAXIMUM_MOVE_COUNT
+            + self.white_rooks.popcnt() * pieces::rook::MAXIMUM_MOVE_COUNT
+            + self.white_queens.popcnt() * pieces::queen::MAXIMUM_MOVE_COUNT
+            + self.white_kings.popcnt() * pieces::king::MAXIMUM_MOVE_COUNT
+    }
+
+    pub const fn maximum_black_move_count(&self) -> u32 {
+        self.black_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT
+            + self.black_knights.popcnt() * pieces::knight::MAXIMUM_MOVE_COUNT
+            + self.black_bishops.popcnt() * pieces::bishop::MAXIMUM_MOVE_COUNT
+            + self.black_rooks.popcnt() * pieces::rook::MAXIMUM_MOVE_COUNT
+            + self.black_queens.popcnt() * pieces::queen::MAXIMUM_MOVE_COUNT
+            + self.black_kings.popcnt() * pieces::king::MAXIMUM_MOVE_COUNT
+    }
+
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
-        let mut counter = 0;
         macro_rules! push_moves {
             ($moves:expr, $piece:expr, $board:expr) => {
                 for sq in $board {
                     let moveinfo = $piece.psuedo_legal_targets_fast(self, &sq);
                     for t in moveinfo.targets {
                         let m = Move::infer(sq, t, self);
-                        push_move_unchecked(&mut $moves, m, &mut counter);
+                        $moves.push_unchecked(m);
                     }
                 }
             };
@@ -1037,7 +1051,7 @@ impl Game {
             ($moves:expr, $board:expr, $attacks:ident, $kingless:expr) => {
                 for sq in $board {
                     for m in lazy_attacks_to_moves($attacks(sq, $kingless), sq, self) {
-                        push_move_unchecked(&mut $moves, m, &mut counter);
+                        $moves.push_unchecked(m);
                     }
                 }
             };
@@ -1045,60 +1059,34 @@ impl Game {
 
         match self.turn {
             PieceColor::White => {
-                let num_pawns = self.white_pawns.popcnt() as usize;
-                let maximum_move_count = num_pawns * 4
-                    + self.white_knights.popcnt() as usize * 8
-                    + self.white_bishops.popcnt() as usize * 13
-                    + self.white_rooks.popcnt() as usize * 14
-                    + self.white_queens.popcnt() as usize * 27
-                    + self.white_kings.popcnt() as usize * 8;
-                let capacity = maximum_move_count;
-                let kingless_bb = self.occupied ^ self.white_kings;
-                let mut moves = Vec::with_capacity(capacity);
+                let kingless_bb = self.occupied ^ self.black_kings;
+                let mut moves = UnsafeVec::with_capacity(self.maximum_white_move_count() as usize);
                 unsafe {
-                    // Generating grouped pawn moves when there are no pawns
-                    // can be slow
-                    if num_pawns != 0 {
-                        self.generate_grouped_psuedo_legal_white_pawn_moves(
-                            &mut moves,
-                            &mut counter,
-                        );
+                    if self.white_pawns != EMPTY {
+                        self.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves);
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
                     push_moves2!(moves, self.white_bishops, magic_bishop_attacks, kingless_bb);
                     push_moves2!(moves, self.white_rooks, magic_rook_attacks, kingless_bb);
                     push_moves2!(moves, self.white_queens, magic_queen_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.white_kings);
-                    moves.set_len(counter);
                 }
-                moves
+                moves.finish()
             }
             PieceColor::Black => {
-                let num_pawns = self.black_pawns.popcnt() as usize;
-                let maximum_move_count = num_pawns * 4
-                    + self.black_knights.popcnt() as usize * 8
-                    + self.black_bishops.popcnt() as usize * 13
-                    + self.black_rooks.popcnt() as usize * 14
-                    + self.black_queens.popcnt() as usize * 27
-                    + self.black_kings.popcnt() as usize * 8;
-                let capacity = maximum_move_count;
                 let kingless_bb = self.occupied ^ self.white_kings;
-                let mut moves = Vec::with_capacity(capacity);
+                let mut moves = UnsafeVec::with_capacity(self.maximum_black_move_count() as usize);
                 unsafe {
-                    if num_pawns != 0 {
-                        self.generate_grouped_psuedo_legal_black_pawn_moves(
-                            &mut moves,
-                            &mut counter,
-                        );
+                    if self.black_pawns != EMPTY {
+                        self.generate_grouped_psuedo_legal_black_pawn_moves(&mut moves);
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
                     push_moves2!(moves, self.black_bishops, magic_bishop_attacks, kingless_bb);
                     push_moves2!(moves, self.black_rooks, magic_rook_attacks, kingless_bb);
                     push_moves2!(moves, self.black_queens, magic_queen_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.black_kings);
-                    moves.set_len(counter);
                 }
-                moves
+                moves.finish()
             }
         }
     }
@@ -1124,25 +1112,10 @@ impl Game {
     }
 }
 
-#[inline(always)]
-unsafe fn push_move_unchecked(moves: &mut Vec<Move>, m: Move, counter: &mut usize) {
-    debug_assert!(
-        *counter < moves.capacity(),
-        "{:?}, {:?}",
-        counter,
-        moves.capacity()
-    );
-    debug_assert_ne!(*counter, usize::MAX);
-    unsafe {
-        moves.as_mut_ptr().add(*counter).write(m);
-        *counter = counter.unchecked_add(1);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::bitboard::{BitBoard, EMPTY};
-    use crate::movegen::moves::Move;
+    use crate::movegen::moves::{Move, UnsafeVec};
     use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::position::game::Game;
     use crate::position::game::{STARTING_FEN, State};
@@ -1492,12 +1465,11 @@ mod tests {
             }
         }
 
-        let mut counter = 0;
-        let mut grouped = Vec::with_capacity(100);
+        let mut grouped = UnsafeVec::with_capacity(100);
         unsafe {
-            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped, &mut counter);
-            grouped.set_len(counter);
+            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped);
         }
+        let grouped = grouped.finish();
 
         println!(
             "\nGrouped: {}\nIndividual: {}",
@@ -1524,12 +1496,11 @@ mod tests {
             }
         }
 
-        let mut counter = 0;
-        let mut grouped = Vec::with_capacity(100);
+        let mut grouped = UnsafeVec::with_capacity(100);
         unsafe {
-            game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped, &mut counter);
-            grouped.set_len(counter);
+            game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped);
         }
+        let grouped = grouped.finish();
 
         println!(
             "\nGrouped: {}\nIndividual: {}",

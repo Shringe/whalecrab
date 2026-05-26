@@ -9,6 +9,8 @@ use crate::{
 
 use super::piece::PieceMoveInfo;
 
+pub const MAXIMUM_MOVE_COUNT: u32 = 13;
+
 pub const DIRECTIONS: [Direction; 4] = [
     Direction::NorthEast,
     Direction::SouthEast,

@@ -1,13 +1,15 @@
 use crate::{
     bitboard::BitBoard,
     file::File,
-    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::PieceMoveInfo,
     },
+    position::game::Game,
     square::Square,
 };
+
+pub const MAXIMUM_MOVE_COUNT: u32 = 8;
 
 impl Square {
     pub fn knight_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {

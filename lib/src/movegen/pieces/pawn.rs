@@ -1,11 +1,11 @@
 use crate::{
     bitboard::BitBoard,
     file::File,
-    position::game::Game,
     movegen::{
         moves::{Move, targets_to_moves},
         pieces::piece::{PieceColor, PieceMoveInfo},
     },
+    position::game::Game,
     rank::Rank,
     square::Square,
 };
@@ -23,6 +23,8 @@ macro_rules! assert_shift {
         }
     };
 }
+
+pub const MAXIMUM_MOVE_COUNT: u32 = 4;
 
 impl Square {
     /// Generates all psuedo legal moves for a single pawn

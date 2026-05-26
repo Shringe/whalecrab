@@ -12,6 +12,8 @@ use crate::{
 
 use super::piece::PieceMoveInfo;
 
+pub const MAXIMUM_MOVE_COUNT: u32 = 8;
+
 impl Square {
     /// King safety not considered.
     pub fn king_psuedo_legal_moves(self, game: &Game) -> Vec<Move> {

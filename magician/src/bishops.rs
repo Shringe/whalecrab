@@ -4,6 +4,8 @@ use whalecrab_lib::{bitboard::BitBoard, position::generator::GameGenerator, squa
 
 use crate::{BitRange, generate_blockers_and_attackers, next_magic, validate_magic};
 
+pub const MAXIMUM_MOVE_COUNT: u32 = 13;
+
 pub fn generate_bishop_blockers_and_attackers(
     sq: Square,
     mask: u64,
