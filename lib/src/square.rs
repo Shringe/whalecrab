@@ -1,4 +1,5 @@
 use std::fmt::{self, Display};
+use std::hint::assert_unchecked;
 use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
@@ -156,20 +157,23 @@ impl Square {
     pub const ALL_SQUARES: [Square; 64] = Square::all_squares();
 
     pub const fn new(sq: u8) -> Square {
-        Square(sq & 63)
+        unsafe { Square::new_unchecked(sq & 63) }
     }
 
     /// # Safety
     /// `sq` should be less than 64
     pub const unsafe fn new_unchecked(sq: u8) -> Square {
+        unsafe { assert_unchecked(sq < 64) };
         Square(sq)
     }
 
     pub const fn to_int(&self) -> u8 {
+        unsafe { assert_unchecked(self.0 < 64) };
         self.0
     }
 
     pub const fn index(self) -> usize {
+        unsafe { assert_unchecked(self.0 < 64) };
         self.0 as usize
     }
 
@@ -182,12 +186,12 @@ impl Square {
     }
 
     pub fn make_square(rank: Rank, file: File) -> Square {
-        Square(((rank.to_index() as u8) << 3) ^ (file.to_index() as u8))
+        unsafe { Square::new_unchecked(((rank.to_int()) << 3) ^ (file.to_int())) }
     }
 
     /// Flips the side of the square for the opposite color
     pub const fn flip_side(&self) -> Square {
-        Square::new(self.0 ^ 56)
+        unsafe { Square::new_unchecked(self.0 ^ 56) }
     }
 
     /// # Safety

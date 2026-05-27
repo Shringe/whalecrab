@@ -83,8 +83,8 @@ impl PieceTable {
     }
 
     pub const fn get(&self, sq: Square) -> Option<(PieceType, PieceColor)> {
-        let index = sq.to_int();
-        let entry = &self.0[(index >> 1) as usize];
+        let index = sq.index();
+        let entry = &self.0[index >> 1];
         if index & 1 == 0 {
             entry.first()
         } else {
@@ -93,8 +93,8 @@ impl PieceTable {
     }
 
     pub const fn set(&mut self, sq: Square, val: Option<(PieceType, PieceColor)>) {
-        let index = sq.to_int();
-        let entry = &mut self.0[(index >> 1) as usize];
+        let index = sq.index();
+        let entry = &mut self.0[index >> 1];
         if index & 1 == 0 {
             entry.set_first(val);
         } else {

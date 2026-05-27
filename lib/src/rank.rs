@@ -18,7 +18,7 @@ pub enum Rank {
 
 impl fmt::Display for Rank {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_index() + 1)
+        write!(f, "{}", self.index() + 1)
     }
 }
 
@@ -83,19 +83,19 @@ impl Rank {
     /// Go one rank down.  If impossible, wrap around.
     #[inline]
     pub fn down(&self) -> Rank {
-        Rank::from_index(self.to_index().wrapping_sub(1))
+        Rank::from_index(self.index().wrapping_sub(1))
     }
 
     /// Go one file up.  If impossible, wrap around.
     #[inline]
     pub fn up(&self) -> Rank {
-        Rank::from_index(self.to_index() + 1)
+        Rank::from_index(self.index() + 1)
     }
 
     /// Convert this `Rank` into a `usize` between 0 and 7 (inclusive).
     #[inline]
-    pub fn to_index(&self) -> usize {
-        *self as usize
+    pub fn index(self) -> usize {
+        self as usize
     }
 }
 

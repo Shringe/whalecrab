@@ -89,20 +89,20 @@ impl File {
 
     /// Go one file to the left.  If impossible, wrap around.
     #[inline]
-    pub fn left(&self) -> File {
-        File::from_index(self.to_index().wrapping_sub(1))
+    pub fn left(self) -> File {
+        File::from_index(self.index().wrapping_sub(1))
     }
 
     /// Go one file to the right.  If impossible, wrap around.
     #[inline]
-    pub fn right(&self) -> File {
-        File::from_index(self.to_index() + 1)
+    pub fn right(self) -> File {
+        File::from_index(self.index() + 1)
     }
 
     /// Convert this `File` into a `usize` from 0 to 7 inclusive.
     #[inline]
-    pub fn to_index(&self) -> usize {
-        *self as usize
+    pub fn index(self) -> usize {
+        self as usize
     }
 }
 

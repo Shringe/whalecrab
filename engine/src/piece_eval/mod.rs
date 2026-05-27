@@ -27,7 +27,7 @@ pub fn square_value(piece_type: PieceType, sq: Square, color: PieceColor, ratio:
         PieceColor::White => sq,
         PieceColor::Black => sq.flip_side(),
     }
-    .to_int() as usize;
+    .index();
 
     let (midgame, endgame) = unsafe {
         match piece_type {
