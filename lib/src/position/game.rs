@@ -16,11 +16,10 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::{Move, lazy_attacks_to_moves},
+        moves::{Move, push_attacks_to_moves_with_occupied},
         pieces::{
             self,
             bishop::{self},
-            king, knight, pawn,
             piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
             queen::{self},
             rook::{self},
@@ -1032,11 +1031,15 @@ impl Game {
         }
 
         macro_rules! push_moves2 {
-            ($moves:expr, $board:expr, $attacks:expr, $kingless:expr) => {
+            ($moves:expr, $board:expr, $attacks:expr, $kingless:expr, $occupied:expr) => {
                 for sq in $board {
-                    for m in lazy_attacks_to_moves($attacks(sq, $kingless), sq, self) {
-                        $moves.push_unchecked(m);
-                    }
+                    push_attacks_to_moves_with_occupied(
+                        &mut $moves,
+                        $attacks(sq, $kingless),
+                        sq,
+                        self,
+                        $occupied,
+                    );
                 }
             };
         }
@@ -1044,6 +1047,7 @@ impl Game {
         match self.turn {
             PieceColor::White => {
                 let kingless_bb = self.occupied ^ self.black_kings;
+                let enemy_occupied = self.black_occupied;
                 let mut moves = UnsafeVec::with_capacity(self.maximum_white_move_count() as usize);
                 unsafe {
                     if self.white_pawns != EMPTY {
@@ -1054,16 +1058,30 @@ impl Game {
                         moves,
                         self.white_bishops,
                         bishop::magic_attacks,
-                        kingless_bb
+                        kingless_bb,
+                        enemy_occupied
                     );
-                    push_moves2!(moves, self.white_rooks, rook::magic_attacks, kingless_bb);
-                    push_moves2!(moves, self.white_queens, queen::magic_attacks, kingless_bb);
+                    push_moves2!(
+                        moves,
+                        self.white_rooks,
+                        rook::magic_attacks,
+                        kingless_bb,
+                        enemy_occupied
+                    );
+                    push_moves2!(
+                        moves,
+                        self.white_queens,
+                        queen::magic_attacks,
+                        kingless_bb,
+                        enemy_occupied
+                    );
                     push_moves!(moves, PieceType::King, self.white_kings);
                 }
                 moves.finish()
             }
             PieceColor::Black => {
                 let kingless_bb = self.occupied ^ self.white_kings;
+                let enemy_occupied = self.white_occupied;
                 let mut moves = UnsafeVec::with_capacity(self.maximum_black_move_count() as usize);
                 unsafe {
                     if self.black_pawns != EMPTY {
@@ -1074,10 +1092,23 @@ impl Game {
                         moves,
                         self.black_bishops,
                         bishop::magic_attacks,
-                        kingless_bb
+                        kingless_bb,
+                        enemy_occupied
                     );
-                    push_moves2!(moves, self.black_rooks, rook::magic_attacks, kingless_bb);
-                    push_moves2!(moves, self.black_queens, queen::magic_attacks, kingless_bb);
+                    push_moves2!(
+                        moves,
+                        self.black_rooks,
+                        rook::magic_attacks,
+                        kingless_bb,
+                        enemy_occupied
+                    );
+                    push_moves2!(
+                        moves,
+                        self.black_queens,
+                        queen::magic_attacks,
+                        kingless_bb,
+                        enemy_occupied
+                    );
                     push_moves!(moves, PieceType::King, self.black_kings);
                 }
                 moves.finish()

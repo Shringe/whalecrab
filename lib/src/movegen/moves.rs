@@ -4,10 +4,13 @@ use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
     movegen::pieces::piece::{PieceColor, PieceType},
-    position::castling::{self, CastleSide},
-    position::game::Game,
+    position::{
+        castling::{self, CastleSide},
+        game::Game,
+    },
     rank::Rank,
     square::{Square, SquareParseError},
+    vectors::Vector,
 };
 
 /// Converts a vector of moves to a vector of targets
@@ -20,6 +23,47 @@ pub fn moves_to_targets(moves: &[Move], game: &Game) -> BitBoard {
     let mut out = EMPTY;
     moves.iter().for_each(|m| out.set(m.to(game)));
     out
+}
+
+pub fn push_attacks_to_moves_with_occupied<V: Vector<Move>>(
+    moves: &mut V,
+    attacks: BitBoard,
+    from: Square,
+    game: &Game,
+    enemy_occupied: BitBoard,
+) {
+    let walks = attacks & !game.occupied;
+    for sq in walks {
+        moves.push(Move::Normal {
+            from,
+            to: sq,
+            capture: None,
+        });
+    }
+
+    let captures = attacks & enemy_occupied;
+    for sq in captures {
+        moves.push(Move::Normal {
+            from,
+            to: sq,
+            capture: Some(unsafe { game.piece_lookup(sq).unwrap_unchecked().0 }),
+        });
+    }
+}
+
+pub fn push_attacks_to_moves<V: Vector<Move>>(
+    moves: &mut V,
+    attacks: BitBoard,
+    from: Square,
+    game: &Game,
+) {
+    push_attacks_to_moves_with_occupied(
+        moves,
+        attacks,
+        from,
+        game,
+        *game.get_occupied(&game.turn.opponent()),
+    );
 }
 
 pub fn lazy_attacks_to_moves(
