@@ -18,7 +18,7 @@ pub const DIRECTIONS: [Direction; 4] = [
     Direction::SouthWest,
 ];
 
-pub fn magic_bishop_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
+pub fn magic_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
     let bishop = &magics::bishops::BISHOPS[sq.index()];
     let key = (((occupied.to_int() & bishop.mask).wrapping_mul(bishop.magic))
         >> (magics::bishops::SHIFT as u64)) as usize;
@@ -29,7 +29,7 @@ impl Square {
     pub fn bishop_psuedo_legal_attacks(&self, game: &Game) -> BitBoard {
         let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
         let blockers = game.occupied ^ *game.get_king(color.opponent());
-        magic_bishop_attacks(*self, blockers)
+        magic_attacks(*self, blockers)
     }
 
     pub fn bishop_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {

@@ -2,7 +2,7 @@ use crate::{
     bitboard::BitBoard,
     movegen::{
         moves::{Move, attacks_to_moves},
-        pieces::{bishop::magic_bishop_attacks, piece::PieceMoveInfo, rook::magic_rook_attacks},
+        pieces::{bishop, piece::PieceMoveInfo, rook},
     },
     position::game::Game,
     square::{ALL_DIRECTIONS, Square},
@@ -10,15 +10,15 @@ use crate::{
 
 pub const MAXIMUM_MOVE_COUNT: u32 = 27;
 
-pub fn magic_queen_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
-    magic_rook_attacks(sq, occupied) | magic_bishop_attacks(sq, occupied)
+pub fn magic_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
+    bishop::magic_attacks(sq, occupied) | rook::magic_attacks(sq, occupied)
 }
 
 impl Square {
     pub fn queen_psuedo_legal_attacks(&self, game: &Game) -> BitBoard {
         let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
         let blockers = game.occupied ^ *game.get_king(color.opponent());
-        magic_queen_attacks(*self, blockers)
+        magic_attacks(*self, blockers)
     }
 
     pub fn queen_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {

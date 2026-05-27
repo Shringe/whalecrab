@@ -18,7 +18,7 @@ pub const DIRECTIONS: [Direction; 4] = [
     Direction::West,
 ];
 
-pub fn magic_rook_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
+pub fn magic_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
     let rook = &magics::rooks::ROOKS[sq.index()];
     let key = (((occupied.to_int() & rook.mask).wrapping_mul(rook.magic))
         >> (magics::rooks::SHIFT as u64)) as usize;
@@ -29,7 +29,7 @@ impl Square {
     pub fn rook_psuedo_legal_attacks(&self, game: &Game) -> BitBoard {
         let color = game.piece_lookup(*self).map(|p| p.1).unwrap_or(game.turn);
         let blockers = game.occupied ^ *game.get_king(color.opponent());
-        magic_rook_attacks(*self, blockers)
+        magic_attacks(*self, blockers)
     }
 
     pub fn rook_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {

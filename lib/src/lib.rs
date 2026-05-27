@@ -8,4 +8,3 @@ pub mod square;
 pub mod test_utils;
 pub mod utils;
 pub mod vectors;
-

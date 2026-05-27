@@ -19,10 +19,11 @@ use crate::{
         moves::{Move, lazy_attacks_to_moves},
         pieces::{
             self,
-            bishop::magic_bishop_attacks,
+            bishop::{self},
+            king, knight, pawn,
             piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
-            queen::magic_queen_attacks,
-            rook::magic_rook_attacks,
+            queen::{self},
+            rook::{self},
         },
     },
     position::{
@@ -1031,7 +1032,7 @@ impl Game {
         }
 
         macro_rules! push_moves2 {
-            ($moves:expr, $board:expr, $attacks:ident, $kingless:expr) => {
+            ($moves:expr, $board:expr, $attacks:expr, $kingless:expr) => {
                 for sq in $board {
                     for m in lazy_attacks_to_moves($attacks(sq, $kingless), sq, self) {
                         $moves.push_unchecked(m);
@@ -1049,9 +1050,14 @@ impl Game {
                         self.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves);
                     }
                     push_moves!(moves, PieceType::Knight, self.white_knights);
-                    push_moves2!(moves, self.white_bishops, magic_bishop_attacks, kingless_bb);
-                    push_moves2!(moves, self.white_rooks, magic_rook_attacks, kingless_bb);
-                    push_moves2!(moves, self.white_queens, magic_queen_attacks, kingless_bb);
+                    push_moves2!(
+                        moves,
+                        self.white_bishops,
+                        bishop::magic_attacks,
+                        kingless_bb
+                    );
+                    push_moves2!(moves, self.white_rooks, rook::magic_attacks, kingless_bb);
+                    push_moves2!(moves, self.white_queens, queen::magic_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.white_kings);
                 }
                 moves.finish()
@@ -1064,9 +1070,14 @@ impl Game {
                         self.generate_grouped_psuedo_legal_black_pawn_moves(&mut moves);
                     }
                     push_moves!(moves, PieceType::Knight, self.black_knights);
-                    push_moves2!(moves, self.black_bishops, magic_bishop_attacks, kingless_bb);
-                    push_moves2!(moves, self.black_rooks, magic_rook_attacks, kingless_bb);
-                    push_moves2!(moves, self.black_queens, magic_queen_attacks, kingless_bb);
+                    push_moves2!(
+                        moves,
+                        self.black_bishops,
+                        bishop::magic_attacks,
+                        kingless_bb
+                    );
+                    push_moves2!(moves, self.black_rooks, rook::magic_attacks, kingless_bb);
+                    push_moves2!(moves, self.black_queens, queen::magic_attacks, kingless_bb);
                     push_moves!(moves, PieceType::King, self.black_kings);
                 }
                 moves.finish()
