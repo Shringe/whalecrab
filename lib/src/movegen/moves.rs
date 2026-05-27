@@ -27,22 +27,21 @@ pub fn lazy_attacks_to_moves(
     from: Square,
     game: &Game,
 ) -> impl Iterator<Item = Move> {
-    let enemy_color = game.turn.opponent();
-    attacks
-        .into_iter()
-        .filter_map(move |sq| match game.piece_lookup(sq) {
-            None => Some(Move::Normal {
-                from,
-                to: sq,
-                capture: None,
-            }),
-            Some((piece, color)) if color == enemy_color => Some(Move::Normal {
-                from,
-                to: sq,
-                capture: Some(piece),
-            }),
-            Some(_) => None,
-        })
+    let walks = attacks & !game.occupied;
+    let walk_moves = walks.map(move |sq| Move::Normal {
+        from,
+        to: sq,
+        capture: None,
+    });
+
+    let captures = attacks & *game.get_occupied(&game.turn.opponent());
+    let capture_moves = captures.map(move |sq| Move::Normal {
+        from,
+        to: sq,
+        capture: Some(unsafe { game.piece_lookup(sq).unwrap_unchecked().0 }),
+    });
+
+    walk_moves.chain(capture_moves)
 }
 
 // Converts a BitBoard of attacks into  vector of moves
