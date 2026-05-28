@@ -50,6 +50,10 @@ impl<T> UnsafeVec<T> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.counter = 0;
+    }
+
     pub fn finish(mut self) -> Vec<T> {
         unsafe { self.list.set_len(self.counter) };
         self.list

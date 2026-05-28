@@ -8,6 +8,10 @@ name = "movegen"
 harness = false
 
 [[bench]]
+name = "movegen2"
+harness = false
+
+[[bench]]
 name = "movemaking"
 harness = false
 
