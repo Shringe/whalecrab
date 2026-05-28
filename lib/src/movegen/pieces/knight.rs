@@ -18,13 +18,13 @@ static ATTACKS: [BitBoard; 64] = {
     while n < 64 {
         let sq = Square::new(n);
         let sqbb = BitBoard::from_square(sq);
-        table[sq.index()] = pseudo_legal_attacks(sqbb);
+        table[sq.index()] = psuedo_legal_attacks(sqbb);
         n += 1;
     }
     table
 };
 
-const fn pseudo_legal_attacks(sqbb: BitBoard) -> BitBoard {
+const fn psuedo_legal_attacks(sqbb: BitBoard) -> BitBoard {
     let bb = sqbb.to_int();
 
     let not_a = !File::A.mask().to_int();

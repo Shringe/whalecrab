@@ -88,7 +88,7 @@ pub fn attacks(sq: Square) -> BitBoard {
 impl Square {
     /// King safety not considered.
     pub fn king_psuedo_legal_moves(self, game: &Game) -> Vec<Move> {
-        self.lazy_king_pseudo_legal_moves(game).collect()
+        self.lazy_king_psuedo_legal_moves(game).collect()
     }
 
     pub fn king_psuedo_legal_targets(self, game: &Game) -> PieceMoveInfo {
@@ -140,7 +140,7 @@ impl Square {
         moveinfo
     }
 
-    pub fn lazy_king_pseudo_legal_moves(self, game: &Game) -> impl Iterator<Item = Move> {
+    pub fn lazy_king_psuedo_legal_moves(self, game: &Game) -> impl Iterator<Item = Move> {
         let color = game.turn;
 
         let (enemy_occupied, castling_moves) = match color {
