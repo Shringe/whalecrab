@@ -1,4 +1,4 @@
-use std::{hint::assert_unchecked, mem::MaybeUninit};
+use std::hint::assert_unchecked;
 
 pub trait Vector<T> {
     #[allow(unused)]
@@ -11,43 +11,79 @@ impl<T> Vector<T> for Vec<T> {
     }
 }
 
-pub struct ArrayVec<T, const N: usize> {
-    list: [MaybeUninit<T>; N],
+pub struct ArrayVec<T: Copy, const N: usize> {
+    list: [T; N],
     counter: usize,
 }
 
-impl<T, const N: usize> Vector<T> for ArrayVec<T, N> {
+impl<T: Copy, const N: usize> Vector<T> for ArrayVec<T, N> {
     fn push(&mut self, item: T) {
         debug_assert!(self.counter < N, "ArrayVec overflow: capacity is {N}");
         unsafe { assert_unchecked(self.counter < N) };
-        self.list[self.counter].write(item);
+        self.list[self.counter] = item;
         self.counter += 1;
     }
 }
 
-impl<T, const N: usize> Default for ArrayVec<T, N> {
+impl<T: Copy, const N: usize> Default for ArrayVec<T, N> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T, const N: usize> ArrayVec<T, N> {
+impl<T: Copy, const N: usize> ArrayVec<T, N> {
     pub const fn new() -> Self {
         Self {
-            list: unsafe { MaybeUninit::uninit().assume_init() },
+            list: unsafe { std::mem::zeroed() },
             counter: 0,
         }
     }
 
     pub fn as_slice(&self) -> &[T] {
-        unsafe { std::slice::from_raw_parts(self.list.as_ptr() as *const T, self.counter) }
+        &self.list[..self.counter]
+    }
+
+    pub fn finish(self) -> [Option<T>; N] {
+        unsafe { assert_unchecked(self.counter < N) };
+        let mut out = [None; N];
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..self.counter {
+            out[i] = Some(self.list[i]);
+        }
+        out
     }
 
     pub fn first(&self) -> Option<T> {
+        unsafe { assert_unchecked(self.counter < N) };
         if self.counter == 0 {
             None
         } else {
-            unsafe { Some(self.list.get_unchecked(0).assume_init_read()) }
+            Some(self.list[0])
+        }
+    }
+}
+
+impl<T: Copy, const N: usize> IntoIterator for ArrayVec<T, N> {
+    type Item = T;
+    type IntoIter = ArrayVecIter<T, N>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ArrayVecIter(self)
+    }
+}
+
+pub struct ArrayVecIter<T: Copy, const N: usize>(ArrayVec<T, N>);
+
+impl<T: Copy, const N: usize> Iterator for ArrayVecIter<T, N> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<T> {
+        unsafe { assert_unchecked(self.0.counter < N) };
+        if self.0.counter == 0 {
+            None
+        } else {
+            self.0.counter -= 1;
+            Some(self.0.list[self.0.counter])
         }
     }
 }

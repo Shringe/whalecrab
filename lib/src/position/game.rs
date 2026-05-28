@@ -797,6 +797,74 @@ impl Game {
             + self.black_kings.popcnt() * pieces::king::MAXIMUM_MOVE_COUNT
     }
 
+    pub fn lazy_psuedo_legal_moves_white(&self) -> impl Iterator<Item = Move> {
+        let enemy_occupied = self.black_occupied;
+        let kingless_bb = self.occupied ^ self.black_kings;
+
+        self.white_knights
+            .into_iter()
+            .flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(knight::attacks(sq), sq, self, enemy_occupied)
+            })
+            .chain(self.white_kings.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(king::attacks(sq), sq, self, enemy_occupied)
+            }))
+            .chain(self.white_bishops.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    bishop::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(self.white_rooks.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    rook::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(self.white_queens.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    queen::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(
+                std::iter::once_with(move || {
+                    self.can_white_castle_kingside().then_some(Move::Castle {
+                        side: CastleSide::Kingside,
+                    })
+                })
+                .flatten(),
+            )
+            .chain(
+                std::iter::once_with(move || {
+                    self.can_white_castle_queenside().then_some(Move::Castle {
+                        side: CastleSide::Queenside,
+                    })
+                })
+                .flatten(),
+            )
+            .chain(
+                (self.white_pawns != EMPTY)
+                    .then(move || {
+                        let mut moves = ArrayVec::<Move, 32>::new();
+                        pawn::push_psuedo_legal_moves_white(&mut moves, self);
+                        moves
+                    })
+                    .into_iter()
+                    .flatten(),
+            )
+    }
+
+    pub fn find_first_pseudo_legal_move_white(&self) -> Option<Move> {
+        self.lazy_psuedo_legal_moves_white().next()
+    }
+
     /// Returns the first legal move found if one exists.
     /// WARNING: full legality checks not yet implemented; this function could return a move that
     /// is only psuedo legal.
@@ -984,7 +1052,7 @@ mod tests {
     use crate::position::game::Game;
     use crate::position::game::{STARTING_FEN, State};
     use crate::square::Square;
-    use crate::test_utils::{compare_to_fen, format_pretty_list, should_generate};
+    use crate::test_utils::{assert_meq, compare_to_fen, format_pretty_list, should_generate};
     use crate::vectors::UnsafeVec;
 
     #[test]
@@ -1373,5 +1441,13 @@ mod tests {
             should_generate(&grouped, m);
         }
         assert_eq!(grouped.len(), individual.len());
+    }
+
+    #[test]
+    fn lazy_psuedo_legal_moves_white_equals_push() {
+        let game = Game::default();
+        let lazy: Vec<Move> = game.lazy_psuedo_legal_moves_white().collect();
+        let push = game.generate_all_psuedo_legal_moves();
+        assert_meq(lazy, push);
     }
 }

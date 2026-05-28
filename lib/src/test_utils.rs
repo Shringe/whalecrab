@@ -10,10 +10,11 @@ pub fn format_pretty_list<T: Display>(v: &Vec<T>) -> String {
     let mut lines = Vec::new();
     let title = type_name::<T>().to_owned();
     let start = " list [".to_owned();
-    let end = "];".to_owned();
     if v.is_empty() {
-        return title + &start + &end;
+        return title + &start + "];";
     }
+
+    let end = format!("; {}];", v.len());
 
     lines.push(title + &start);
     for i in v {
@@ -144,7 +145,7 @@ mod tests {
   G6,
   D8,
   C1,
-];",
+; 6];",
         );
 
         assert_eq!(
