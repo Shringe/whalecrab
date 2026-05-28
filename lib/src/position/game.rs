@@ -861,8 +861,76 @@ impl Game {
             )
     }
 
+    pub fn lazy_psuedo_legal_moves_black(&self) -> impl Iterator<Item = Move> {
+        let enemy_occupied = self.white_occupied;
+        let kingless_bb = self.occupied ^ self.white_kings;
+
+        self.black_knights
+            .into_iter()
+            .flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(knight::attacks(sq), sq, self, enemy_occupied)
+            })
+            .chain(self.black_kings.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(king::attacks(sq), sq, self, enemy_occupied)
+            }))
+            .chain(self.black_bishops.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    bishop::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(self.black_rooks.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    rook::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(self.black_queens.into_iter().flat_map(move |sq| {
+                lazy_attacks_to_moves_with_occupied(
+                    queen::magic_attacks(sq, kingless_bb),
+                    sq,
+                    self,
+                    enemy_occupied,
+                )
+            }))
+            .chain(
+                std::iter::once_with(move || {
+                    self.can_black_castle_kingside().then_some(Move::Castle {
+                        side: CastleSide::Kingside,
+                    })
+                })
+                .flatten(),
+            )
+            .chain(
+                std::iter::once_with(move || {
+                    self.can_black_castle_queenside().then_some(Move::Castle {
+                        side: CastleSide::Queenside,
+                    })
+                })
+                .flatten(),
+            )
+            .chain(
+                (self.black_pawns != EMPTY)
+                    .then(move || {
+                        let mut moves = ArrayVec::<Move, 32>::new();
+                        pawn::push_psuedo_legal_moves_black(&mut moves, self);
+                        moves
+                    })
+                    .into_iter()
+                    .flatten(),
+            )
+    }
+
     pub fn find_first_pseudo_legal_move_white(&self) -> Option<Move> {
         self.lazy_psuedo_legal_moves_white().next()
+    }
+
+    pub fn find_first_pseudo_legal_move_black(&self) -> Option<Move> {
+        self.lazy_psuedo_legal_moves_black().next()
     }
 
     /// Returns the first legal move found if one exists.
@@ -1054,6 +1122,20 @@ mod tests {
     use crate::square::Square;
     use crate::test_utils::{assert_meq, compare_to_fen, format_pretty_list, should_generate};
     use crate::vectors::UnsafeVec;
+
+    #[track_caller]
+    fn assert_lazy_equals_push_black(game: &Game) {
+        let lazy: Vec<Move> = game.lazy_psuedo_legal_moves_black().collect();
+        let push = game.generate_all_psuedo_legal_moves();
+        assert_meq(lazy, push);
+    }
+
+    #[track_caller]
+    fn assert_lazy_equals_push_white(game: &Game) {
+        let lazy: Vec<Move> = game.lazy_psuedo_legal_moves_white().collect();
+        let push = game.generate_all_psuedo_legal_moves();
+        assert_meq(lazy, push);
+    }
 
     #[test]
     fn white_gets_checkmated() {
@@ -1444,10 +1526,12 @@ mod tests {
     }
 
     #[test]
-    fn lazy_psuedo_legal_moves_white_equals_push() {
-        let game = Game::default();
-        let lazy: Vec<Move> = game.lazy_psuedo_legal_moves_white().collect();
-        let push = game.generate_all_psuedo_legal_moves();
-        assert_meq(lazy, push);
+    fn lazy_psuedo_legal_moves_equals_push() {
+        let mut game = Game::default();
+        assert_lazy_equals_push_white(&game);
+        game.play(&game.find_first_pseudo_legal_move_white().unwrap());
+        assert_lazy_equals_push_black(&game);
+        game.play(&game.find_first_pseudo_legal_move_black().unwrap());
+        assert_lazy_equals_push_white(&game);
     }
 }
