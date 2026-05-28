@@ -23,6 +23,19 @@ fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
 
     let mut group = c.benchmark_group(group_name);
 
+    let m = game.find_first_legal_move_white();
+    println!(
+        "First legal move: {:?} {:?}",
+        m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
+        m
+    );
+    group.bench_function("Find first move", |b| {
+        b.iter(|| {
+            let m = game.find_first_legal_move_white();
+            black_box(m);
+        });
+    });
+
     group.bench_function("pawns", |b| {
         b.iter(|| {
             pawn::push_psuedo_legal_moves_white(&mut moves, &game);

@@ -48,16 +48,12 @@ pub fn push_psuedo_legal_moves<V: Vector<Move>>(
 }
 
 pub fn push_psuedo_legal_castling_moves_white<V: Vector<Move>>(moves: &mut V, game: &Game) {
-    if game.castling_rights.white_queenside()
-        && game.occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
-    {
+    if game.can_white_castle_queenside() {
         moves.push(Move::Castle {
             side: CastleSide::Queenside,
         });
     }
-    if game.castling_rights.white_kingside()
-        && game.occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
-    {
+    if game.can_white_castle_kingside() {
         moves.push(Move::Castle {
             side: CastleSide::Kingside,
         });
@@ -65,16 +61,12 @@ pub fn push_psuedo_legal_castling_moves_white<V: Vector<Move>>(moves: &mut V, ga
 }
 
 pub fn push_psuedo_legal_castling_moves_black<V: Vector<Move>>(moves: &mut V, game: &Game) {
-    if game.castling_rights.black_queenside()
-        && game.occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
-    {
+    if game.can_black_castle_queenside() {
         moves.push(Move::Castle {
             side: CastleSide::Queenside,
         });
     }
-    if game.castling_rights.black_kingside()
-        && game.occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
-    {
+    if game.can_black_castle_kingside() {
         moves.push(Move::Castle {
             side: CastleSide::Kingside,
         });

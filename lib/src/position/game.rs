@@ -16,7 +16,7 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::Move,
+        moves::{Move, lazy_attacks_to_moves},
         pieces::{
             self,
             bishop::{self},
@@ -27,7 +27,7 @@ use crate::{
         },
     },
     position::{
-        castling::{self, CastlingRights},
+        castling::{self, CastleSide, CastlingRights},
         piece_table::PieceTable,
         previous::{PositionHistory, UnRestoreable},
     },
@@ -795,6 +795,71 @@ impl Game {
             + self.black_rooks.popcnt() * pieces::rook::MAXIMUM_MOVE_COUNT
             + self.black_queens.popcnt() * pieces::queen::MAXIMUM_MOVE_COUNT
             + self.black_kings.popcnt() * pieces::king::MAXIMUM_MOVE_COUNT
+    }
+
+    /// Returns the first legal move found if one exists.
+    /// WARNING: full legality checks not yet implemented; this function could return a move that
+    /// is only psuedo legal.
+    pub fn find_first_legal_move_white(&self) -> Option<Move> {
+        let kingless_bb = self.occupied ^ self.black_kings;
+
+        macro_rules! lazy_return {
+            ($opt:expr) => {
+                if let Some(m) = $opt {
+                    return Some(m);
+                }
+            };
+        }
+
+        for sq in self.white_bishops {
+            let attacks = bishop::magic_attacks(sq, kingless_bb);
+            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+        }
+
+        for sq in self.white_rooks {
+            let attacks = rook::magic_attacks(sq, kingless_bb);
+            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+        }
+
+        for sq in self.white_queens {
+            let attacks = queen::magic_attacks(sq, kingless_bb);
+            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+        }
+
+        for sq in self.white_knights {
+            let attacks = king::attacks(sq);
+            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+        }
+
+        for sq in self.white_kings {
+            let attacks = king::attacks(sq);
+            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+        }
+
+        // If we still haven't found a move, we probably don't have castling rights
+        if self.castling_rights.to_int() != 0 {
+            if self.can_white_castle_queenside() {
+                return Some(Move::Castle {
+                    side: CastleSide::Queenside,
+                });
+            }
+            if self.can_white_castle_kingside() {
+                return Some(Move::Castle {
+                    side: CastleSide::Kingside,
+                });
+            }
+        }
+
+        // Avoid allocation if possible
+        if self.white_pawns != EMPTY {
+            let mut moves = UnsafeVec::with_capacity(
+                (self.white_pawns.popcnt() * pawn::MAXIMUM_MOVE_COUNT) as usize,
+            );
+            pawn::push_psuedo_legal_moves_white(&mut moves, self);
+            lazy_return!(moves.finish().into_iter().next());
+        }
+
+        None
     }
 
     /// Generates all psuedo legal moves for the current player
