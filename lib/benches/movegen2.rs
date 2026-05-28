@@ -4,9 +4,13 @@ use std::hint::black_box;
 
 use criterion::Criterion;
 use whalecrab_lib::{
-    movegen::pieces::{bishop, king, knight, pawn, piece::PieceColor, queen, rook},
+    bitboard::EMPTY,
+    movegen::{
+        moves::Move,
+        pieces::{bishop, king, knight, pawn, piece::PieceColor, queen, rook},
+    },
     position::game::Game,
-    vectors::UnsafeVec,
+    vectors::{ArrayVec, UnsafeVec},
 };
 
 fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
@@ -23,7 +27,7 @@ fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
 
     let mut group = c.benchmark_group(group_name);
 
-    let m = game.find_first_legal_move_white();
+    let m = game.find_first_psuedo_legal_move_white();
     println!(
         "First legal move: {:?} {:?}",
         m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
@@ -31,7 +35,7 @@ fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
     );
     group.bench_function("Find first move", |b| {
         b.iter(|| {
-            let m = game.find_first_legal_move_white();
+            let m = game.find_first_psuedo_legal_move_white();
             black_box(m);
         });
     });
@@ -120,9 +124,30 @@ fn bench_lategame(c: &mut Criterion) {
     bench_game(c, "lategame", common::lategame());
 }
 
+fn bench(c: &mut Criterion) {
+    let game = common::only_pawn_moves();
+    let m = game.find_first_psuedo_legal_move_white();
+    println!(
+        "First legal move: {:?} {:?}",
+        m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
+        m
+    );
+    c.bench_function("Find first move when only pawn moves are available", |b| {
+        b.iter(|| {
+            // TODO: We should call game.find_first_legal_move_white() when legal move filtering is
+            // implemented into that method
+            if game.white_pawns != EMPTY {
+                let mut moves = ArrayVec::<Move, 32>::new();
+                pawn::push_psuedo_legal_moves_white(&mut moves, &game);
+                black_box(moves.first());
+            }
+        });
+    });
+}
+
 criterion::criterion_group! {
     name = benches;
     config = common::configured_criterion();
-    targets = bench_midgame, bench_earlygame, bench_lategame
+    targets = bench, bench_midgame, bench_earlygame, bench_lategame
 }
 criterion::criterion_main!(benches);

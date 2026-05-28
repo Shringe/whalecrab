@@ -1,3 +1,5 @@
+use std::{hint::assert_unchecked, mem::MaybeUninit};
+
 pub trait Vector<T> {
     #[allow(unused)]
     fn push(&mut self, item: T) {}
@@ -6,6 +8,47 @@ pub trait Vector<T> {
 impl<T> Vector<T> for Vec<T> {
     fn push(&mut self, item: T) {
         self.push(item);
+    }
+}
+
+pub struct ArrayVec<T, const N: usize> {
+    list: [MaybeUninit<T>; N],
+    counter: usize,
+}
+
+impl<T, const N: usize> Vector<T> for ArrayVec<T, N> {
+    fn push(&mut self, item: T) {
+        debug_assert!(self.counter < N, "ArrayVec overflow: capacity is {N}");
+        unsafe { assert_unchecked(self.counter < N) };
+        self.list[self.counter].write(item);
+        self.counter += 1;
+    }
+}
+
+impl<T, const N: usize> Default for ArrayVec<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T, const N: usize> ArrayVec<T, N> {
+    pub const fn new() -> Self {
+        Self {
+            list: unsafe { MaybeUninit::uninit().assume_init() },
+            counter: 0,
+        }
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        unsafe { std::slice::from_raw_parts(self.list.as_ptr() as *const T, self.counter) }
+    }
+
+    pub fn first(&self) -> Option<T> {
+        if self.counter == 0 {
+            None
+        } else {
+            unsafe { Some(self.list.get_unchecked(0).assume_init_read()) }
+        }
     }
 }
 
@@ -91,5 +134,16 @@ mod tests {
         let mut v = Vec::with_capacity(1);
         push_to_vector(&mut v, 5u8);
         assert_eq!(v, vec![5u8]);
+    }
+
+    #[test]
+    fn array_vec() {
+        let mut actual = ArrayVec::<usize, 32>::new();
+        let mut expected = Vec::with_capacity(32);
+        for n in 0..32 {
+            actual.push(n);
+            expected.push(n);
+        }
+        assert_eq!(actual.as_slice(), expected.as_slice());
     }
 }

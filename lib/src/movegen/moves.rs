@@ -66,6 +66,29 @@ pub fn push_attacks_to_moves<V: Vector<Move>>(
     );
 }
 
+pub fn lazy_attacks_to_moves_with_occupied(
+    attacks: BitBoard,
+    from: Square,
+    game: &Game,
+    enemy_occupied: BitBoard,
+) -> impl Iterator<Item = Move> {
+    let walks = attacks & !game.occupied;
+    let walk_moves = walks.map(move |sq| Move::Normal {
+        from,
+        to: sq,
+        capture: None,
+    });
+
+    let captures = attacks & enemy_occupied;
+    let capture_moves = captures.map(move |sq| Move::Normal {
+        from,
+        to: sq,
+        capture: Some(unsafe { game.piece_lookup(sq).unwrap_unchecked().0 }),
+    });
+
+    walk_moves.chain(capture_moves)
+}
+
 pub fn lazy_attacks_to_moves(
     attacks: BitBoard,
     from: Square,

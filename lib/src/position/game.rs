@@ -16,7 +16,7 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::{Move, lazy_attacks_to_moves},
+        moves::{Move, lazy_attacks_to_moves_with_occupied},
         pieces::{
             self,
             bishop::{self},
@@ -33,7 +33,7 @@ use crate::{
     },
     rank::Rank,
     square::Square,
-    vectors::UnsafeVec,
+    vectors::{ArrayVec, UnsafeVec},
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -800,8 +800,8 @@ impl Game {
     /// Returns the first legal move found if one exists.
     /// WARNING: full legality checks not yet implemented; this function could return a move that
     /// is only psuedo legal.
-    pub fn find_first_legal_move_white(&self) -> Option<Move> {
-        let kingless_bb = self.occupied ^ self.black_kings;
+    pub fn find_first_psuedo_legal_move_white(&self) -> Option<Move> {
+        let enemy_occupied = self.black_occupied;
 
         macro_rules! lazy_return {
             ($opt:expr) => {
@@ -811,29 +811,41 @@ impl Game {
             };
         }
 
-        for sq in self.white_bishops {
-            let attacks = bishop::magic_attacks(sq, kingless_bb);
-            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
-        }
-
-        for sq in self.white_rooks {
-            let attacks = rook::magic_attacks(sq, kingless_bb);
-            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
-        }
-
-        for sq in self.white_queens {
-            let attacks = queen::magic_attacks(sq, kingless_bb);
-            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
-        }
-
         for sq in self.white_knights {
-            let attacks = king::attacks(sq);
-            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+            let attacks = knight::attacks(sq);
+            lazy_return!(
+                lazy_attacks_to_moves_with_occupied(attacks, sq, self, enemy_occupied).next()
+            );
         }
 
         for sq in self.white_kings {
             let attacks = king::attacks(sq);
-            lazy_return!(lazy_attacks_to_moves(attacks, sq, self).next());
+            lazy_return!(
+                lazy_attacks_to_moves_with_occupied(attacks, sq, self, enemy_occupied).next()
+            );
+        }
+
+        let kingless_bb = self.occupied ^ self.black_kings;
+
+        for sq in self.white_bishops {
+            let attacks = bishop::magic_attacks(sq, kingless_bb);
+            lazy_return!(
+                lazy_attacks_to_moves_with_occupied(attacks, sq, self, enemy_occupied).next()
+            );
+        }
+
+        for sq in self.white_rooks {
+            let attacks = rook::magic_attacks(sq, kingless_bb);
+            lazy_return!(
+                lazy_attacks_to_moves_with_occupied(attacks, sq, self, enemy_occupied).next()
+            );
+        }
+
+        for sq in self.white_queens {
+            let attacks = queen::magic_attacks(sq, kingless_bb);
+            lazy_return!(
+                lazy_attacks_to_moves_with_occupied(attacks, sq, self, enemy_occupied).next()
+            );
         }
 
         // If we still haven't found a move, we probably don't have castling rights
@@ -852,11 +864,9 @@ impl Game {
 
         // Avoid allocation if possible
         if self.white_pawns != EMPTY {
-            let mut moves = UnsafeVec::with_capacity(
-                (self.white_pawns.popcnt() * pawn::MAXIMUM_MOVE_COUNT) as usize,
-            );
+            let mut moves = ArrayVec::<Move, 32>::new();
             pawn::push_psuedo_legal_moves_white(&mut moves, self);
-            lazy_return!(moves.finish().into_iter().next());
+            lazy_return!(moves.first());
         }
 
         None
