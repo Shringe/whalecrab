@@ -1,12 +1,16 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
-    movegen::{moves::Move, pieces::piece::PieceColor},
+    movegen::{
+        moves::{Move, push_attacks_to_moves_with_occupied},
+        pieces::piece::PieceColor,
+    },
     position::{
         castling::{self, CastleSide},
         game::Game,
     },
     square::Square,
+    vectors::Vector,
 };
 
 use super::piece::PieceMoveInfo;
@@ -30,6 +34,55 @@ const fn psuedo_legal_attacks(sqbb: BitBoard) -> BitBoard {
     let right = (sqbb.to_int() << 1) & !File::A.mask().to_int();
     let middle_three = left | sqbb.to_int() | right;
     BitBoard::new((middle_three >> 8) | (middle_three << 8) | (middle_three ^ sqbb.to_int()))
+}
+
+pub fn push_psuedo_legal_moves<V: Vector<Move>>(
+    moves: &mut V,
+    game: &Game,
+    kings: BitBoard,
+    enemy_occupied: BitBoard,
+) {
+    for sq in kings {
+        push_attacks_to_moves_with_occupied(moves, attacks(sq), sq, game, enemy_occupied);
+    }
+}
+
+pub fn push_psuedo_legal_castling_moves_white<V: Vector<Move>>(moves: &mut V, game: &Game) {
+    if game.castling_rights.white_queenside()
+        && game.occupied & castling::WHITE_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+    {
+        moves.push(Move::Castle {
+            side: CastleSide::Queenside,
+        });
+    }
+    if game.castling_rights.white_kingside()
+        && game.occupied & castling::WHITE_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
+    {
+        moves.push(Move::Castle {
+            side: CastleSide::Kingside,
+        });
+    }
+}
+
+pub fn push_psuedo_legal_castling_moves_black<V: Vector<Move>>(moves: &mut V, game: &Game) {
+    if game.castling_rights.black_queenside()
+        && game.occupied & castling::BLACK_CASTLE_QUEENSIDE_NEEDS_CLEAR == EMPTY
+    {
+        moves.push(Move::Castle {
+            side: CastleSide::Queenside,
+        });
+    }
+    if game.castling_rights.black_kingside()
+        && game.occupied & castling::BLACK_CASTLE_KINGSIDE_NEEDS_CLEAR == EMPTY
+    {
+        moves.push(Move::Castle {
+            side: CastleSide::Kingside,
+        });
+    }
+}
+
+pub fn attacks(sq: Square) -> BitBoard {
+    ATTACKS[sq.index()]
 }
 
 impl Square {
@@ -119,7 +172,7 @@ impl Square {
             ),
         };
 
-        let attacks = ATTACKS[self.index()];
+        let attacks = attacks(self);
         let captures = attacks & enemy_occupied;
         let walks = attacks & !game.occupied;
 

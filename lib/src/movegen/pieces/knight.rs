@@ -1,40 +1,73 @@
 use crate::{
-    bitboard::BitBoard,
+    bitboard::{BitBoard, EMPTY},
     file::File,
     movegen::{
-        moves::{Move, targets_to_moves},
+        moves::{Move, attacks_to_moves, push_attacks_to_moves_with_occupied},
         pieces::piece::PieceMoveInfo,
     },
     position::game::Game,
     square::Square,
+    vectors::Vector,
 };
 
 pub const MAXIMUM_MOVE_COUNT: u32 = 8;
 
+static ATTACKS: [BitBoard; 64] = {
+    let mut table = [EMPTY; 64];
+    let mut n = 0;
+    while n < 64 {
+        let sq = Square::new(n);
+        let sqbb = BitBoard::from_square(sq);
+        table[sq.index()] = pseudo_legal_attacks(sqbb);
+        n += 1;
+    }
+    table
+};
+
+const fn pseudo_legal_attacks(sqbb: BitBoard) -> BitBoard {
+    let bb = sqbb.to_int();
+
+    let not_a = !File::A.mask().to_int();
+    let not_ab = !File::A.mask().to_int() & !File::B.mask().to_int();
+    let not_h = !File::H.mask().to_int();
+    let not_gh = !File::G.mask().to_int() & !File::H.mask().to_int();
+
+    let attacks = (bb << 17) & not_a
+        | (bb << 15) & not_h
+        | (bb << 10) & not_ab
+        | (bb << 6) & not_gh
+        | (bb >> 17) & not_h
+        | (bb >> 15) & not_a
+        | (bb >> 10) & not_gh
+        | (bb >> 6) & not_ab;
+
+    BitBoard::new(attacks)
+}
+
+pub fn push_psuedo_legal_moves<V: Vector<Move>>(
+    moves: &mut V,
+    game: &Game,
+    knights: BitBoard,
+    enemy_occupied: BitBoard,
+) {
+    for sq in knights {
+        push_attacks_to_moves_with_occupied(moves, attacks(sq), sq, game, enemy_occupied);
+    }
+}
+
+pub fn attacks(sq: Square) -> BitBoard {
+    ATTACKS[sq.index()]
+}
+
 impl Square {
-    pub fn knight_psuedo_legal_moves(&self, game: &Game) -> Vec<Move> {
-        targets_to_moves(self.knight_psuedo_legal_targets(game).targets, *self, game)
+    pub fn knight_psuedo_legal_moves(self, game: &Game) -> Vec<Move> {
+        attacks_to_moves(attacks(self), self, game)
     }
 
-    pub fn knight_psuedo_legal_targets(&self, game: &Game) -> PieceMoveInfo {
+    pub fn knight_psuedo_legal_targets(self, game: &Game) -> PieceMoveInfo {
         let mut moveinfo = PieceMoveInfo::default();
-
-        let sqbb = BitBoard::from_square(*self);
         let enemy_or_empty = !*game.get_occupied(&game.turn);
-
-        let not_file_a = !File::A.mask();
-        let not_file_b = !File::B.mask();
-        let not_file_g = !File::G.mask();
-        let not_file_h = !File::H.mask();
-
-        let attacks = (sqbb << 17) & not_file_a
-            | (sqbb << 15) & not_file_h
-            | (sqbb << 10) & not_file_a & not_file_b
-            | (sqbb << 6) & not_file_g & not_file_h
-            | (sqbb >> 6) & not_file_a & not_file_b
-            | (sqbb >> 10) & not_file_g & not_file_h
-            | (sqbb >> 15) & not_file_a
-            | (sqbb >> 17) & not_file_h;
+        let attacks = attacks(self);
 
         moveinfo.attacks = attacks;
         moveinfo.targets = attacks & enemy_or_empty;

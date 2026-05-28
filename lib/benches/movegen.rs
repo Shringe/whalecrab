@@ -4,7 +4,7 @@ use whalecrab_lib::{
     movegen::{
         moves::Move,
         pieces::{
-            self,
+            self, pawn,
             piece::{ALL_PIECE_TYPES, PieceColor},
         },
     },
@@ -61,7 +61,7 @@ fn bench(c: &mut Criterion) {
         let capacity = game.white_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT;
         b.iter(|| {
             let mut moves = UnsafeVec::with_capacity(capacity as usize);
-            game.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves);
+            pawn::push_psuedo_legal_moves_white(&mut moves, &game);
             let _ = moves.finish();
         });
     });

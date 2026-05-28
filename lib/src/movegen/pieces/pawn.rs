@@ -3,11 +3,12 @@ use crate::{
     file::File,
     movegen::{
         moves::{Move, targets_to_moves},
-        pieces::piece::{PieceColor, PieceMoveInfo},
+        pieces::piece::{PieceColor, PieceMoveInfo, PieceType},
     },
     position::game::Game,
     rank::Rank,
     square::Square,
+    vectors::Vector,
 };
 
 macro_rules! assert_shift {
@@ -25,6 +26,226 @@ macro_rules! assert_shift {
 }
 
 pub const MAXIMUM_MOVE_COUNT: u32 = 4;
+
+pub fn push_psuedo_legal_moves_white<V: Vector<Move>>(moves: &mut V, game: &Game) {
+    let twice_mask = Rank::Fourth.mask();
+    let promotion_mask = Rank::Eighth.mask();
+    let unoccupied = !game.occupied;
+
+    let once = game.white_pawns.up() & unoccupied;
+    let twice = once.up() & unoccupied & twice_mask;
+    let promotions = once & promotion_mask;
+
+    let capture_right = game.white_pawns.up_right() & (game.black_occupied & !File::A.mask());
+    let capture_left = game.white_pawns.up_left() & (game.black_occupied & !File::H.mask());
+
+    macro_rules! get_piece {
+        ($sq:expr) => {
+            Some(
+                if cfg!(debug_assertions) {
+                    game.piece_lookup($sq).unwrap()
+                } else {
+                    // Should be safe because with pawn move generation we know for sure
+                    // whether or not we can capture ahead of time using bit manipulation
+                    unsafe { game.piece_lookup($sq).unwrap_unchecked() }
+                }
+                .0,
+            )
+        };
+    }
+
+    for to in once ^ promotions {
+        let from = unsafe { to.down_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: None,
+        };
+        moves.push(m);
+    }
+
+    for sq in twice {
+        let m = Move::CreateEnPassant { at: sq.get_file() };
+        moves.push(m);
+    }
+
+    for sq in promotions {
+        let file = sq.get_file();
+        let m = Move::Promotion {
+            from: file,
+            to: file,
+            piece: PieceType::Queen,
+            capture: None,
+        };
+        moves.push(m);
+    }
+
+    for to in capture_right & !promotion_mask {
+        let from = unsafe { to.dleft_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_left & !promotion_mask {
+        let from = unsafe { to.dright_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_right & promotion_mask {
+        let from = unsafe { to.dleft_unchecked() };
+        let m = Move::Promotion {
+            from: from.get_file(),
+            to: to.get_file(),
+            piece: PieceType::Queen,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_left & promotion_mask {
+        let from = unsafe { to.dright_unchecked() };
+        let m = Move::Promotion {
+            from: from.get_file(),
+            to: to.get_file(),
+            piece: PieceType::Queen,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    if let Some(target) = game.en_passant_target {
+        let mut process_target = |sq: Option<Square>| {
+            if let Some(sq) = sq
+                && game.white_pawns.has_square(BitBoard::from_square(sq))
+            {
+                let m = Move::CaptureEnPassant {
+                    from: sq.get_file(),
+                };
+                moves.push(m);
+            }
+        };
+        process_target(target.dleft());
+        process_target(target.dright());
+    }
+}
+
+pub fn push_psuedo_legal_moves_black<V: Vector<Move>>(moves: &mut V, game: &Game) {
+    let twice_mask = Rank::Fifth.mask();
+    let promotion_mask = Rank::First.mask();
+    let unoccupied = !game.occupied;
+
+    let once = game.black_pawns.down() & unoccupied;
+    let twice = once.down() & unoccupied & twice_mask;
+    let promotions = once & promotion_mask;
+
+    let capture_right = game.black_pawns.down_left() & (game.white_occupied & !File::H.mask());
+    let capture_left = game.black_pawns.down_right() & (game.white_occupied & !File::A.mask());
+
+    macro_rules! get_piece {
+        ($sq:expr) => {
+            Some(
+                if cfg!(debug_assertions) {
+                    game.piece_lookup($sq).unwrap()
+                } else {
+                    unsafe { game.piece_lookup($sq).unwrap_unchecked() }
+                }
+                .0,
+            )
+        };
+    }
+
+    for to in once ^ promotions {
+        let from = unsafe { to.up_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: None,
+        };
+        moves.push(m);
+    }
+
+    for sq in twice {
+        let m = Move::CreateEnPassant { at: sq.get_file() };
+        moves.push(m);
+    }
+
+    for sq in promotions {
+        let file = sq.get_file();
+        let m = Move::Promotion {
+            from: file,
+            to: file,
+            piece: PieceType::Queen,
+            capture: None,
+        };
+        moves.push(m);
+    }
+
+    for to in capture_right & !promotion_mask {
+        let from = unsafe { to.uright_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_left & !promotion_mask {
+        let from = unsafe { to.uleft_unchecked() };
+        let m = Move::Normal {
+            from,
+            to,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_right & promotion_mask {
+        let from = unsafe { to.uright_unchecked() };
+        let m = Move::Promotion {
+            from: from.get_file(),
+            to: to.get_file(),
+            piece: PieceType::Queen,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    for to in capture_left & promotion_mask {
+        let from = unsafe { to.uleft_unchecked() };
+        let m = Move::Promotion {
+            from: from.get_file(),
+            to: to.get_file(),
+            piece: PieceType::Queen,
+            capture: get_piece!(to),
+        };
+        moves.push(m);
+    }
+
+    if let Some(target) = game.en_passant_target {
+        let mut process_target = |sq: Option<Square>| {
+            if let Some(sq) = sq
+                && game.black_pawns.has_square(BitBoard::from_square(sq))
+            {
+                let m = Move::CaptureEnPassant {
+                    from: sq.get_file(),
+                };
+                moves.push(m);
+            }
+        };
+        process_target(target.uleft());
+        process_target(target.uright());
+    }
+}
 
 impl Square {
     /// Generates all psuedo legal moves for a single pawn

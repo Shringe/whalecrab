@@ -1,10 +1,11 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
     file::File,
-    movegen::moves::{Move, attacks_to_moves},
+    movegen::moves::{Move, attacks_to_moves, push_attacks_to_moves_with_occupied},
     position::game::Game,
     rank::Rank,
     square::{Direction, Square},
+    vectors::Vector,
 };
 
 use super::piece::PieceMoveInfo;
@@ -23,6 +24,19 @@ pub fn magic_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
     let key = (((occupied.to_int() & rook.mask).wrapping_mul(rook.magic))
         >> (magics::rooks::SHIFT as u64)) as usize;
     BitBoard::new(rook.attacks[key])
+}
+
+pub fn push_psuedo_legal_moves<V: Vector<Move>>(
+    moves: &mut V,
+    game: &Game,
+    rooks: BitBoard,
+    kingless_bb: BitBoard,
+    enemy_occupied: BitBoard,
+) {
+    for sq in rooks {
+        let attacks = magic_attacks(sq, kingless_bb);
+        push_attacks_to_moves_with_occupied(moves, attacks, sq, game, enemy_occupied);
+    }
 }
 
 impl Square {

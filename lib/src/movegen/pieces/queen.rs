@@ -1,17 +1,31 @@
 use crate::{
     bitboard::BitBoard,
     movegen::{
-        moves::{Move, attacks_to_moves},
+        moves::{Move, attacks_to_moves, push_attacks_to_moves_with_occupied},
         pieces::{bishop, piece::PieceMoveInfo, rook},
     },
     position::game::Game,
     square::{ALL_DIRECTIONS, Square},
+    vectors::Vector,
 };
 
 pub const MAXIMUM_MOVE_COUNT: u32 = 27;
 
 pub fn magic_attacks(sq: Square, occupied: BitBoard) -> BitBoard {
     bishop::magic_attacks(sq, occupied) | rook::magic_attacks(sq, occupied)
+}
+
+pub fn push_psuedo_legal_moves<V: Vector<Move>>(
+    moves: &mut V,
+    game: &Game,
+    queens: BitBoard,
+    kingless_bb: BitBoard,
+    enemy_occupied: BitBoard,
+) {
+    for sq in queens {
+        let attacks = magic_attacks(sq, kingless_bb);
+        push_attacks_to_moves_with_occupied(moves, attacks, sq, game, enemy_occupied);
+    }
 }
 
 impl Square {

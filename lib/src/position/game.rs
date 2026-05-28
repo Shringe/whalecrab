@@ -16,10 +16,11 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
-        moves::{Move, push_attacks_to_moves_with_occupied},
+        moves::Move,
         pieces::{
             self,
             bishop::{self},
+            king, knight, pawn,
             piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
             queen::{self},
             rook::{self},
@@ -32,7 +33,7 @@ use crate::{
     },
     rank::Rank,
     square::Square,
-    vectors::{UnsafeVec, Vector},
+    vectors::UnsafeVec,
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -778,227 +779,7 @@ impl Game {
         self.piece_table.get(sq)
     }
 
-    pub fn generate_grouped_psuedo_legal_white_pawn_moves<V: Vector<Move>>(&self, moves: &mut V) {
-        let twice_mask = Rank::Fourth.mask();
-        let promotion_mask = Rank::Eighth.mask();
-        let unoccupied = !self.occupied;
-
-        let once = self.white_pawns.up() & unoccupied;
-        let twice = once.up() & unoccupied & twice_mask;
-        let promotions = once & promotion_mask;
-
-        let capture_right = self.white_pawns.up_right() & (self.black_occupied & !File::A.mask());
-        let capture_left = self.white_pawns.up_left() & (self.black_occupied & !File::H.mask());
-
-        macro_rules! get_piece {
-            ($sq:expr) => {
-                Some(
-                    if cfg!(debug_assertions) {
-                        self.piece_lookup($sq).unwrap()
-                    } else {
-                        // Should be safe because with pawn move generation we know for sure
-                        // whether or not we can capture ahead of time using bit manipulation
-                        unsafe { self.piece_lookup($sq).unwrap_unchecked() }
-                    }
-                    .0,
-                )
-            };
-        }
-
-        for to in once ^ promotions {
-            let from = unsafe { to.down_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: None,
-            };
-            moves.push(m);
-        }
-
-        for sq in twice {
-            let m = Move::CreateEnPassant { at: sq.get_file() };
-            moves.push(m);
-        }
-
-        for sq in promotions {
-            let file = sq.get_file();
-            let m = Move::Promotion {
-                from: file,
-                to: file,
-                piece: PieceType::Queen,
-                capture: None,
-            };
-            moves.push(m);
-        }
-
-        for to in capture_right & !promotion_mask {
-            let from = unsafe { to.dleft_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_left & !promotion_mask {
-            let from = unsafe { to.dright_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_right & promotion_mask {
-            let from = unsafe { to.dleft_unchecked() };
-            let m = Move::Promotion {
-                from: from.get_file(),
-                to: to.get_file(),
-                piece: PieceType::Queen,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_left & promotion_mask {
-            let from = unsafe { to.dright_unchecked() };
-            let m = Move::Promotion {
-                from: from.get_file(),
-                to: to.get_file(),
-                piece: PieceType::Queen,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        if let Some(target) = self.en_passant_target {
-            let mut process_target = |sq: Option<Square>| {
-                if let Some(sq) = sq
-                    && self.white_pawns.has_square(BitBoard::from_square(sq))
-                {
-                    let m = Move::CaptureEnPassant {
-                        from: sq.get_file(),
-                    };
-                    moves.push(m);
-                }
-            };
-            process_target(target.dleft());
-            process_target(target.dright());
-        }
-    }
-
-    pub fn generate_grouped_psuedo_legal_black_pawn_moves<V: Vector<Move>>(&self, moves: &mut V) {
-        let twice_mask = Rank::Fifth.mask();
-        let promotion_mask = Rank::First.mask();
-        let unoccupied = !self.occupied;
-
-        let once = self.black_pawns.down() & unoccupied;
-        let twice = once.down() & unoccupied & twice_mask;
-        let promotions = once & promotion_mask;
-
-        let capture_right = self.black_pawns.down_left() & (self.white_occupied & !File::H.mask());
-        let capture_left = self.black_pawns.down_right() & (self.white_occupied & !File::A.mask());
-
-        macro_rules! get_piece {
-            ($sq:expr) => {
-                Some(
-                    if cfg!(debug_assertions) {
-                        self.piece_lookup($sq).unwrap()
-                    } else {
-                        unsafe { self.piece_lookup($sq).unwrap_unchecked() }
-                    }
-                    .0,
-                )
-            };
-        }
-
-        for to in once ^ promotions {
-            let from = unsafe { to.up_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: None,
-            };
-            moves.push(m);
-        }
-
-        for sq in twice {
-            let m = Move::CreateEnPassant { at: sq.get_file() };
-            moves.push(m);
-        }
-
-        for sq in promotions {
-            let file = sq.get_file();
-            let m = Move::Promotion {
-                from: file,
-                to: file,
-                piece: PieceType::Queen,
-                capture: None,
-            };
-            moves.push(m);
-        }
-
-        for to in capture_right & !promotion_mask {
-            let from = unsafe { to.uright_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_left & !promotion_mask {
-            let from = unsafe { to.uleft_unchecked() };
-            let m = Move::Normal {
-                from,
-                to,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_right & promotion_mask {
-            let from = unsafe { to.uright_unchecked() };
-            let m = Move::Promotion {
-                from: from.get_file(),
-                to: to.get_file(),
-                piece: PieceType::Queen,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        for to in capture_left & promotion_mask {
-            let from = unsafe { to.uleft_unchecked() };
-            let m = Move::Promotion {
-                from: from.get_file(),
-                to: to.get_file(),
-                piece: PieceType::Queen,
-                capture: get_piece!(to),
-            };
-            moves.push(m);
-        }
-
-        if let Some(target) = self.en_passant_target {
-            let mut process_target = |sq: Option<Square>| {
-                if let Some(sq) = sq
-                    && self.black_pawns.has_square(BitBoard::from_square(sq))
-                {
-                    let m = Move::CaptureEnPassant {
-                        from: sq.get_file(),
-                    };
-                    moves.push(m);
-                }
-            };
-            process_target(target.uleft());
-            process_target(target.uright());
-        }
-    }
-
-    pub const fn maximum_white_move_count(&self) -> u32 {
+    pub const fn maximum_move_count_white(&self) -> u32 {
         self.white_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT
             + self.white_knights.popcnt() * pieces::knight::MAXIMUM_MOVE_COUNT
             + self.white_bishops.popcnt() * pieces::bishop::MAXIMUM_MOVE_COUNT
@@ -1007,7 +788,7 @@ impl Game {
             + self.white_kings.popcnt() * pieces::king::MAXIMUM_MOVE_COUNT
     }
 
-    pub const fn maximum_black_move_count(&self) -> u32 {
+    pub const fn maximum_move_count_black(&self) -> u32 {
         self.black_pawns.popcnt() * pieces::pawn::MAXIMUM_MOVE_COUNT
             + self.black_knights.popcnt() * pieces::knight::MAXIMUM_MOVE_COUNT
             + self.black_bishops.popcnt() * pieces::bishop::MAXIMUM_MOVE_COUNT
@@ -1018,99 +799,81 @@ impl Game {
 
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
-        macro_rules! push_moves {
-            ($moves:expr, $piece:expr, $board:expr) => {
-                for sq in $board {
-                    let moveinfo = $piece.psuedo_legal_targets_fast(self, &sq);
-                    for t in moveinfo.targets {
-                        let m = Move::infer(sq, t, self);
-                        $moves.push_unchecked(m);
-                    }
-                }
-            };
-        }
-
-        macro_rules! push_moves2 {
-            ($moves:expr, $board:expr, $attacks:expr, $kingless:expr, $occupied:expr) => {
-                for sq in $board {
-                    push_attacks_to_moves_with_occupied(
-                        &mut $moves,
-                        $attacks(sq, $kingless),
-                        sq,
-                        self,
-                        $occupied,
-                    );
-                }
-            };
-        }
-
         match self.turn {
             PieceColor::White => {
                 let kingless_bb = self.occupied ^ self.black_kings;
                 let enemy_occupied = self.black_occupied;
-                let mut moves = UnsafeVec::with_capacity(self.maximum_white_move_count() as usize);
-                unsafe {
-                    if self.white_pawns != EMPTY {
-                        self.generate_grouped_psuedo_legal_white_pawn_moves(&mut moves);
-                    }
-                    push_moves!(moves, PieceType::Knight, self.white_knights);
-                    push_moves2!(
-                        moves,
-                        self.white_bishops,
-                        bishop::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves2!(
-                        moves,
-                        self.white_rooks,
-                        rook::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves2!(
-                        moves,
-                        self.white_queens,
-                        queen::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves!(moves, PieceType::King, self.white_kings);
+                let mut moves = UnsafeVec::with_capacity(self.maximum_move_count_white() as usize);
+                if self.white_pawns != EMPTY {
+                    pawn::push_psuedo_legal_moves_white(&mut moves, self);
                 }
+                knight::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.white_knights,
+                    enemy_occupied,
+                );
+                bishop::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.white_bishops,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                rook::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.white_rooks,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                queen::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.white_queens,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                king::push_psuedo_legal_moves(&mut moves, self, self.white_kings, enemy_occupied);
+                king::push_psuedo_legal_castling_moves_white(&mut moves, self);
                 moves.finish()
             }
             PieceColor::Black => {
                 let kingless_bb = self.occupied ^ self.white_kings;
                 let enemy_occupied = self.white_occupied;
-                let mut moves = UnsafeVec::with_capacity(self.maximum_black_move_count() as usize);
-                unsafe {
-                    if self.black_pawns != EMPTY {
-                        self.generate_grouped_psuedo_legal_black_pawn_moves(&mut moves);
-                    }
-                    push_moves!(moves, PieceType::Knight, self.black_knights);
-                    push_moves2!(
-                        moves,
-                        self.black_bishops,
-                        bishop::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves2!(
-                        moves,
-                        self.black_rooks,
-                        rook::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves2!(
-                        moves,
-                        self.black_queens,
-                        queen::magic_attacks,
-                        kingless_bb,
-                        enemy_occupied
-                    );
-                    push_moves!(moves, PieceType::King, self.black_kings);
+                let mut moves = UnsafeVec::with_capacity(self.maximum_move_count_black() as usize);
+                if self.black_pawns != EMPTY {
+                    pawn::push_psuedo_legal_moves_black(&mut moves, self);
                 }
+                knight::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.black_knights,
+                    enemy_occupied,
+                );
+                bishop::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.black_bishops,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                rook::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.black_rooks,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                queen::push_psuedo_legal_moves(
+                    &mut moves,
+                    self,
+                    self.black_queens,
+                    kingless_bb,
+                    enemy_occupied,
+                );
+                king::push_psuedo_legal_moves(&mut moves, self, self.black_kings, enemy_occupied);
+                king::push_psuedo_legal_castling_moves_black(&mut moves, self);
                 moves.finish()
             }
         }
@@ -1141,6 +904,7 @@ impl Game {
 mod tests {
     use crate::bitboard::{BitBoard, EMPTY};
     use crate::movegen::moves::Move;
+    use crate::movegen::pieces::pawn;
     use crate::movegen::pieces::piece::{PieceColor, PieceType};
     use crate::position::game::Game;
     use crate::position::game::{STARTING_FEN, State};
@@ -1492,7 +1256,7 @@ mod tests {
         }
 
         let mut grouped = UnsafeVec::with_capacity(100);
-        game.generate_grouped_psuedo_legal_white_pawn_moves(&mut grouped);
+        pawn::push_psuedo_legal_moves_white(&mut grouped, &game);
         let grouped = grouped.finish();
 
         println!(
@@ -1521,7 +1285,7 @@ mod tests {
         }
 
         let mut grouped = UnsafeVec::with_capacity(100);
-        game.generate_grouped_psuedo_legal_black_pawn_moves(&mut grouped);
+        pawn::push_psuedo_legal_moves_black(&mut grouped, &game);
         let grouped = grouped.finish();
 
         println!(

@@ -10,7 +10,7 @@ use crate::{
     },
     rank::Rank,
     square::{Square, SquareParseError},
-    vectors::Vector,
+    vectors::{UnsafeVec, Vector},
 };
 
 /// Converts a vector of moves to a vector of targets
@@ -90,11 +90,9 @@ pub fn lazy_attacks_to_moves(
 
 // Converts a BitBoard of attacks into  vector of moves
 pub fn attacks_to_moves(attacks: BitBoard, from: Square, game: &Game) -> Vec<Move> {
-    let mut moves = Vec::with_capacity(attacks.popcnt() as usize);
-    for m in lazy_attacks_to_moves(attacks, from, game) {
-        moves.push(m);
-    }
-    moves
+    let mut moves = UnsafeVec::with_capacity(attacks.popcnt() as usize);
+    push_attacks_to_moves(&mut moves, attacks, from, game);
+    moves.finish()
 }
 
 /// Converts a BitBoard of targets into a vector of moves
