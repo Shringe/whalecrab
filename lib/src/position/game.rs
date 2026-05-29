@@ -16,6 +16,7 @@ use crate::{
     get_attacks, get_attacks_mut, get_check_rays, get_check_rays_mut, get_occupied,
     get_occupied_mut, get_pieces, get_pieces_mut,
     movegen::{
+        legal_moves::LegalMovesFilter,
         moves::{Move, lazy_attacks_to_moves_with_occupied},
         pieces::{
             self,
@@ -925,12 +926,24 @@ impl Game {
             )
     }
 
-    pub fn find_first_pseudo_legal_move_white(&self) -> Option<Move> {
-        self.lazy_psuedo_legal_moves_white().next()
+    pub fn lazy_legal_moves_white(&self) -> impl Iterator<Item = Move> {
+        let lmf = LegalMovesFilter::new(self);
+        self.lazy_psuedo_legal_moves_white()
+            .filter(move |&m| lmf.check(m))
     }
 
-    pub fn find_first_pseudo_legal_move_black(&self) -> Option<Move> {
-        self.lazy_psuedo_legal_moves_black().next()
+    pub fn find_first_legal_move_white(&self) -> Option<Move> {
+        self.lazy_legal_moves_white().next()
+    }
+
+    pub fn lazy_legal_moves_black(&self) -> impl Iterator<Item = Move> {
+        let lmf = LegalMovesFilter::new(self);
+        self.lazy_psuedo_legal_moves_black()
+            .filter(move |&m| lmf.check(m))
+    }
+
+    pub fn find_first_legal_move_black(&self) -> Option<Move> {
+        self.lazy_legal_moves_black().next()
     }
 
     /// Returns the first legal move found if one exists.
@@ -1529,9 +1542,9 @@ mod tests {
     fn lazy_psuedo_legal_moves_equals_push() {
         let mut game = Game::default();
         assert_lazy_equals_push_white(&game);
-        game.play(&game.find_first_pseudo_legal_move_white().unwrap());
+        game.play(&game.find_first_legal_move_white().unwrap());
         assert_lazy_equals_push_black(&game);
-        game.play(&game.find_first_pseudo_legal_move_black().unwrap());
+        game.play(&game.find_first_legal_move_black().unwrap());
         assert_lazy_equals_push_white(&game);
     }
 }
