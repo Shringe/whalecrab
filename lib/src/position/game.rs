@@ -945,7 +945,14 @@ impl Game {
     }
 
     pub fn find_first_legal_move_white(&self) -> Option<Move> {
-        self.lazy_legal_moves_white().next()
+        let mut iter = self.lazy_psuedo_legal_moves_white();
+        let first = iter.next()?;
+        let lmf = LegalMovesFilter::new(self);
+        if lmf.check(first) {
+            Some(first)
+        } else {
+            iter.find(|&m| lmf.check(m))
+        }
     }
 
     pub fn lazy_legal_moves_black(&self) -> impl Iterator<Item = Move> {
@@ -955,7 +962,14 @@ impl Game {
     }
 
     pub fn find_first_legal_move_black(&self) -> Option<Move> {
-        self.lazy_legal_moves_black().next()
+        let mut iter = self.lazy_psuedo_legal_moves_black();
+        let first = iter.next()?;
+        let lmf = LegalMovesFilter::new(self);
+        if lmf.check(first) {
+            Some(first)
+        } else {
+            iter.find(|&m| lmf.check(m))
+        }
     }
 
     /// Returns the first legal move found if one exists.

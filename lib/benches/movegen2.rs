@@ -137,10 +137,10 @@ fn bench_lategame(c: &mut Criterion) {
 fn bench(c: &mut Criterion) {
     let game = common::only_pawn_moves();
 
-    let m = game.find_first_legal_move_white();
+    let m = game.find_first_legal_move_white().unwrap();
     println!(
         "First legal move: {:?} {:?}",
-        m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
+        game.piece_lookup(m.from(game.turn)).unwrap().0,
         m
     );
     c.bench_function("Find first move when only pawn moves are available", |b| {
@@ -152,6 +152,13 @@ fn bench(c: &mut Criterion) {
     c.bench_function("Construct LegalMovesFilter", |b| {
         b.iter(|| {
             let _ = LegalMovesFilter::new(&game);
+        });
+    });
+
+    let lmf = LegalMovesFilter::new(&game);
+    c.bench_function("Check a single move for legality", |b| {
+        b.iter(|| {
+            let _ = lmf.check(m);
         });
     });
 }
