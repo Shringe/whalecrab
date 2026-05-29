@@ -85,7 +85,6 @@ pub struct Game {
     pub black_attacks: BitBoard,
     pub white_check_rays: BitBoard,
     pub black_check_rays: BitBoard,
-    pub legal_moves: Option<Vec<Move>>,
     pub(crate) piece_table: PieceTable,
     #[cfg(feature = "panic_logger")]
     panic_logger: RefCell<BufLogger>,
@@ -152,7 +151,6 @@ impl Default for Game {
             black_occupied: EMPTY,
             occupied: EMPTY,
             position_history: PositionHistory::new(),
-            legal_moves: None,
             piece_table: PieceTable::new(),
             #[cfg(feature = "panic_logger")]
             panic_logger: RefCell::new(BufLogger::new()),
@@ -338,7 +336,6 @@ impl Game {
             black_occupied: EMPTY,
             occupied: EMPTY,
             position_history: PositionHistory::new(),
-            legal_moves: None,
             piece_table: PieceTable::new(),
             #[cfg(feature = "panic_logger")]
             panic_logger: RefCell::new(BufLogger::new()),
@@ -533,15 +530,6 @@ impl Game {
             self.full_move_clock += 1;
         }
         self.refresh();
-        if let Some(moves) = &self.legal_moves
-            && moves.is_empty()
-        {
-            self.state = if self.is_in_check(self.turn) {
-                State::Checkmate
-            } else {
-                State::Stalemate
-            };
-        }
 
         // Half move timeout
         let should_reset_half_move_timeout = match last_move {
@@ -560,19 +548,19 @@ impl Game {
             self.half_move_timeout += 1;
         }
 
-        if self.half_move_timeout == 50 {
-            self.state = State::Timeout;
-        }
-
         // Repetition
         if let Some(times_seen) = self.seen_positions.get_mut(&self.hash) {
-            if *times_seen == 2 {
-                self.state = State::Repetition;
-            }
             *times_seen += 1;
+            if *times_seen == 3 {
+                self.state = State::Repetition;
+                // Skip the below state determination
+                return;
+            }
         } else {
             self.seen_positions.insert(self.hash, 1);
         }
+
+        self.state = self.determine_state();
     }
 
     /// Reverses turn color and full_move_clock to the last turn
@@ -634,8 +622,26 @@ impl Game {
         self.hash = hasher.finish();
 
         self.update_attacks();
-        let moves = self.generate_all_legal_moves();
-        self.legal_moves = Some(moves);
+    }
+
+    /// This method will check for all states aside from `State::Repetition`
+    fn determine_state(&self) -> State {
+        let has_moves = match self.turn {
+            PieceColor::White => self.lazy_legal_moves_white().next().is_some(),
+            PieceColor::Black => self.lazy_legal_moves_black().next().is_some(),
+        };
+
+        if !has_moves {
+            if self.is_in_check(self.turn) {
+                State::Checkmate
+            } else {
+                State::Stalemate
+            }
+        } else if self.half_move_timeout == 50 {
+            State::Timeout
+        } else {
+            State::InProgress
+        }
     }
 
     /// Calculates the attack bitboard for the given player
@@ -949,6 +955,7 @@ impl Game {
     /// Returns the first legal move found if one exists.
     /// WARNING: full legality checks not yet implemented; this function could return a move that
     /// is only psuedo legal.
+    #[deprecated = "Use find_first_legal_move_white"]
     pub fn find_first_psuedo_legal_move_white(&self) -> Option<Move> {
         let enemy_occupied = self.black_occupied;
 
@@ -1111,10 +1118,7 @@ impl Game {
             return Vec::new();
         }
 
-        match self.legal_moves.take() {
-            Some(legal_moves) => legal_moves,
-            None => self.generate_all_legal_moves(),
-        }
+        self.generate_all_legal_moves()
     }
 
     /// Generates all legal moves for the current player. This also updates position state
