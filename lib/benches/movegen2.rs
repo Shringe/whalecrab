@@ -4,13 +4,12 @@ use std::hint::black_box;
 
 use criterion::Criterion;
 use whalecrab_lib::{
-    bitboard::EMPTY,
     movegen::{
-        moves::Move,
+        legal_moves::LegalMovesFilter,
         pieces::{bishop, king, knight, pawn, piece::PieceColor, queen, rook},
     },
     position::game::Game,
-    vectors::{ArrayVec, UnsafeVec},
+    vectors::UnsafeVec,
 };
 
 fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
@@ -27,16 +26,27 @@ fn bench_game(c: &mut Criterion, group_name: &str, game: Game) {
 
     let mut group = c.benchmark_group(group_name);
 
-    let m = game.find_first_psuedo_legal_move_white();
+    let m = game.find_first_legal_move_white();
     println!(
         "First legal move: {:?} {:?}",
         m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
         m
     );
-    group.bench_function("Find first move", |b| {
+    group.bench_function("Find first legal move", |b| {
         b.iter(|| {
-            let m = game.find_first_psuedo_legal_move_white();
-            black_box(m);
+            let _ = game.find_first_legal_move_white();
+        });
+    });
+
+    let m = game.lazy_psuedo_legal_moves_white().next();
+    println!(
+        "First legal move: {:?} {:?}",
+        m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
+        m
+    );
+    group.bench_function("Find first psuedo legal move", |b| {
+        b.iter(|| {
+            let _ = game.lazy_psuedo_legal_moves_white().next();
         });
     });
 
@@ -126,7 +136,8 @@ fn bench_lategame(c: &mut Criterion) {
 
 fn bench(c: &mut Criterion) {
     let game = common::only_pawn_moves();
-    let m = game.find_first_psuedo_legal_move_white();
+
+    let m = game.find_first_legal_move_white();
     println!(
         "First legal move: {:?} {:?}",
         m.map(|m| game.piece_lookup(m.from(game.turn)).unwrap().0),
@@ -134,13 +145,13 @@ fn bench(c: &mut Criterion) {
     );
     c.bench_function("Find first move when only pawn moves are available", |b| {
         b.iter(|| {
-            // TODO: We should call game.find_first_legal_move_white() when legal move filtering is
-            // implemented into that method
-            if game.white_pawns != EMPTY {
-                let mut moves = ArrayVec::<Move, 32>::new();
-                pawn::push_psuedo_legal_moves_white(&mut moves, &game);
-                black_box(moves.first());
-            }
+            let _ = game.find_first_legal_move_white();
+        });
+    });
+
+    c.bench_function("Construct LegalMovesFilter", |b| {
+        b.iter(|| {
+            let _ = LegalMovesFilter::new(&game);
         });
     });
 }

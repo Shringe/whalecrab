@@ -806,6 +806,8 @@ impl Game {
 
     pub fn lazy_psuedo_legal_moves_white(&self) -> impl Iterator<Item = Move> {
         let enemy_occupied = self.black_occupied;
+        // TODO: Figure out lazy computation for this value. Generators will probably make this
+        // much easier.
         let kingless_bb = self.occupied ^ self.black_kings;
 
         self.white_knights
@@ -857,14 +859,16 @@ impl Game {
                 .flatten(),
             )
             .chain(
-                (self.white_pawns != EMPTY)
-                    .then(move || {
+                std::iter::once_with(move || {
+                    if self.white_pawns != EMPTY {
                         let mut moves = ArrayVec::<Move, 32>::new();
                         pawn::push_psuedo_legal_moves_white(&mut moves, self);
                         moves
-                    })
-                    .into_iter()
-                    .flatten(),
+                    } else {
+                        ArrayVec::new()
+                    }
+                })
+                .flatten(),
             )
     }
 
@@ -921,14 +925,16 @@ impl Game {
                 .flatten(),
             )
             .chain(
-                (self.black_pawns != EMPTY)
-                    .then(move || {
+                std::iter::once_with(move || {
+                    if self.black_pawns != EMPTY {
                         let mut moves = ArrayVec::<Move, 32>::new();
                         pawn::push_psuedo_legal_moves_black(&mut moves, self);
                         moves
-                    })
-                    .into_iter()
-                    .flatten(),
+                    } else {
+                        ArrayVec::new()
+                    }
+                })
+                .flatten(),
             )
     }
 
