@@ -72,7 +72,7 @@ impl std::fmt::Debug for MagicRook {
 
 impl MagicRook {
     pub const BIT_RANGE: RangeInclusive<u8> = Self::NUM_BITS..=Self::NUM_BITS;
-    const NUM_BITS: u8 = 9;
+    const NUM_BITS: u8 = 12;
     const NUM_SUBSETS: usize = 1 << Self::NUM_BITS as usize;
     const SHIFT: usize = 64 - Self::NUM_BITS as usize;
 
