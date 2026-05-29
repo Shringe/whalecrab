@@ -53,6 +53,16 @@ fn bench(c: &mut Criterion) {
         b.iter(|| game.generate_all_psuedo_legal_moves());
     });
 
+    c.bench_function("Generate all legal moves lazily", |b| {
+        b.iter(|| {
+            let mut moves = UnsafeVec::with_capacity(game.maximum_move_count_white() as usize);
+            for m in game.lazy_legal_moves_white() {
+                moves.push(m);
+            }
+            let _ = moves.finish();
+        });
+    });
+
     c.bench_function("Generate all psuedo legal moves lazily", |b| {
         b.iter(|| {
             let mut moves = UnsafeVec::with_capacity(game.maximum_move_count_white() as usize);
