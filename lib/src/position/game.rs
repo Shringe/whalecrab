@@ -34,7 +34,7 @@ use crate::{
     },
     rank::Rank,
     square::Square,
-    vectors::{ArrayVec, UnsafeVec},
+    vectors::{ArrayVec, UnsafeVec, Vector},
 };
 
 pub const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -1048,83 +1048,64 @@ impl Game {
         None
     }
 
+    pub fn push_psuedo_legal_moves_white<V: Vector<Move>>(&self, moves: &mut V) {
+        let kingless_bb = self.occupied ^ self.black_kings;
+        let enemy_occupied = self.black_occupied;
+        if self.white_pawns != EMPTY {
+            pawn::push_psuedo_legal_moves_white(moves, self);
+        }
+        knight::push_psuedo_legal_moves(moves, self, self.white_knights, enemy_occupied);
+        bishop::push_psuedo_legal_moves(
+            moves,
+            self,
+            self.white_bishops,
+            kingless_bb,
+            enemy_occupied,
+        );
+        rook::push_psuedo_legal_moves(moves, self, self.white_rooks, kingless_bb, enemy_occupied);
+        queen::push_psuedo_legal_moves(moves, self, self.white_queens, kingless_bb, enemy_occupied);
+        king::push_psuedo_legal_moves(moves, self, self.white_kings, enemy_occupied);
+        king::push_psuedo_legal_castling_moves_white(moves, self);
+    }
+
+    pub fn push_psuedo_legal_moves_black<V: Vector<Move>>(&self, moves: &mut V) {
+        let kingless_bb = self.occupied ^ self.white_kings;
+        let enemy_occupied = self.white_occupied;
+        if self.black_pawns != EMPTY {
+            pawn::push_psuedo_legal_moves_black(moves, self);
+        }
+        knight::push_psuedo_legal_moves(moves, self, self.black_knights, enemy_occupied);
+        bishop::push_psuedo_legal_moves(
+            moves,
+            self,
+            self.black_bishops,
+            kingless_bb,
+            enemy_occupied,
+        );
+        rook::push_psuedo_legal_moves(moves, self, self.black_rooks, kingless_bb, enemy_occupied);
+        queen::push_psuedo_legal_moves(moves, self, self.black_queens, kingless_bb, enemy_occupied);
+        king::push_psuedo_legal_moves(moves, self, self.black_kings, enemy_occupied);
+        king::push_psuedo_legal_castling_moves_black(moves, self);
+    }
+
+    pub fn push_psuedo_legal_moves<V: Vector<Move>>(&self, moves: &mut V) {
+        match self.turn {
+            PieceColor::White => self.push_psuedo_legal_moves_white(moves),
+            PieceColor::Black => self.push_psuedo_legal_moves_black(moves),
+        }
+    }
+
     /// Generates all psuedo legal moves for the current player
     pub fn generate_all_psuedo_legal_moves(&self) -> Vec<Move> {
         match self.turn {
             PieceColor::White => {
-                let kingless_bb = self.occupied ^ self.black_kings;
-                let enemy_occupied = self.black_occupied;
                 let mut moves = UnsafeVec::with_capacity(self.maximum_move_count_white() as usize);
-                if self.white_pawns != EMPTY {
-                    pawn::push_psuedo_legal_moves_white(&mut moves, self);
-                }
-                knight::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.white_knights,
-                    enemy_occupied,
-                );
-                bishop::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.white_bishops,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                rook::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.white_rooks,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                queen::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.white_queens,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                king::push_psuedo_legal_moves(&mut moves, self, self.white_kings, enemy_occupied);
-                king::push_psuedo_legal_castling_moves_white(&mut moves, self);
+                self.push_psuedo_legal_moves_white(&mut moves);
                 moves.finish()
             }
             PieceColor::Black => {
-                let kingless_bb = self.occupied ^ self.white_kings;
-                let enemy_occupied = self.white_occupied;
                 let mut moves = UnsafeVec::with_capacity(self.maximum_move_count_black() as usize);
-                if self.black_pawns != EMPTY {
-                    pawn::push_psuedo_legal_moves_black(&mut moves, self);
-                }
-                knight::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.black_knights,
-                    enemy_occupied,
-                );
-                bishop::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.black_bishops,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                rook::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.black_rooks,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                queen::push_psuedo_legal_moves(
-                    &mut moves,
-                    self,
-                    self.black_queens,
-                    kingless_bb,
-                    enemy_occupied,
-                );
-                king::push_psuedo_legal_moves(&mut moves, self, self.black_kings, enemy_occupied);
-                king::push_psuedo_legal_castling_moves_black(&mut moves, self);
+                self.push_psuedo_legal_moves_black(&mut moves);
                 moves.finish()
             }
         }
