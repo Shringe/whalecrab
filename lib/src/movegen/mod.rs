@@ -1,3 +1,4 @@
+pub mod legal_moves;
 pub mod make;
 pub mod moves;
 pub mod pieces;

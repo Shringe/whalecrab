@@ -1,6 +1,6 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    movegen::moves::Move,
+    movegen::{legal_moves::LegalMovesFilter, moves::Move},
     position::game::Game,
     rank::Rank,
     square::Square,
@@ -132,107 +132,11 @@ impl Game {
     /// Filters out psuedo_legal moves that are found to be illegal
     pub fn legal_moves_filter(&self, psuedo_legal: Vec<Move>) -> Vec<Move> {
         let mut legal = Vec::with_capacity(psuedo_legal.len());
-
-        let enemy = self.turn.opponent();
-        let attack_board = self.get_attacks(&enemy);
-        let checks = *self.get_check_rays(&enemy);
-
-        let kingbb = self.get_pieces(&PieceType::King, &self.turn);
-        let king = kingbb.to_square();
-        let king_attackers = self.attackers(king);
+        let lmf = LegalMovesFilter::new(self);
 
         for m in psuedo_legal {
-            let from = m.from(self.turn);
-            let to = m.to(self);
-            let frombb = BitBoard::from_square(from);
-            let tobb = BitBoard::from_square(to);
-
-            let special_moves_is_legal = || {
-                if let Move::CaptureEnPassant { .. } = m {
-                    let pawn_rank = from.get_rank();
-                    let king_rank = king.get_rank();
-
-                    if pawn_rank != king_rank {
-                        return true;
-                    }
-
-                    let remaining_row =
-                        self.occupied ^ frombb ^ to.get_file().mask() & pawn_rank.mask();
-
-                    if remaining_row.popcnt() < 2 {
-                        return true;
-                    }
-
-                    // Ensure that the en_passant_capture does not leave an enemy horizontal ray
-                    // piece staring at our king
-                    let mut was_king_or_horizontal_ray = false;
-                    for sq in remaining_row {
-                        let (piece, color) = unsafe { self.piece_lookup(sq).unwrap_unchecked() };
-                        let is_king_or_horizontal_ray = (color == self.turn
-                            && piece == PieceType::King)
-                            || (color != self.turn
-                                && (piece == PieceType::Rook || piece == PieceType::Queen));
-
-                        if is_king_or_horizontal_ray && was_king_or_horizontal_ray {
-                            return false;
-                        }
-
-                        was_king_or_horizontal_ray = is_king_or_horizontal_ray;
-                    }
-
-                    return true;
-                }
-
-                true
-            };
-
-            if !special_moves_is_legal() {
+            if !lmf.check(m) {
                 continue;
-            }
-
-            let is_moving_king = kingbb.has_square(frombb);
-
-            // Handle being in check
-            match king_attackers.popcnt() {
-                1 => {
-                    let attacker = king_attackers.to_square();
-                    let attacking_piece = self.piece_lookup(attacker).unwrap().0;
-
-                    let is_blocking = !is_moving_king
-                        && attacking_piece.is_ray_piece()
-                        && attacker.path_to(king)
-                            & attacking_piece
-                                .psuedo_legal_targets_fast(self, &attacker)
-                                .targets
-                            & tobb
-                            != EMPTY;
-
-                    let is_capturing = m.is_capture();
-                    let is_capturing_attacking_piece =
-                        is_capturing && king_attackers.has_square(tobb);
-
-                    if !(is_moving_king || is_capturing_attacking_piece || is_blocking) {
-                        continue;
-                    }
-                }
-                2 => {
-                    if !is_moving_king {
-                        continue;
-                    }
-                }
-                _ => {}
-            }
-
-            if is_moving_king {
-                // Prevent moving into check
-                if attack_board.has_square(tobb) {
-                    continue;
-                }
-            } else {
-                // Prevent moving piece blocking check (pin)
-                if checks.has_square(frombb) {
-                    continue;
-                }
             }
 
             debug_assert!(
