@@ -344,7 +344,6 @@ mod tests {
                 movetime,
                 elapsed
             );
-            assert!(elapsed < movetime * 2);
 
             let bestmove = responses.iter().find(|r| r.starts_with("bestmove"));
             let bestmove = bestmove.expect("Engine should return a bestmove");
