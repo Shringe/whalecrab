@@ -23,10 +23,6 @@ harness = false
 name = "unsafe_vec"
 harness = false
 
-[features]
-# TODO: remove default features
-default = ["rand"]
-
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
 
