@@ -18,7 +18,7 @@
             inherit system;
           };
 
-          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+          cargoToml = fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
 
           makeCratePackage =
@@ -64,9 +64,9 @@
           };
 
           devShells.default = pkgs.mkShell {
-            shellHook = ''
-              export RUSTFLAGS="-C target-cpu=native"
-            '';
+            RUSTFLAGS = "-C target-cpu=native";
+            RUST_LOG = "debug";
+            RUST_MIN_STACK = 16 * 1024 * 1024;
 
             buildInputs = with pkgs; [
               git
