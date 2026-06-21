@@ -2,6 +2,13 @@ use std::{path::PathBuf, time::Duration};
 
 use clap::Parser;
 
+fn get_available_threads() -> u8 {
+    std::thread::available_parallelism()
+        .ok()
+        .and_then(|x| x.get().try_into().ok())
+        .unwrap_or(1)
+}
+
 #[derive(Parser, Debug, Clone)]
 pub struct Args {
     #[arg(long)]
@@ -23,7 +30,7 @@ pub struct Args {
     pub seed: Option<u32>,
 
     /// Number of threads to use
-    #[arg(long, default_value_t = 16)]
+    #[arg(long, default_value_t = get_available_threads())]
     pub threads: u8,
 
     /// Path to the database. You can set this to `/dev/null` to disable the db
