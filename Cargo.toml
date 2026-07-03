@@ -6,6 +6,7 @@ resolver = "2"
 version = "1.5.5"
 edition = "2024"
 
+# This is the most performant set of flags I have found
 [profile.release]
 opt-level = 3
 codegen-units = 1
@@ -13,6 +14,8 @@ lto = "fat"
 strip = true
 panic = "abort"
 
+# This is the second most performant set of flags I have found.
+# These flags also allow for a much faster build time than the release profile.
 [profile.bench]
 inherits = "release"
 codegen-units = 16
