@@ -205,3 +205,24 @@ macro_rules! implement_operations {
         $crate::implement_operation!($struct, Ord);
     };
 }
+
+/// Similar to `debug_assert!`, but compiles to `std::hint::assert_unchecked` when `debug_assertions` are
+/// disabled. This is better than using `std::hint::assert_unchecked` directly.
+///
+/// # Safety
+/// This can lead to undefined behavior in release if the provided condition is ever false.
+#[macro_export]
+macro_rules! assert_unchecked {
+    ($cond:expr $(,)?) => {
+        #[cfg(debug_assertions)]
+        assert!($cond);
+        #[cfg(not(debug_assertions))]
+        unsafe { std::hint::assert_unchecked($cond) };
+    };
+    ($cond:expr, $($arg:tt)+) => {
+        #[cfg(debug_assertions)]
+        assert!($cond, $($arg)+);
+        #[cfg(not(debug_assertions))]
+        unsafe { std::hint::assert_unchecked($cond) };
+    };
+}
