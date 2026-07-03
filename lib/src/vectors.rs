@@ -1,4 +1,4 @@
-use std::hint::assert_unchecked;
+use crate::assert_unchecked;
 
 pub trait Vector<T> {
     #[allow(unused)]
@@ -18,8 +18,7 @@ pub struct ArrayVec<T: Copy, const N: usize> {
 
 impl<T: Copy, const N: usize> Vector<T> for ArrayVec<T, N> {
     fn push(&mut self, item: T) {
-        debug_assert!(self.counter < N, "ArrayVec overflow: capacity is {N}");
-        unsafe { assert_unchecked(self.counter < N) };
+        assert_unchecked!(self.counter < N, "ArrayVec overflow: capacity is {N}");
         self.list[self.counter] = item;
         self.counter += 1;
     }
@@ -44,7 +43,7 @@ impl<T: Copy, const N: usize> ArrayVec<T, N> {
     }
 
     pub fn finish(self) -> [Option<T>; N] {
-        unsafe { assert_unchecked(self.counter < N) };
+        assert_unchecked!(self.counter < N);
         let mut out = [None; N];
         #[allow(clippy::needless_range_loop)]
         for i in 0..self.counter {
@@ -54,7 +53,7 @@ impl<T: Copy, const N: usize> ArrayVec<T, N> {
     }
 
     pub fn first(&self) -> Option<T> {
-        unsafe { assert_unchecked(self.counter < N) };
+        assert_unchecked!(self.counter < N);
         if self.counter == 0 {
             None
         } else {
@@ -78,7 +77,7 @@ impl<T: Copy, const N: usize> Iterator for ArrayVecIter<T, N> {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        unsafe { assert_unchecked(self.0.counter < N) };
+        assert_unchecked!(self.0.counter < N);
         if self.0.counter == 0 {
             None
         } else {

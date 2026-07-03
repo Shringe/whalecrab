@@ -1,14 +1,13 @@
 use std::fmt::{self, Display};
-use std::hint::assert_unchecked;
 use std::str::FromStr;
 
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
-use crate::implement_operations;
 use crate::movegen::moves::Move;
 use crate::movegen::pieces::piece::{PieceColor, PieceMoveInfo, PieceType};
 use crate::position::game::Game;
 use crate::rank::Rank;
+use crate::{assert_unchecked, implement_operations};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
@@ -163,17 +162,17 @@ impl Square {
     /// # Safety
     /// `sq` should be less than 64
     pub const unsafe fn new_unchecked(sq: u8) -> Square {
-        unsafe { assert_unchecked(sq < 64) };
+        assert_unchecked!(sq < 64);
         Square(sq)
     }
 
-    pub const fn to_int(&self) -> u8 {
-        unsafe { assert_unchecked(self.0 < 64) };
+    pub const fn to_int(self) -> u8 {
+        assert_unchecked!(self.0 < 64);
         self.0
     }
 
     pub const fn index(self) -> usize {
-        unsafe { assert_unchecked(self.0 < 64) };
+        assert_unchecked!(self.0 < 64);
         self.0 as usize
     }
 
