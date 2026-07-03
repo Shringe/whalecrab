@@ -1,7 +1,3 @@
 /target
 /result
 whalecrab_essex.csv
-
-# These are very large and should be generated locally
-/magics/src/rooks.rs
-/magics/src/bishops.rs
