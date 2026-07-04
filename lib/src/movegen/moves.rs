@@ -355,8 +355,14 @@ impl Move {
         }
     }
 
-    /// Formats the move in uci notation, such as e2e4
-    pub fn to_shorthand(self, game: &mut Game) -> String {
+    /// Formats the move in Standard Algebraic Notation, such as Bxf7+.
+    /// `self` will be played and unplayed on the board to determine whether the move is a checkmate or check.
+    ///
+    /// This was created following the specifications listed on the Chess Programming Wiki,
+    /// and by verifying the notation against the lichess analysis board.
+    /// Chess Programming Wiki: https://www.chessprogramming.org/Algebraic_Chess_Notation#Standard_Algebraic_Notation_.28SAN.29
+    /// Lichess Analysis Board: https://lichess.org/analysis
+    pub fn to_san(self, game: &mut Game) -> String {
         match self {
             Move::Normal { from, to, capture } => {
                 let mut out = String::with_capacity(MAX_SHORTHAND_NOTATION_EXPECTED_BYTES);
@@ -560,22 +566,22 @@ mod tests {
             capture: Some(PieceType::Pawn),
         };
 
-        assert_eq!(white_castles_queenside.to_shorthand(&mut game), "O-O-O");
-        assert_eq!(white_promotes_to_queen.to_shorthand(&mut game), "a8=Q");
+        assert_eq!(white_castles_queenside.to_san(&mut game), "O-O-O");
+        assert_eq!(white_promotes_to_queen.to_san(&mut game), "a8=Q");
 
         game.play(&white_castles_queenside);
-        assert_eq!(black_castles_kingside.to_shorthand(&mut game), "O-O");
-        assert_eq!(black_promotes_to_knight.to_shorthand(&mut game), "hxg1=N");
+        assert_eq!(black_castles_kingside.to_san(&mut game), "O-O");
+        assert_eq!(black_promotes_to_knight.to_san(&mut game), "hxg1=N");
 
         game.play(&black_castles_kingside);
-        assert_eq!(white_creates_en_passant.to_shorthand(&mut game), "g4");
+        assert_eq!(white_creates_en_passant.to_san(&mut game), "g4");
 
         game.play(&white_creates_en_passant);
-        assert_eq!(black_captures_en_passant.to_shorthand(&mut game), "fxg3");
+        assert_eq!(black_captures_en_passant.to_san(&mut game), "fxg3");
 
         game.play(&black_captures_en_passant);
         game.play(&white_promotes_to_queen);
-        assert_eq!(black_moves_rook.to_shorthand(&mut game), "Rxf2");
+        assert_eq!(black_moves_rook.to_san(&mut game), "Rxf2");
     }
 
     #[test]
@@ -584,7 +590,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::G5, Square::F4, &game);
         let expected = "gxf4";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "xf4", "Pawn file is always included");
         assert_eq!(actual, expected);
     }
@@ -595,7 +601,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::G3, Square::E5, &game);
         let expected = "Bxe5";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_eq!(actual, expected);
     }
 
@@ -605,7 +611,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::G3, Square::E5, &game);
         let expected = "B3xe5";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "Bxe5", "Missing Rank specifier");
         assert_ne!(actual, "B7xe5", "Wrong bishop");
         assert_ne!(actual, "Bgxe5", "Unnecessary File specifier");
@@ -618,7 +624,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::C3, Square::E5, &game);
         let expected = "Bcxe5";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "Bxe5", "Missing File specifier");
         assert_ne!(actual, "Bgxe5", "Wrong bishop");
         assert_ne!(actual, "B7xe5", "Unnecessary Rank specifier");
@@ -631,7 +637,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::G3, Square::E5, &game);
         let expected = "Bg3xe5";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "Bxe5", "Missing File and Rank specifiers");
         assert_ne!(actual, "Bgxe5", "Missing Rank specifier");
         assert_ne!(actual, "B3xe5", "Missing File specifier");
@@ -646,8 +652,8 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let noob = Move::infer(Square::F5, Square::G4, &game);
         let pro = Move::infer(Square::F4, Square::G3, &game);
-        assert_eq!(noob.to_shorthand(&mut game), "fxg4");
-        assert_eq!(pro.to_shorthand(&mut game), "fxg3");
+        assert_eq!(noob.to_san(&mut game), "fxg4");
+        assert_eq!(pro.to_san(&mut game), "fxg3");
     }
 
     #[test]
@@ -656,7 +662,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::C4, Square::F7, &game);
         let expected = "Bxf7+";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "Bxf7", "Missing check specifier");
         assert_eq!(actual, expected);
     }
@@ -667,7 +673,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::H5, Square::F7, &game);
         let expected = "Qxf7#";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_ne!(actual, "Qxf7", "Missing checkmate specifier");
         assert!(
             !actual.contains('+'),
@@ -682,7 +688,7 @@ mod tests {
         let mut game = Game::from_fen(fen).unwrap();
         let m = Move::infer(Square::E3, Square::F3, &game);
         let expected = "Kf3";
-        let actual = m.to_shorthand(&mut game);
+        let actual = m.to_san(&mut game);
         assert_eq!(actual, expected);
     }
 
