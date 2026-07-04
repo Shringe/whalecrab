@@ -458,12 +458,14 @@ impl Move {
     }
 
     /// Formats the move in uci notation, such as e2e4
-    pub fn to_uci(&self, game: &Game) -> String {
-        format!(
-            "{}{}",
-            self.from(game.turn).to_string().to_lowercase(),
-            self.to(game).to_string().to_lowercase()
-        )
+    pub fn to_uci(self, game: &Game) -> String {
+        let mut out = String::with_capacity(5);
+        out.push_str(&self.from(game.turn).to_string().to_lowercase());
+        out.push_str(&self.to(game).to_string().to_lowercase());
+        if let Move::Promotion { piece, .. } = self {
+            out.push(piece.notation().to_ascii_lowercase());
+        }
+        out
     }
 
     /// Returns a move from a uci string
@@ -508,6 +510,17 @@ mod tests {
         };
 
         assert_eq!(m.to_uci(&game), uci.to_owned());
+    }
+
+    #[test]
+    fn to_uci_promotion() {
+        let fen = "rnbqkb2/pppppp1P/8/8/8/8/PPPPPP2/RNBQKB2 w Qq - 0 1";
+        let game = Game::from_fen(fen).unwrap();
+        let m = Move::infer(Square::H7, Square::H8, &game);
+        let expected = "h7h8q";
+        let actual = m.to_uci(&game);
+        assert_eq!(actual, expected);
+        assert!(actual.len() <= 5);
     }
 
     #[test]
