@@ -41,6 +41,21 @@ impl PieceColor {
             PieceColor::Black => Rank::First,
         }
     }
+
+    pub const fn create_en_passant_rank(&self) -> Rank {
+        match self {
+            PieceColor::White => Rank::Fourth,
+            PieceColor::Black => Rank::Fifth,
+        }
+    }
+
+    /// Uppercases a piece notation for White and lowercases it for Black
+    pub fn color_notation(self, notation: char) -> char {
+        match self {
+            PieceColor::White => notation.to_ascii_uppercase(),
+            PieceColor::Black => notation.to_ascii_lowercase(),
+        }
+    }
 }
 
 pub const ALL_PIECE_TYPES: [PieceType; 6] = [
@@ -114,6 +129,24 @@ impl PieceType {
 
     pub fn is_ray_piece(&self) -> bool {
         matches!(self, PieceType::Bishop | PieceType::Rook | PieceType::Queen)
+    }
+
+    /// Returns the uppercase letter representing the piece type in standard notation
+    pub fn notation(self) -> char {
+        match self {
+            PieceType::Pawn => 'P',
+            PieceType::Knight => 'N',
+            PieceType::Bishop => 'B',
+            PieceType::Rook => 'R',
+            PieceType::Queen => 'Q',
+            PieceType::King => 'K',
+        }
+    }
+
+    /// Returns the letter representing the piece type in standard notation.
+    /// The letter is uppercase for White and lowercase for Black.
+    pub fn colored_notation(self, color: PieceColor) -> char {
+        color.color_notation(self.notation())
     }
 }
 

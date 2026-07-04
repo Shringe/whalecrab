@@ -81,6 +81,19 @@ impl File {
         }
     }
 
+    pub fn notation(self) -> char {
+        match self {
+            File::A => 'a',
+            File::B => 'b',
+            File::C => 'c',
+            File::D => 'd',
+            File::E => 'e',
+            File::F => 'f',
+            File::G => 'g',
+            File::H => 'h',
+        }
+    }
+
     /// Creates a bitboard with the entire file set
     #[inline]
     pub const fn mask(self) -> BitBoard {

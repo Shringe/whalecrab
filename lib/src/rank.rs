@@ -1,6 +1,6 @@
 use std::fmt::{self};
 
-use crate::bitboard::BitBoard;
+use crate::{assert_unchecked, bitboard::BitBoard};
 
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
@@ -53,7 +53,12 @@ impl Rank {
     }
 
     pub const fn to_int(self) -> u8 {
+        assert_unchecked!((self as u8) < 8);
         self as u8
+    }
+
+    pub fn notation(self) -> char {
+        unsafe { char::from_digit(self.to_int() as u32 + 1, 10).unwrap_unchecked() }
     }
 
     /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
