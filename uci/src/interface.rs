@@ -37,7 +37,7 @@ impl FromStr for BestmoveNotation {
     type Err = BestmoveNotationParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.to_lowercase().as_str() {
             "uci" | "universalchessinterface" => Ok(BestmoveNotation::UniversalChessInterface),
             "san" | "standardalgebraicnotation" => Ok(BestmoveNotation::StandardAlgebraicNotation),
             _ => Err(BestmoveNotationParseError::UnknownOption),
