@@ -22,11 +22,35 @@ pub enum UciHandleAction {
     Continue,
 }
 
+#[derive(Debug)]
+pub enum BestmoveNotationParseError {
+    UnknownOption,
+}
+
+/// The notation to respond with the `bestmove` in
+pub enum BestmoveNotation {
+    UniversalChessInterface,
+    StandardAlgebraicNotation,
+}
+
+impl FromStr for BestmoveNotation {
+    type Err = BestmoveNotationParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "uci" | "universalchessinterface" => Ok(BestmoveNotation::UniversalChessInterface),
+            "san" | "standardalgebraicnotation" => Ok(BestmoveNotation::StandardAlgebraicNotation),
+            _ => Err(BestmoveNotationParseError::UnknownOption),
+        }
+    }
+}
+
 /// Stores the state of the uci interface
 pub struct UciInterface {
     pub engine: Engine,
     pub depth: u8,
     pub duration: Duration,
+    pub bestmove_notation: BestmoveNotation,
     /// The last score the engine came up with
     last_score: Score,
 }
@@ -40,6 +64,7 @@ impl Default for UciInterface {
             duration: Duration::from_millis(30),
             #[cfg(not(debug_assertions))]
             duration: Duration::from_secs(3),
+            bestmove_notation: BestmoveNotation::UniversalChessInterface,
             last_score: Score::default(),
         }
     }
@@ -108,6 +133,9 @@ impl UciInterface {
                     Duration::from_secs(3).as_millis(),
                     Duration::from_hours(1).as_millis(),
                 );
+                uci_send!(
+                    "option name BestmoveNotation type combo default UniversalChessInterface var UniversalChessInterface var StandardAlgebraicNotation"
+                );
                 uci_send!("uciok");
             }
 
@@ -118,7 +146,7 @@ impl UciInterface {
                         self.depth = depth
                     }
                     Err(e) => {
-                        log!("Failed to parse depth: {}", e);
+                        log!("Failed to parse depth: {:?}", e);
                     }
                 },
                 "maxmovetimems" => match value.parse::<u64>() {
@@ -130,7 +158,11 @@ impl UciInterface {
                         log!("Setting max move time to {}ms", ms);
                         self.duration = Duration::from_millis(ms);
                     }
-                    Err(e) => log!("Failed to parse movetime: {}", e),
+                    Err(e) => log!("Failed to parse movetime: {:?}", e),
+                },
+                "bestmovenotation" => match value.parse::<BestmoveNotation>() {
+                    Ok(notation) => self.bestmove_notation = notation,
+                    Err(e) => log!("Failed to parse bestmove notation: {:?}", e),
                 },
                 _ => {
                     log!("Unknown option: {}", name);
@@ -211,7 +243,15 @@ impl UciInterface {
                     }
                 };
 
-                let best_move_uci = best_move.to_uci(&self.engine.game);
+                let best_move_uci = match self.bestmove_notation {
+                    BestmoveNotation::UniversalChessInterface => {
+                        best_move.to_uci(&self.engine.game)
+                    }
+                    BestmoveNotation::StandardAlgebraicNotation => {
+                        best_move.to_san(&mut self.engine.game)
+                    }
+                };
+
                 log!("Fen before playing the move: {}", self.engine.game.to_fen());
                 uci_send!("bestmove {}", best_move_uci);
                 self.last_score = result.info.score;
