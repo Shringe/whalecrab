@@ -20,9 +20,11 @@ pub(crate) enum NodeType {
     All,
 }
 
+type FullEntry = Option<(TranspositionTableEntry, u64)>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct TranspositionTable {
-    entries: Box<[Option<TranspositionTableEntry>]>,
+    entries: Box<[FullEntry]>,
     mask: usize,
 }
 
@@ -34,7 +36,7 @@ impl Default for TranspositionTable {
 
 impl TranspositionTable {
     fn from_size(kilobytes: usize) -> Self {
-        let entry_size = std::mem::size_of::<Option<TranspositionTableEntry>>();
+        let entry_size = std::mem::size_of::<FullEntry>();
         let count = (kilobytes * 1024 / entry_size).next_power_of_two();
         Self {
             entries: vec![None; count].into_boxed_slice(),
@@ -59,11 +61,14 @@ impl TranspositionTable {
     }
 
     pub(crate) fn get(&self, hash: u64) -> Option<&TranspositionTableEntry> {
-        self.entries[hash as usize & self.mask].as_ref()
+        let key = hash as usize & self.mask;
+        let (entry, checksum) = self.entries[key].as_ref()?;
+        if *checksum == hash { Some(entry) } else { None }
     }
 
     pub(crate) fn insert(&mut self, hash: u64, entry: TranspositionTableEntry) {
-        self.entries[hash as usize & self.mask] = Some(entry);
+        let key = hash as usize & self.mask;
+        self.entries[key] = Some((entry, hash));
     }
 
     pub(crate) fn clear(&mut self) {
