@@ -26,6 +26,8 @@ type FullEntry = Option<(TranspositionTableEntry, u64)>;
 pub(crate) struct TranspositionTable {
     entries: Box<[FullEntry]>,
     mask: usize,
+    #[cfg(debug_assertions)]
+    pub num_collisions: std::cell::RefCell<usize>,
 }
 
 impl Default for TranspositionTable {
@@ -41,6 +43,8 @@ impl TranspositionTable {
         Self {
             entries: vec![None; count].into_boxed_slice(),
             mask: count - 1,
+            #[cfg(debug_assertions)]
+            num_collisions: std::cell::RefCell::new(0),
         }
     }
 
@@ -63,7 +67,15 @@ impl TranspositionTable {
     pub(crate) fn get(&self, hash: u64) -> Option<&TranspositionTableEntry> {
         let key = hash as usize & self.mask;
         let (entry, checksum) = self.entries[key].as_ref()?;
-        if *checksum == hash { Some(entry) } else { None }
+        if *checksum == hash {
+            Some(entry)
+        } else {
+            #[cfg(debug_assertions)]
+            {
+                *self.num_collisions.try_borrow_mut().ok()? += 1;
+            }
+            None
+        }
     }
 
     pub(crate) fn insert(&mut self, hash: u64, entry: TranspositionTableEntry) {
