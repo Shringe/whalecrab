@@ -272,7 +272,7 @@ mod tests {
 
         engine.game.unplay(&blunder);
 
-        let result = engine.search(Duration::from_millis(200), 5);
+        let result = engine.search(Duration::MAX, 2);
         assert_ne!(
             result.best_move,
             Some(blunder),

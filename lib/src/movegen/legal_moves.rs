@@ -124,3 +124,23 @@ impl<'a> LegalMovesFilter<'a> {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::position::game::Game;
+
+    #[test]
+    fn pawn_recapture_through_queen_ray_should_be_legal() {
+        let fen = "r1b1k2r/pppp1ppp/2n1pn2/8/P1PP4/2b1q2N/3NBPPP/1RBQ1RK1 w kq - 0 11";
+        let game = Game::from_fen(fen).unwrap();
+        let lmf = LegalMovesFilter::new(&game);
+        let m = Move::Normal {
+            from: Square::F2,
+            to: Square::E3,
+            capture: Some(PieceType::Queen),
+        };
+        assert!(lmf.check(m));
+    }
+}
