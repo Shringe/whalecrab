@@ -27,6 +27,8 @@ pub(crate) struct TranspositionTable {
     entries: Box<[FullEntry]>,
     mask: usize,
     #[cfg(debug_assertions)]
+    // TODO: implement a method to estimate the amount of hash collisions that this isn't
+    // preventing
     pub num_collisions: std::cell::RefCell<usize>,
 }
 
