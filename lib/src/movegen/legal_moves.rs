@@ -77,6 +77,8 @@ impl<'a> LegalMovesFilter<'a> {
             }
         } else {
             // Prevent moving a pinned piece
+            // TODO: Pinned pieces should be able to move if their destination still blocks the
+            // pinning piece. Pinned pieces should also be able to capture the pinning piece.
             if self.checks.has_square(frombb) {
                 return false;
             }
@@ -141,6 +143,21 @@ mod tests {
             to: Square::E3,
             capture: Some(PieceType::Queen),
         };
+        assert!(!game.is_in_check(game.turn));
+        assert!(!game.is_in_check(game.turn.opponent()));
         assert!(lmf.check(m));
+    }
+
+    #[test]
+    fn pinned_piece_can_move_across_check_ray() {
+        let fen = "8/k7/8/8/8/BBB5/K1R1q3/BBB5 w - - 0 1";
+        let game = Game::from_fen(fen).unwrap();
+        let left = Move::infer(Square::C2, Square::B2, &game);
+        let right = Move::infer(Square::C2, Square::D2, &game);
+        let capture_attacker = Move::infer(Square::C2, Square::E2, &game);
+        let lmf = LegalMovesFilter::new(&game);
+        assert!(lmf.check(capture_attacker));
+        assert!(lmf.check(left));
+        assert!(lmf.check(right));
     }
 }
