@@ -235,4 +235,49 @@ mod tests {
         eprintln!("Possible moves: {:#?}", engine.game.legal_moves());
         should_play(&mut engine, expected, 7);
     }
+
+    #[test]
+    fn should_not_blunder_queen() {
+        let fen = "r1b1k2r/pppp1ppp/2n1pn2/8/P1PPq3/2b1P2N/3NBPPP/1RBQ1RK1 b kq - 6 10";
+        let mut engine = Engine::from_fen(fen).unwrap();
+        let blunder = Move::Normal {
+            from: Square::E4,
+            to: Square::E3,
+            capture: Some(PieceType::Pawn),
+        };
+        let recapture = Move::Normal {
+            from: Square::F2,
+            to: Square::E3,
+            capture: Some(PieceType::Queen),
+        };
+
+        eprintln!("Score before playing: {}", engine.grade_position());
+
+        assert!(engine.game.legal_moves().contains(&blunder));
+        engine.game.play(&blunder);
+
+        assert_ne!(engine.game.state, State::Checkmate);
+        eprintln!("Score after playing: {}", engine.grade_position());
+        assert!(
+            engine
+                .game
+                .generate_all_psuedo_legal_moves()
+                .contains(&recapture),
+            "Engine doesn't see the opponent's recapture move as a possibilty"
+        );
+        assert!(
+            engine.game.legal_moves().contains(&recapture),
+            "Engine doesn't think the opponent's recapture move is legal"
+        );
+
+        engine.game.unplay(&blunder);
+
+        let result = engine.search(Duration::from_millis(200), 5);
+        assert_ne!(
+            result.best_move,
+            Some(blunder),
+            "The engine blunders its queen with Qxe3! Search: {:#?}",
+            result
+        );
+    }
 }
