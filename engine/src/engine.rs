@@ -280,4 +280,13 @@ mod tests {
             result
         );
     }
+
+    #[test]
+    fn should_take_hanging_pinning_bishop() {
+        let fen = "rnbqk1nr/ppp2pp1/7p/3pp3/1b1PP3/8/PPPB1PPP/RN1QKBNR w KQkq - 0 1";
+        let mut engine = Engine::from_fen(fen).unwrap();
+        let expected = Move::infer(Square::D2, Square::B4, &engine.game);
+        let result = engine.search(Duration::MAX, 2);
+        assert_eq!(result.best_move, Some(expected));
+    }
 }
