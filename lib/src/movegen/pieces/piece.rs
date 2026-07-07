@@ -3,7 +3,7 @@ use crate::{
     movegen::{
         legal_moves::LegalMovesFilter,
         moves::Move,
-        pieces::{bishop, king, queen, rook},
+        pieces::{bishop, queen, rook},
     },
     position::game::Game,
     rank::Rank,
