@@ -1,6 +1,10 @@
 use crate::{
     bitboard::{BitBoard, EMPTY},
-    movegen::{legal_moves::LegalMovesFilter, moves::Move},
+    movegen::{
+        legal_moves::LegalMovesFilter,
+        moves::Move,
+        pieces::{bishop, king, queen, rook},
+    },
     position::game::Game,
     rank::Rank,
     square::Square,
@@ -67,6 +71,8 @@ pub const ALL_PIECE_TYPES: [PieceType; 6] = [
     PieceType::King,
 ];
 
+pub const ALL_RAY_PIECES: [PieceType; 3] = [PieceType::Bishop, PieceType::Rook, PieceType::Queen];
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn,
@@ -129,6 +135,17 @@ impl PieceType {
 
     pub fn is_ray_piece(&self) -> bool {
         matches!(self, PieceType::Bishop | PieceType::Rook | PieceType::Queen)
+    }
+
+    /// You should usually remove the enemy king from `game.occupied` before using this method.
+    /// This will return an empty `BitBoard` if `self` is not a ray piece.
+    pub fn magic_attacks(self, sq: Square, occupied: BitBoard) -> BitBoard {
+        match self {
+            PieceType::Bishop => bishop::magic_attacks(sq, occupied),
+            PieceType::Rook => rook::magic_attacks(sq, occupied),
+            PieceType::Queen => queen::magic_attacks(sq, occupied),
+            _ => EMPTY,
+        }
     }
 
     /// Returns the uppercase letter representing the piece type in standard notation

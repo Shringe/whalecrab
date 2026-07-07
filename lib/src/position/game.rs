@@ -22,7 +22,7 @@ use crate::{
             self,
             bishop::{self},
             king, knight, pawn,
-            piece::{ALL_PIECE_TYPES, PieceColor, PieceType},
+            piece::{ALL_PIECE_TYPES, ALL_RAY_PIECES, PieceColor, PieceType},
             queen::{self},
             rook::{self},
         },
@@ -767,6 +767,30 @@ impl Game {
         }
 
         attackers
+    }
+
+    /// Returns the squarebb of the piece pinning `sqbb` to the king and a bitboard of its pin/check
+    /// ray
+    pub fn checkers(&self, sqbb: BitBoard) -> Option<(BitBoard, BitBoard)> {
+        let color = self.determine_color(sqbb)?;
+        let enemy = color.opponent();
+        let checks = *self.get_check_rays(&enemy);
+        if !checks.has_square(sqbb) {
+            return None;
+        }
+
+        let king = self.get_king(color).to_square();
+        let occupied = self.occupied ^ sqbb;
+        for piece in ALL_RAY_PIECES {
+            let attacks = piece.magic_attacks(king, occupied);
+            let potential_enemies = *self.get_pieces(&piece, &enemy);
+            let checker = attacks & potential_enemies;
+            if checker != EMPTY {
+                return Some((checker, attacks & checks));
+            }
+        }
+
+        None
     }
 
     /// Determines color of standing piece.

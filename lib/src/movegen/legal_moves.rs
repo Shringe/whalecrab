@@ -77,10 +77,20 @@ impl<'a> LegalMovesFilter<'a> {
             }
         } else {
             // Prevent moving a pinned piece
-            // TODO: Pinned pieces should be able to move if their destination still blocks the
-            // pinning piece. Pinned pieces should also be able to capture the pinning piece.
             if self.checks.has_square(frombb) {
-                return false;
+                // TODO: there are surely faster ways to do this than computing `self.checkers` per pinned move,
+                // such as computing this once per pinned piece in `LegalMovesFilter::new` or tracking
+                // pinning pieces in `self.game`
+                let (checking_piecebb, check_ray) = self
+                    .game
+                    .checkers(frombb)
+                    .expect("Could not find the piece populating `self.checks`");
+                // Allow capturing the checking piece & moving within the check ray
+                if tobb != checking_piecebb
+                    && !(check_ray.has_square(frombb) && check_ray.has_square(tobb))
+                {
+                    return false;
+                }
             }
         }
 
@@ -156,8 +166,8 @@ mod tests {
         let right = Move::infer(Square::C2, Square::D2, &game);
         let capture_attacker = Move::infer(Square::C2, Square::E2, &game);
         let lmf = LegalMovesFilter::new(&game);
-        assert!(lmf.check(capture_attacker));
         assert!(lmf.check(left));
         assert!(lmf.check(right));
+        assert!(lmf.check(capture_attacker));
     }
 }
