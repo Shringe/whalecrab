@@ -89,3 +89,25 @@ impl TranspositionTable {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::AtomicU64;
+
+    use super::*;
+
+    #[test]
+    fn memory_layout() {
+        let full_entry_size = size_of::<Option<(TranspositionTableEntry, u64)>>();
+        let maybe_entry_size = size_of::<Option<TranspositionTableEntry>>();
+        let entry_size = size_of::<TranspositionTableEntry>();
+        // created from (Option<T>, u64)
+        let full_atomic_entry_size = size_of::<(AtomicU64, AtomicU64)>();
+        assert_eq!(
+            maybe_entry_size, entry_size,
+            "T does not support null pointer optimization"
+        );
+        assert_eq!(full_entry_size, 16);
+        assert_eq!(full_atomic_entry_size, full_entry_size);
+    }
+}
