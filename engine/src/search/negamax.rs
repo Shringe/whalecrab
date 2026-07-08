@@ -90,3 +90,18 @@ impl Engine {
         self.nega(timer, depth, Score::MIN, Score::MAX)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::timers::infinite::Infinite;
+
+    use super::*;
+
+    #[test]
+    fn negamax_result_equals_minimax_result_default_position() {
+        let mut engine = Engine::default();
+        let mresult = engine.minimax(&Infinite, 3);
+        let nresult = engine.negamax(&Infinite, 3);
+        assert_eq!(mresult, nresult);
+    }
+}

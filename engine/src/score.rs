@@ -23,8 +23,8 @@ impl fmt::Display for Score {
 }
 
 impl Score {
-    pub const MAX: Score = Score(i16::MAX);
-    pub const MIN: Score = Score(i16::MIN);
+    pub const MAX: Score = Score::new(30_000);
+    pub const MIN: Score = Score::new(-Score::MAX.to_int());
 
     pub const fn new(value: i16) -> Self {
         Self(value)
