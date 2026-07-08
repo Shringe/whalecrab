@@ -52,7 +52,7 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(self.game.hash);
-        let better_than_existing = if let Some(entry) = existing {
+        let better_than_existing = if let Some(entry) = &existing {
             if depth == entry.depth {
                 return SearchInfo {
                     score: entry.score,
@@ -121,7 +121,7 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(self.game.hash);
-        let better_than_existing = if let Some(entry) = existing {
+        let better_than_existing = if let Some(entry) = &existing {
             if depth == entry.depth {
                 return SearchInfo {
                     score: entry.score,
@@ -182,7 +182,7 @@ impl Engine {
         macro_rules! search_loop {
             ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
                 let existing = self.transposition_table.get(self.game.hash);
-                let better_than_existing = existing.is_none_or(|e| depth > e.depth);
+                let better_than_existing = existing.as_ref().is_none_or(|e| depth > e.depth);
 
                 let mut result = SearchResult::new($best_score, 0);
 
