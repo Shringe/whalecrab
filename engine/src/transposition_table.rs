@@ -94,7 +94,7 @@ pub(crate) struct TranspositionTable {
     entries: Arc<[AtomicEntry]>,
     mask: usize,
     #[cfg(debug_assertions)]
-    pub(crate) num_collisions: std::cell::RefCell<usize>,
+    pub(crate) prevented_collisions: std::cell::RefCell<usize>,
 }
 
 impl Default for TranspositionTable {
@@ -111,7 +111,7 @@ impl TranspositionTable {
             entries: (0..count).map(|_| AtomicEntry::new(None)).collect(),
             mask: count - 1,
             #[cfg(debug_assertions)]
-            num_collisions: std::cell::RefCell::new(0),
+            prevented_collisions: std::cell::RefCell::new(0),
         }
     }
 
@@ -139,7 +139,7 @@ impl TranspositionTable {
         } else {
             #[cfg(debug_assertions)]
             {
-                *self.num_collisions.try_borrow_mut().ok()? += 1;
+                *self.prevented_collisions.try_borrow_mut().ok()? += 1;
             }
             None
         }
@@ -201,11 +201,11 @@ mod tests {
     #[test]
     fn canary_count_hash_collisions() {
         let mut engine = Engine::default();
-        assert_eq!(*engine.transposition_table.num_collisions.borrow(), 0);
+        assert_eq!(*engine.transposition_table.prevented_collisions.borrow(), 0);
         play_game(&mut engine, 3);
         panic!(
             "Number of prevented collisions: {}",
-            *engine.transposition_table.num_collisions.borrow()
+            *engine.transposition_table.prevented_collisions.borrow()
         );
     }
 }
