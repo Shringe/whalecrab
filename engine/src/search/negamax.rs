@@ -87,21 +87,80 @@ impl Engine {
 
     /// Continues searching at the given depth until the search finishes or the timer is over
     pub fn negamax<T: MoveTimer>(&mut self, timer: &T, depth: u8) -> SearchResult {
-        self.nega(timer, depth, Score::MIN, Score::MAX)
+        self.nega(timer, depth + 1, Score::MIN, Score::MAX)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
+
     use crate::timers::infinite::Infinite;
 
     use super::*;
 
+    #[track_caller]
+    fn assert_nem(engine: &mut Engine, depth: u8, cache: bool) -> SearchResult {
+        let start = Instant::now();
+        let mresult = engine.minimax(&Infinite, depth);
+        let mtime = start.elapsed();
+
+        if !cache {
+            engine.clear_persistant_cache();
+        }
+
+        let start = Instant::now();
+        let nresult = engine.negamax(&Infinite, depth);
+        let ntime = start.elapsed();
+
+        println!("Minimax took {:?}; Negamax took {:?}", mtime, ntime);
+        assert_eq!(nresult.best_move, mresult.best_move);
+        assert_eq!(nresult.info.score, mresult.info.score);
+        if !cache {
+            engine.clear_persistant_cache();
+            assert_eq!(nresult.info.nodes, mresult.info.nodes);
+        }
+        mresult
+    }
+
     #[test]
     fn negamax_result_equals_minimax_result_default_position() {
-        let mut engine = Engine::default();
-        let mresult = engine.minimax(&Infinite, 3);
-        let nresult = engine.negamax(&Infinite, 3);
-        assert_eq!(mresult, nresult);
+        assert_nem(&mut Engine::default(), 1, false);
+    }
+
+    #[ignore]
+    #[test]
+    fn canary_negamax_result_equals_minimax_result_default_position_many_depths() {
+        for depth in 1..5 {
+            println!("Depth: {}", depth);
+            assert_nem(&mut Engine::default(), depth, false);
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn canary_negamax_result_equals_minimax_result_full_game() {
+        let mut mini = Engine::default();
+        let mut nega = Engine::default();
+        let depth = 2;
+
+        loop {
+            assert_eq!(mini.game, nega.game);
+
+            let mresult = mini.minimax(&Infinite, depth);
+            let nresult = nega.negamax(&Infinite, depth);
+            assert_eq!(
+                nresult.best_move, mresult.best_move,
+                "Minimax: {:#?}\nNegamax: {:#?}\nGame: {:?}\n",
+                mresult, nresult, mini.game
+            );
+
+            let Some(m) = mresult.best_move else {
+                break;
+            };
+
+            mini.game.play(&m);
+            nega.game.play(&m);
+        }
     }
 }

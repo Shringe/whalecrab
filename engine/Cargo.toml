@@ -8,6 +8,10 @@ name = "minimax"
 harness = false
 
 [[bench]]
+name = "negamax"
+harness = false
+
+[[bench]]
 name = "iterative_deepening"
 harness = false
 
