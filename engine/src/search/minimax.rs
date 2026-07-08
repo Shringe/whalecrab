@@ -1,13 +1,5 @@
-use whalecrab_lib::movegen::pieces::piece::PieceColor;
-
 use crate::engine::Engine;
-use crate::score::Score;
-use crate::search::move_ordering::order_moves;
-use crate::transposition_table::{NodeType, TranspositionTableEntry};
-use crate::{
-    move_result::{SearchInfo, SearchResult},
-    timers::MoveTimer,
-};
+use crate::{move_result::SearchResult, timers::MoveTimer};
 
 /// Plays a move, gets the score from the given method, and then unplays the move and returns that
 /// score. Also does expensive validity checks in debug builds.
@@ -37,199 +29,23 @@ macro_rules! search_move {
 }
 
 impl Engine {
-    fn maxi<T: MoveTimer>(
-        &mut self,
-        mut alpha: Score,
-        beta: Score,
-        depth: u8,
-        timer: &T,
-    ) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let existing = self.transposition_table.get(self.game.hash);
-        let better_than_existing = if let Some(entry) = &existing {
-            if depth == entry.depth {
-                return SearchInfo {
-                    score: entry.score,
-                    depth,
-                    nodes: 1,
-                };
-            } else if depth > entry.depth {
-                if alpha > entry.score {
-                    alpha = entry.score;
-                }
-                false
-            } else {
-                true
-            }
-        } else {
-            true
-        };
-
-        let mut node_type = NodeType::Exact;
-        let mut result = SearchResult::new(Score::MIN, depth);
-
-        for m in order_moves(self.game.legal_moves(), &existing) {
-            let node = search_move!(self, &m, mini(alpha, beta, depth - 1, timer));
-            result += &node;
-
-            if node.score > result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-                if node.score > alpha {
-                    alpha = node.score;
-                }
-            }
-
-            if node.score >= beta {
-                node_type = NodeType::Cut;
-                break;
-            }
-        }
-
-        if better_than_existing {
-            let entry = TranspositionTableEntry {
-                best_move: result.best_move,
-                depth,
-                score: result.info.score,
-                node_type,
-            };
-            self.transposition_table.insert(self.game.hash, entry);
-        }
-
-        result.info
-    }
-
-    fn mini<T: MoveTimer>(
-        &mut self,
-        alpha: Score,
-        mut beta: Score,
-        depth: u8,
-        timer: &T,
-    ) -> SearchInfo {
-        if depth == 0 || timer.over() {
-            return SearchInfo {
-                score: self.grade_position(),
-                depth,
-                nodes: 1,
-            };
-        }
-
-        let existing = self.transposition_table.get(self.game.hash);
-        let better_than_existing = if let Some(entry) = &existing {
-            if depth == entry.depth {
-                return SearchInfo {
-                    score: entry.score,
-                    depth,
-                    nodes: 1,
-                };
-            } else if depth > entry.depth {
-                if beta < entry.score {
-                    beta = entry.score;
-                }
-                false
-            } else {
-                true
-            }
-        } else {
-            true
-        };
-
-        let mut node_type = NodeType::Exact;
-        let mut result = SearchResult::new(Score::MAX, depth);
-
-        for m in order_moves(self.game.legal_moves(), &existing) {
-            let node = search_move!(self, &m, maxi(alpha, beta, depth - 1, timer));
-            result += &node;
-
-            if node.score < result.info.score {
-                result.info.score = node.score;
-                result.best_move = Some(m);
-                if node.score < beta {
-                    beta = node.score;
-                }
-            }
-
-            if node.score <= alpha {
-                node_type = NodeType::All;
-                break;
-            }
-        }
-
-        if better_than_existing {
-            let entry = TranspositionTableEntry {
-                best_move: result.best_move,
-                depth,
-                score: result.info.score,
-                node_type,
-            };
-            self.transposition_table.insert(self.game.hash, entry);
-        }
-
-        result.info
-    }
-
-    /// Continues searching at the given depth until the search finishes or the timer is over
+    /// Continues searching at the given depth until the search finishes or the timer is over.
+    ///
+    /// Note: this now uses Negamax under the hood as of 1.6.0.
+    /// This function will probably be deprecated in the future.
     pub fn minimax<T: MoveTimer>(&mut self, timer: &T, depth: u8) -> SearchResult {
-        let mut alpha = Score::MIN;
-        let mut beta = Score::MAX;
-
-        macro_rules! search_loop {
-            ($best_score:expr, $cmp:tt, $search:ident, $prune:expr) => {{
-                let existing = self.transposition_table.get(self.game.hash);
-                let better_than_existing = existing.as_ref().is_none_or(|e| depth > e.depth);
-
-                let mut result = SearchResult::new($best_score, 0);
-
-                for m in order_moves(self.game.legal_moves(), &existing) {
-                    let node = search_move!(self, &m, $search(alpha, beta, depth, timer));
-                    if timer.over() {
-                        break;
-                    }
-
-                    result += &node;
-
-                    if node.score $cmp result.info.score {
-                        result.info.score = node.score;
-                        result.best_move = Some(m);
-                        if node.score $cmp $prune {
-                            $prune = node.score;
-                        }
-                    }
-                }
-
-                if better_than_existing {
-                    let entry = TranspositionTableEntry {
-                        best_move: result.best_move,
-                        depth,
-                        score: result.info.score,
-                        node_type: NodeType::Exact,
-                    };
-                    self.transposition_table.insert(self.game.hash, entry);
-                }
-
-                result
-            }};
-        }
-
-        match self.game.turn {
-            PieceColor::White => search_loop!(Score::MIN, >, mini, alpha),
-            PieceColor::Black => search_loop!(Score::MAX, <, maxi, beta),
-        }
+        self.negamax(timer, depth)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use whalecrab_lib::{movegen::moves::Move, square::Square};
+    use whalecrab_lib::{
+        movegen::{moves::Move, pieces::piece::PieceColor},
+        square::Square,
+    };
 
-    use crate::timers::infinite::Infinite;
+    use crate::{move_result::SearchInfo, score::Score, timers::infinite::Infinite};
 
     use super::*;
 
