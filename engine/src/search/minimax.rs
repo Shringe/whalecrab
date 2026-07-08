@@ -11,6 +11,7 @@ use crate::{
 
 /// Plays a move, gets the score from the given method, and then unplays the move and returns that
 /// score. Also does expensive validity checks in debug builds.
+#[macro_export]
 macro_rules! search_move {
     ($self:expr, $move:expr, $method:ident($($args:expr),*)) => {{
         #[cfg(debug_assertions)]

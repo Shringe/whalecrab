@@ -200,14 +200,6 @@ impl Engine {
 
     /// Grades the position for the current player's turn
     pub fn grade_position_relative(&mut self) -> Score {
-        if self.game.state != State::InProgress {
-            return self.score_state(self.game.turn);
-        }
-
-        let white_material = self.score_white_material();
-        let black_material = self.score_black_material();
-        let ratio = self.midgame_to_lategame_ratio(white_material + black_material);
-
-        self.score_white(white_material, ratio) + self.score_black(black_material, ratio)
+        self.grade_position().for_color(self.game.turn)
     }
 }
