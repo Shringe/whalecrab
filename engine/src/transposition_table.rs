@@ -26,6 +26,8 @@ pub(crate) enum NodeType {
     /// A beta cutoff was performed in maxi
     Cut,
     /// An alpha cutoff was performed in mini
+    // TODO: Are All nodes really unnecessary in negamax?
+    #[allow(unused)]
     All,
 }
 
