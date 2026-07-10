@@ -131,8 +131,8 @@ mod tests {
         for m in black_moves {
             engine.game.play(&m);
             let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
-            let result = engine.minimax(&Infinite, 1).best.unwrap();
-            assert_eq!(result, looking_for);
+            let result = engine.minimax(&Infinite, 1);
+            assert_eq!(result.best.unwrap(), looking_for, "{:#?}", result);
             engine.game.unplay(&m);
         }
     }
