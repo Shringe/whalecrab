@@ -2,6 +2,7 @@ pub mod elapsed;
 pub mod infinite;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod rdtsc;
+pub mod remote;
 
 /// Returns the high performance `Rdtsc` timer on supported platforms, otherwise returns an `Elapsed` timer
 #[macro_export]
