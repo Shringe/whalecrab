@@ -26,7 +26,7 @@ impl Engine {
         if let Some(entry) = &existing {
             if entry.depth == depth && entry.node_type == NodeType::Exact {
                 return SearchResult {
-                    best: entry.best_move,
+                    best: entry.best,
                     terminal: Terminal::Depth,
                     score: entry.score,
                     depth,
@@ -42,8 +42,14 @@ impl Engine {
 
         for m in order_moves(self.game.legal_moves(), &existing) {
             let mut child = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha));
-            child.score = -child.score;
             result.nodes += child.nodes;
+
+            if child.terminal == Terminal::Timer {
+                result.terminal = Terminal::Timer;
+                return result;
+            }
+
+            child.score = -child.score;
 
             if child.score > result.score {
                 result.score = child.score;
@@ -66,7 +72,7 @@ impl Engine {
 
         if better_than_existing {
             let entry = TranspositionTableEntry {
-                best_move: result.best,
+                best: result.best,
                 depth,
                 score: result.score,
                 node_type,

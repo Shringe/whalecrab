@@ -33,7 +33,7 @@ fn score_move(m: &Move, best: Option<&Move>) -> Score {
 
 /// Orders the moves for better minimax pruning
 pub fn order_moves(mut moves: Vec<Move>, existing: &Option<TranspositionTableEntry>) -> Vec<Move> {
-    let best_move = existing.as_ref().and_then(|e| e.best_move);
+    let best_move = existing.as_ref().and_then(|e| e.best);
 
     moves.sort_unstable_by_key(|m| score_move(m, best_move.as_ref()));
 

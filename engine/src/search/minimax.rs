@@ -51,10 +51,7 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let looking_for = Move::infer(Square::C1, Square::G5, &engine.game);
-        let result = engine
-            .minimax(&Infinite, 2)
-            .best
-            .expect("No moves found");
+        let result = engine.minimax(&Infinite, 2).best.expect("No moves found");
         println!("State: {:?}", engine.game.state);
         assert_eq!(result, looking_for);
     }
@@ -64,10 +61,7 @@ mod tests {
         let starting = "rnb1kbnr/pppp1ppp/8/4p1q1/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 1 3";
         let mut engine = Engine::from_fen(starting).unwrap();
         let black_queens_before = engine.game.black_queens.popcnt();
-        let result = engine
-            .minimax(&Infinite, 2)
-            .best
-            .expect("No moves found");
+        let result = engine.minimax(&Infinite, 2).best.expect("No moves found");
         engine.game.play(&result);
         assert_eq!(black_queens_before, engine.game.black_queens.popcnt());
     }
