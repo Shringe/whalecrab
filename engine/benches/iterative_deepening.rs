@@ -20,16 +20,16 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Iterative deepening");
     let mut engine = Engine::default();
 
-    for seconds in 1..=10 {
-        let duration = Duration::from_secs(seconds);
-
-        let result = engine.search(duration, u8::MAX);
+    let duration = Duration::from_secs(10);
+    for depth in [2, 4, 8] {
+        let result = engine.search(duration, depth);
         group.throughput(Throughput::Elements(result.nodes));
 
-        println!("{}", format_header(&format!(" {} seconds ", seconds)));
+        println!("{}", format_header(&format!(" depth of {} ", depth)));
         println!("Nodes searched:   {}", result.nodes);
         println!("Depth reached:    {}", result.depth);
         println!("Final score:      {}", result.score);
+        println!("Termination:      {:?}", result.terminal);
         println!("{}", format_header(""));
     }
 
