@@ -1,10 +1,10 @@
-use std::time::Duration;
+use std::{thread, time::Duration};
 
 use crate::{
     engine::Engine,
     move_result::{SearchResult, Terminal},
     platform_timer,
-    timers::{MoveTimer, infinite::Infinite},
+    timers::{MoveTimer, infinite::Infinite, remote::Remote},
 };
 
 impl Engine {
@@ -36,6 +36,35 @@ impl Engine {
             }
 
             depth += 1;
+        }
+
+        result
+    }
+
+    pub fn threaded_search<T: MoveTimer>(
+        &mut self,
+        timer: &T,
+        max_depth: u8,
+        threads: usize,
+    ) -> SearchResult {
+        let remote = Remote::default();
+        let handles = (1..threads)
+            .map(|_| {
+                let mut engine = self.clone();
+                let remote = remote.clone();
+                thread::spawn(move || engine.search_with_timer(&remote, max_depth))
+            })
+            .collect::<Vec<_>>();
+
+        let mut result = self.search_with_timer(timer, max_depth);
+        remote.stop();
+
+        for h in handles {
+            let Ok(extra) = h.join() else {
+                continue;
+            };
+
+            result.nodes += extra.nodes;
         }
 
         result
