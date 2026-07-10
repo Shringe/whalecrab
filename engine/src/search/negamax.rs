@@ -89,6 +89,7 @@ impl Engine {
                         return result;
                     }
 
+                    result.depth = result.depth.max(child.depth);
                     child.score = -child.score;
 
                     if child.score > result.score {
@@ -218,5 +219,13 @@ mod tests {
             mini.game.play(&m);
             nega.game.play(&m);
         }
+    }
+
+    #[test]
+    fn depth_reached() {
+        let mut engine = Engine::default();
+        let depth = 2;
+        let result = engine.negamax(&Infinite, depth);
+        assert_eq!(result.depth, depth + 1);
     }
 }

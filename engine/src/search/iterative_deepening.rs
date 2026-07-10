@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     engine::Engine,
-    move_result::SearchResult,
+    move_result::{SearchResult, Terminal},
     platform_timer,
     timers::{MoveTimer, infinite::Infinite},
 };
@@ -14,19 +14,27 @@ impl Engine {
         let mut result = SearchResult::default();
 
         loop {
-            let node = self.minimax(timer, depth);
-            result.nodes += node.nodes;
+            let child = self.minimax(timer, depth);
+            result.nodes += child.nodes;
 
-            if node.best.is_none() || timer.over() {
+            if child.terminal == Terminal::Timer {
+                result.terminal = Terminal::Timer;
                 break;
             }
 
-            result.best = node.best;
-            result.score = node.score;
+            result.depth = result.depth.max(child.depth);
+
+            if child.best.is_none() {
+                break;
+            }
+
+            result.best = child.best;
+            result.score = child.score;
 
             if depth == max_depth {
                 break;
             }
+
             depth += 1;
         }
 
