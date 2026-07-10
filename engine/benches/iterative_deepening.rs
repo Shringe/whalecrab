@@ -24,12 +24,12 @@ fn bench(c: &mut Criterion) {
         let duration = Duration::from_secs(seconds);
 
         let result = engine.search(duration, u8::MAX);
-        group.throughput(Throughput::Elements(result.info.nodes));
+        group.throughput(Throughput::Elements(result.nodes));
 
         println!("{}", format_header(&format!(" {} seconds ", seconds)));
-        println!("Nodes searched:   {}", result.info.nodes);
-        println!("Depth reached:    {}", result.info.depth);
-        println!("Final score:      {}", result.info.score);
+        println!("Nodes searched:   {}", result.nodes);
+        println!("Depth reached:    {}", result.depth);
+        println!("Final score:      {}", result.score);
         println!("{}", format_header(""));
     }
 

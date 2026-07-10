@@ -169,7 +169,7 @@ mod tests {
 
     fn play_game(engine: &mut Engine, depth_per_move: u8) -> Vec<Move> {
         let mut moves = Vec::with_capacity(64);
-        while let Some(m) = engine.search(Duration::MAX, depth_per_move).best_move {
+        while let Some(m) = engine.search(Duration::MAX, depth_per_move).best {
             engine.game.play(&m);
             moves.push(m);
         }

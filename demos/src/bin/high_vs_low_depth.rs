@@ -9,7 +9,7 @@ fn main() {
             PieceColor::White => engine.minimax(&Infinite, 3),
             PieceColor::Black => engine.minimax(&Infinite, 2),
         }
-        .best_move;
+        .best;
 
         match m {
             Some(m) => {

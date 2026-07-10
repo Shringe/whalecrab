@@ -1,6 +1,6 @@
 use crate::{
     engine::Engine,
-    move_result::{SearchInfo, SearchResult},
+    move_result::{SearchResult, Terminal},
     score::Score,
     search::move_ordering::order_moves,
     search_move,
@@ -16,27 +16,21 @@ impl Engine {
         mut alpha: Score,
         beta: Score,
     ) -> SearchResult {
-        if depth == 0 || timer.over() {
-            return SearchResult {
-                info: SearchInfo {
-                    score: self.grade_position_relative(),
-                    depth,
-                    nodes: 1,
-                },
-                best_move: None,
-            };
+        if depth == 0 {
+            return SearchResult::leaf(self.grade_position_relative(), depth, Terminal::Depth);
+        } else if timer.over() {
+            return SearchResult::leaf(self.grade_position_relative(), depth, Terminal::Timer);
         }
 
         let existing = self.transposition_table.get(self.game.hash);
         if let Some(entry) = &existing {
             if entry.depth == depth && entry.node_type == NodeType::Exact {
                 return SearchResult {
-                    info: SearchInfo {
-                        score: entry.score,
-                        depth,
-                        nodes: 1,
-                    },
-                    best_move: entry.best_move,
+                    best: entry.best_move,
+                    terminal: Terminal::Depth,
+                    score: entry.score,
+                    depth,
+                    nodes: 1,
                 };
             } else if entry.depth < depth && entry.score < alpha {
                 alpha = entry.score;
@@ -48,18 +42,18 @@ impl Engine {
 
         for m in order_moves(self.game.legal_moves(), &existing) {
             let mut node = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha));
-            node.info.score = -node.info.score;
-            result += &node.info;
+            node.score = -node.score;
+            result.nodes += node.nodes;
 
-            if node.info.score > result.info.score {
-                result.info.score = node.info.score;
-                result.best_move = Some(m);
-                if node.info.score > alpha {
-                    alpha = node.info.score;
+            if node.score > result.score {
+                result.score = node.score;
+                result.best = Some(m);
+                if node.score > alpha {
+                    alpha = node.score;
                 }
             }
 
-            if node.info.score >= beta {
+            if node.score >= beta {
                 node_type = NodeType::Cut;
                 break;
             }
@@ -72,9 +66,9 @@ impl Engine {
 
         if better_than_existing {
             let entry = TranspositionTableEntry {
-                best_move: result.best_move,
+                best_move: result.best,
                 depth,
-                score: result.info.score,
+                score: result.score,
                 node_type,
             };
             self.transposition_table.insert(self.game.hash, entry);
@@ -112,11 +106,11 @@ mod tests {
         let ntime = start.elapsed();
 
         println!("Minimax took {:?}; Negamax took {:?}", mtime, ntime);
-        assert_eq!(nresult.best_move, mresult.best_move);
-        assert_eq!(nresult.info.score, mresult.info.score);
+        assert_eq!(nresult.best, mresult.best);
+        assert_eq!(nresult.score, mresult.score);
         if !cache {
             engine.clear_persistant_cache();
-            assert_eq!(nresult.info.nodes, mresult.info.nodes);
+            assert_eq!(nresult.nodes, mresult.nodes);
         }
         mresult
     }
@@ -148,12 +142,12 @@ mod tests {
             let mresult = mini.minimax(&Infinite, depth);
             let nresult = nega.negamax(&Infinite, depth);
             assert_eq!(
-                nresult.best_move, mresult.best_move,
+                nresult.best, mresult.best,
                 "Minimax: {:#?}\nNegamax: {:#?}\nGame: {:?}\n",
                 mresult, nresult, mini.game
             );
 
-            let Some(m) = mresult.best_move else {
+            let Some(m) = mresult.best else {
                 break;
             };
 

@@ -234,7 +234,7 @@ impl UciInterface {
                     ("\n".to_string() + &result.to_string()).replace("\n", "\n -- ")
                 );
 
-                let best_move = match result.best_move {
+                let best_move = match result.best {
                     Some(m) => m,
                     None => {
                         log!("No self.engine move found. Maybe the game is finished?");
@@ -254,7 +254,7 @@ impl UciInterface {
 
                 log!("Fen before playing the move: {}", self.engine.game.to_fen());
                 uci_send!("bestmove {}", best_move_uci);
-                self.last_score = result.info.score;
+                self.last_score = result.score;
             }
         }
 

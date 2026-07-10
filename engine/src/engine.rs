@@ -62,7 +62,7 @@ mod tests {
     #[track_caller]
     fn should_play(engine: &mut Engine, expected: Move, depth: u8) {
         let result = engine.search(Duration::MAX, depth);
-        let actual = result.best_move.expect("The engine did not play a move");
+        let actual = result.best.expect("The engine did not play a move");
         assert_eq!(actual, expected, "\n{}", result);
     }
 
@@ -107,7 +107,7 @@ mod tests {
         let white_moves = engine.game.legal_moves();
         for m in white_moves {
             engine.game.play(&m);
-            let result = engine.minimax(&Infinite, 0).best_move.unwrap();
+            let result = engine.minimax(&Infinite, 0).best.unwrap();
             assert!(
                 matches!(
                     result,
@@ -131,7 +131,7 @@ mod tests {
         for m in black_moves {
             engine.game.play(&m);
             let looking_for = Move::infer(Square::F2, Square::H2, &engine.game);
-            let result = engine.minimax(&Infinite, 1).best_move.unwrap();
+            let result = engine.minimax(&Infinite, 1).best.unwrap();
             assert_eq!(result, looking_for);
             engine.game.unplay(&m);
         }
@@ -170,7 +170,7 @@ mod tests {
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
         let _ = engine.game.legal_moves();
-        let _ = engine.minimax(&Infinite, 2).best_move;
+        let _ = engine.minimax(&Infinite, 2).best;
         assert_eq!(before, engine.game);
     }
 
@@ -179,7 +179,7 @@ mod tests {
         let fen = "r1k2b1r/1p4p1/p1p4P/4B3/2p5/3P3P/NP2P1B1/2K2R2 w - - 0 29";
         let mut engine = Engine::from_fen(fen).unwrap();
         let before = engine.game.clone();
-        let _ = engine.minimax(&Infinite, 3).best_move;
+        let _ = engine.minimax(&Infinite, 3).best;
         let after = engine.game;
         assert_eq!(after, before);
     }
@@ -189,7 +189,7 @@ mod tests {
         let fen = "rnbqkbnr/pp1ppppp/2p5/8/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2";
         let mut engine = Engine::from_fen(fen).unwrap();
         let moves = engine.game.legal_moves();
-        let engine_move = engine.minimax(&Infinite, 2).best_move;
+        let engine_move = engine.minimax(&Infinite, 2).best;
         assert!(!moves.is_empty());
         assert!(engine_move.is_some())
     }
@@ -205,7 +205,7 @@ mod tests {
             let m = Move::infer(from, to, &engine.game);
             engine.game.play(&m);
             let moves = engine.game.legal_moves();
-            let engine_move = engine.minimax(&Infinite, 2).best_move;
+            let engine_move = engine.minimax(&Infinite, 2).best;
             assert_eq!(engine.game.state, State::InProgress);
             assert!(!moves.is_empty());
             assert!(engine_move.is_some())
@@ -222,7 +222,7 @@ mod tests {
             eprintln!("Depth: {}", n);
             let result = engine.minimax(&Infinite, n);
             eprintln!("{}", result);
-            assert_eq!(result.best_move.unwrap(), expected);
+            assert_eq!(result.best.unwrap(), expected);
         }
     }
 
@@ -274,7 +274,7 @@ mod tests {
 
         let result = engine.search(Duration::MAX, 2);
         assert_ne!(
-            result.best_move,
+            result.best,
             Some(blunder),
             "The engine blunders its queen with Qxe3! Search: {:#?}",
             result
@@ -287,6 +287,6 @@ mod tests {
         let mut engine = Engine::from_fen(fen).unwrap();
         let expected = Move::infer(Square::D2, Square::B4, &engine.game);
         let result = engine.search(Duration::MAX, 2);
-        assert_eq!(result.best_move, Some(expected));
+        assert_eq!(result.best, Some(expected));
     }
 }

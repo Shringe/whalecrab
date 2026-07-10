@@ -1,12 +1,26 @@
-use std::{fmt, ops::AddAssign};
+use std::fmt;
 
 use whalecrab_lib::movegen::moves::Move;
 
 use crate::score::Score;
 
+/// The reason that a search ended
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
+pub enum Terminal {
+    /// The search fully completed its depth target
+    #[default]
+    Depth,
+    /// The search ran out of time
+    Timer,
+}
+
 /// Provides relevant information about the completed search
-#[derive(Debug)]
-pub struct SearchInfo {
+#[derive(Debug, Default)]
+pub struct SearchResult {
+    /// The best move found in the search
+    pub best: Option<Move>,
+    /// The reason the search ended
+    pub terminal: Terminal,
     /// The best score from a search
     pub score: Score,
     /// The maximum depth reached in a search
@@ -15,42 +29,16 @@ pub struct SearchInfo {
     pub nodes: u64,
 }
 
-impl PartialEq for SearchInfo {
+impl PartialEq for SearchResult {
     fn eq(&self, other: &Self) -> bool {
-        self.score == other.score && self.depth == other.depth
+        self.best == other.best
+            && self.terminal == other.terminal
+            && self.score == other.score
+            && self.depth == other.depth
     }
 }
 
-impl SearchInfo {
-    pub const fn new(score: Score, depth: u8) -> Self {
-        Self {
-            score,
-            depth,
-            nodes: 1,
-        }
-    }
-}
-
-impl Default for SearchInfo {
-    fn default() -> Self {
-        Self {
-            score: Score::default(),
-            depth: 0,
-            nodes: 1,
-        }
-    }
-}
-
-impl AddAssign<&SearchInfo> for SearchInfo {
-    fn add_assign(&mut self, rhs: &SearchInfo) {
-        self.nodes += rhs.nodes;
-        if rhs.depth > self.depth {
-            self.depth = rhs.depth;
-        }
-    }
-}
-
-impl fmt::Display for SearchInfo {
+impl fmt::Display for SearchResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -60,35 +48,25 @@ impl fmt::Display for SearchInfo {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
-pub struct SearchResult {
-    pub best_move: Option<Move>,
-    pub info: SearchInfo,
-}
-
 impl SearchResult {
-    pub const fn new(score: Score, depth: u8) -> SearchResult {
-        SearchResult {
-            best_move: None,
-            info: SearchInfo::new(score, depth),
+    pub const fn new(score: Score, depth: u8) -> Self {
+        Self {
+            best: None,
+            terminal: Terminal::Depth,
+            score,
+            depth,
+            nodes: 1,
         }
     }
-}
 
-impl AddAssign<&SearchInfo> for SearchResult {
-    fn add_assign(&mut self, rhs: &SearchInfo) {
-        self.info += rhs;
-    }
-}
-
-impl AddAssign<&SearchResult> for SearchResult {
-    fn add_assign(&mut self, rhs: &SearchResult) {
-        self.info += &rhs.info;
-    }
-}
-
-impl fmt::Display for SearchResult {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Best: {:?}\n{}", self.best_move, self.info)
+    /// Creates
+    pub fn leaf(score: Score, depth: u8, terminal: Terminal) -> Self {
+        Self {
+            best: None,
+            terminal,
+            score,
+            depth,
+            nodes: 1,
+        }
     }
 }

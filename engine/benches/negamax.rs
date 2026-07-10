@@ -11,13 +11,13 @@ fn bench(c: &mut Criterion) {
 
     for depth in 1..=4 {
         let result = sample_engine.negamax(&Infinite, depth);
-        let sample = result.info.nodes;
+        let sample = result.nodes;
         group.throughput(Throughput::Elements(sample));
 
         let mut engine = Engine::default();
         group.bench_with_input(BenchmarkId::from_parameter(depth), &depth, |b, &depth| {
             b.iter(|| {
-                if let Some(m) = engine.negamax(&Infinite, depth).best_move {
+                if let Some(m) = engine.negamax(&Infinite, depth).best {
                     engine.game.play(&m);
                 } else {
                     // Reset the board if no moves to play

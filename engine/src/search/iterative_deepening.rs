@@ -15,14 +15,14 @@ impl Engine {
 
         loop {
             let node = self.minimax(timer, depth);
-            result += &node;
+            result.nodes += node.nodes;
 
-            if node.best_move.is_none() || timer.over() {
+            if node.best.is_none() || timer.over() {
                 break;
             }
 
-            result.best_move = node.best_move;
-            result.info.score = node.info.score;
+            result.best = node.best;
+            result.score = node.score;
 
             if depth == max_depth {
                 break;
@@ -103,7 +103,7 @@ mod tests {
     fn iterative_deepening_finds_a_move() {
         let mut engine = Engine::default();
         let duration = Duration::from_millis(200);
-        let best_move = engine.search(duration, u8::MAX).best_move;
+        let best_move = engine.search(duration, u8::MAX).best;
         assert!(best_move.is_some());
     }
 }
