@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use criterion::{Criterion, Throughput};
-use whalecrab_engine::engine::Engine;
+use whalecrab_engine::{engine::Engine, timers::elapsed::Elapsed};
 mod common;
 
 fn format_header(title: &str) -> String {
@@ -20,9 +20,12 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Iterative deepening");
     let mut engine = Engine::default();
 
-    let duration = Duration::from_secs(10);
-    for depth in [2, 4, 8] {
-        let result = engine.search(duration, depth);
+    let threads = 8;
+
+    let duration = Duration::from_secs(20);
+    for depth in [2, 4, 6, 8] {
+        let timer = Elapsed::now(duration);
+        let result = engine.threaded_search(&timer, depth, threads);
         group.throughput(Throughput::Elements(result.nodes));
 
         println!("{}", format_header(&format!(" depth of {} ", depth)));
@@ -30,6 +33,7 @@ fn bench(c: &mut Criterion) {
         println!("Depth reached:    {}", result.depth);
         println!("Final score:      {}", result.score);
         println!("Termination:      {:?}", result.terminal);
+        println!("{}", timer);
         println!("{}", format_header(""));
     }
 
