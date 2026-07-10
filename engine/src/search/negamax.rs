@@ -28,8 +28,8 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(self.game.hash);
-        let better_than_existing = if let Some(entry) = &existing {
-            if depth == entry.depth {
+        if let Some(entry) = &existing {
+            if entry.depth == depth && entry.node_type == NodeType::Exact {
                 return SearchResult {
                     info: SearchInfo {
                         score: entry.score,
@@ -38,17 +38,10 @@ impl Engine {
                     },
                     best_move: entry.best_move,
                 };
-            } else if depth > entry.depth {
-                if alpha > entry.score {
-                    alpha = entry.score;
-                }
-                false
-            } else {
-                true
+            } else if entry.depth < depth && entry.score < alpha {
+                alpha = entry.score;
             }
-        } else {
-            true
-        };
+        }
 
         let mut node_type = NodeType::Exact;
         let mut result = SearchResult::new(Score::MIN, depth);
@@ -71,6 +64,11 @@ impl Engine {
                 break;
             }
         }
+
+        let better_than_existing = self
+            .transposition_table
+            .get(self.game.hash)
+            .is_none_or(|e| e.depth < depth);
 
         if better_than_existing {
             let entry = TranspositionTableEntry {
