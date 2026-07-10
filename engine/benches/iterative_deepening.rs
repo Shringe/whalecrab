@@ -20,7 +20,8 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Iterative deepening");
     let mut engine = Engine::default();
 
-    let threads = 8;
+    let threads = std::thread::available_parallelism().unwrap().into();
+    // let threads = 1;
 
     let duration = Duration::from_secs(20);
     for depth in [2, 4, 6, 8] {
