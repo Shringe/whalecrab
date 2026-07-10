@@ -14,7 +14,7 @@ impl Engine {
         timer: &T,
         depth: u8,
         mut alpha: Score,
-        beta: Score,
+        mut beta: Score,
         color: ScoreColor,
     ) -> SearchResult {
         if depth == 0 {
@@ -24,8 +24,45 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(self.game.hash);
-        if let Some(entry) = &existing {
-            if entry.depth == depth && entry.node_type == NodeType::Exact {
+        if let Some(entry) = &existing
+            && entry.depth >= depth
+        {
+            match entry.node_type {
+                NodeType::Exact => {
+                    return SearchResult {
+                        best: entry.best,
+                        terminal: Terminal::Depth,
+                        score: entry.score,
+                        depth,
+                        nodes: 1,
+                    };
+                }
+                NodeType::LowerBound => {
+                    if entry.score >= beta {
+                        return SearchResult {
+                            best: entry.best,
+                            terminal: Terminal::Depth,
+                            score: entry.score,
+                            depth,
+                            nodes: 1,
+                        };
+                    }
+                    alpha = alpha.max(entry.score);
+                }
+                NodeType::UpperBound => {
+                    if entry.score < alpha {
+                        return SearchResult {
+                            best: entry.best,
+                            terminal: Terminal::Depth,
+                            score: entry.score,
+                            depth,
+                            nodes: 1,
+                        };
+                    }
+                    beta = beta.min(entry.score);
+                }
+            }
+            if alpha >= beta {
                 return SearchResult {
                     best: entry.best,
                     terminal: Terminal::Depth,
@@ -33,11 +70,10 @@ impl Engine {
                     depth,
                     nodes: 1,
                 };
-            } else if entry.depth < depth && entry.score < alpha {
-                alpha = entry.score;
             }
         }
 
+        let original_alpha = alpha;
         let mut node_type = NodeType::Exact;
         let mut result = SearchResult::new(Score::MIN, depth);
 
@@ -55,15 +91,17 @@ impl Engine {
             if child.score > result.score {
                 result.score = child.score;
                 result.best = Some(m);
-                if child.score > alpha {
-                    alpha = child.score;
-                }
+                alpha = alpha.max(child.score);
             }
 
             if child.score >= beta {
-                node_type = NodeType::Cut;
+                node_type = NodeType::LowerBound;
                 break;
             }
+        }
+
+        if node_type != NodeType::LowerBound && alpha == original_alpha {
+            node_type = NodeType::UpperBound;
         }
 
         let better_than_existing = self

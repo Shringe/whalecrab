@@ -24,11 +24,9 @@ pub(crate) enum NodeType {
     #[default]
     Exact,
     /// A beta cutoff was performed in maxi
-    Cut,
+    LowerBound,
     /// An alpha cutoff was performed in mini
-    // TODO: Are All nodes really unnecessary in negamax?
-    #[allow(unused)]
-    All,
+    UpperBound,
 }
 
 #[derive(Debug)]
