@@ -41,19 +41,19 @@ impl Engine {
         let mut result = SearchResult::new(Score::MIN, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
-            let mut node = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha));
-            node.score = -node.score;
-            result.nodes += node.nodes;
+            let mut child = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha));
+            child.score = -child.score;
+            result.nodes += child.nodes;
 
-            if node.score > result.score {
-                result.score = node.score;
+            if child.score > result.score {
+                result.score = child.score;
                 result.best = Some(m);
-                if node.score > alpha {
-                    alpha = node.score;
+                if child.score > alpha {
+                    alpha = child.score;
                 }
             }
 
-            if node.score >= beta {
+            if child.score >= beta {
                 node_type = NodeType::Cut;
                 break;
             }
