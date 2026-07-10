@@ -77,26 +77,39 @@ impl Engine {
         let mut node_type = NodeType::Exact;
         let mut result = SearchResult::new(Score::MIN, depth);
 
-        for m in order_moves(self.game.legal_moves(), &existing) {
-            let mut child = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha, -color));
-            result.nodes += child.nodes;
+        'search: {
+            macro_rules! evaluate {
+                ($m:expr) => {{
+                    let mut child =
+                        search_move!(self, &$m, nega(timer, depth - 1, -beta, -alpha, -color));
+                    result.nodes += child.nodes;
 
-            if child.terminal == Terminal::Timer {
-                result.terminal = Terminal::Timer;
-                return result;
+                    if child.terminal == Terminal::Timer {
+                        result.terminal = Terminal::Timer;
+                        return result;
+                    }
+
+                    child.score = -child.score;
+
+                    if child.score > result.score {
+                        result.score = child.score;
+                        result.best = Some($m);
+                        alpha = alpha.max(child.score);
+                    }
+
+                    if child.score >= beta {
+                        node_type = NodeType::LowerBound;
+                        break 'search;
+                    }
+                }};
             }
 
-            child.score = -child.score;
-
-            if child.score > result.score {
-                result.score = child.score;
-                result.best = Some(m);
-                alpha = alpha.max(child.score);
+            if let Some(m) = existing.as_ref().and_then(|e| e.best) {
+                evaluate!(m);
             }
 
-            if child.score >= beta {
-                node_type = NodeType::LowerBound;
-                break;
+            for m in order_moves(self.game.legal_moves(), &existing) {
+                evaluate!(m);
             }
         }
 
