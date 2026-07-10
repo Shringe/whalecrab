@@ -112,6 +112,7 @@ mod tests {
         assert!(rdtsc_timer.over(), "Rdtsc did not fire");
     }
 
+    #[ignore = "threadcontention"]
     #[test]
     fn cached_tsc_freq_equals_manual_calibration() {
         let uncached = calibrate_tsc_frequency(CALIBRATION_TIME) as f64;

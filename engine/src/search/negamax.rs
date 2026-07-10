@@ -50,7 +50,7 @@ impl Engine {
                 return result;
             }
 
-            child.score *= color;
+            child.score = -child.score;
 
             if child.score > result.score {
                 result.score = child.score;
