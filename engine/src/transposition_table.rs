@@ -118,13 +118,11 @@ impl TranspositionTable {
     pub(crate) fn new() -> Self {
         let kilobytes = *TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES.get_or_init(|| {
             (if cfg!(test) && cfg!(debug_assertions) {
-                128
+                64
             } else if cfg!(test) {
                 256
-            } else if cfg!(debug_assertions) {
-                2048
             } else {
-                4096
+                512
             }) * 1024
         });
 
