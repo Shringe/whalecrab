@@ -1,7 +1,7 @@
 use crate::{
     engine::Engine,
     move_result::{SearchResult, Terminal},
-    score::Score,
+    score::{Score, ScoreColor},
     search::move_ordering::order_moves,
     search_move,
     timers::MoveTimer,
@@ -15,11 +15,12 @@ impl Engine {
         depth: u8,
         mut alpha: Score,
         beta: Score,
+        color: ScoreColor,
     ) -> SearchResult {
         if depth == 0 {
-            return SearchResult::leaf(self.grade_position_relative(), depth, Terminal::Depth);
+            return SearchResult::leaf(self.grade_position() * color, depth, Terminal::Depth);
         } else if timer.over() {
-            return SearchResult::leaf(self.grade_position_relative(), depth, Terminal::Timer);
+            return SearchResult::leaf(self.grade_position() * color, depth, Terminal::Timer);
         }
 
         let existing = self.transposition_table.get(self.game.hash);
@@ -41,7 +42,7 @@ impl Engine {
         let mut result = SearchResult::new(Score::MIN, depth);
 
         for m in order_moves(self.game.legal_moves(), &existing) {
-            let mut child = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha));
+            let mut child = search_move!(self, &m, nega(timer, depth - 1, -beta, -alpha, -color));
             result.nodes += child.nodes;
 
             if child.terminal == Terminal::Timer {
@@ -49,7 +50,7 @@ impl Engine {
                 return result;
             }
 
-            child.score = -child.score;
+            child.score *= color;
 
             if child.score > result.score {
                 result.score = child.score;
@@ -85,7 +86,13 @@ impl Engine {
 
     /// Continues searching at the given depth until the search finishes or the timer is over
     pub fn negamax<T: MoveTimer>(&mut self, timer: &T, depth: u8) -> SearchResult {
-        self.nega(timer, depth + 1, Score::MIN, Score::MAX)
+        self.nega(
+            timer,
+            depth + 1,
+            Score::MIN,
+            Score::MAX,
+            ScoreColor::from_color(self.game.turn),
+        )
     }
 }
 
