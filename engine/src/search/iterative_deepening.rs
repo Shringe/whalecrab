@@ -1,14 +1,36 @@
-use std::thread;
+use std::{thread, time::Duration};
 
 use crate::{
     engine::Engine,
     move_result::{SearchResult, Terminal},
-    timers::{IntoTimer, MoveTimer, remote::Remote},
+    platform_timer,
+    timers::{MoveTimer, infinite::Infinite, remote::Remote},
 };
+
+/// Allows calling `Engine::search` with either a `MoveTimer` or a `Duration`
+trait IntoTimer {
+    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult;
+}
+
+impl<T: MoveTimer> IntoTimer for &T {
+    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult {
+        engine.search_with_timer(self, max_depth)
+    }
+}
+
+impl IntoTimer for Duration {
+    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult {
+        if self == Duration::MAX {
+            engine.search_with_timer(&Infinite, max_depth)
+        } else {
+            engine.search_with_timer(&platform_timer!(self), max_depth)
+        }
+    }
+}
 
 impl Engine {
     /// Same as `search` but you can use your own timer
-    pub fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u8) -> SearchResult {
+    fn search_with_timer<T: MoveTimer>(&mut self, timer: &T, max_depth: u8) -> SearchResult {
         let mut depth = 0;
         let mut result = SearchResult::default();
 
@@ -93,7 +115,7 @@ impl Engine {
             })
             .collect::<Vec<_>>();
 
-        let mut result = self.search_with_timer(timer, max_depth);
+        let mut result = self.search(timer, max_depth);
         remote.stop();
 
         for h in handles {
@@ -108,6 +130,7 @@ impl Engine {
     }
 
     /// Searches for the best move in the position until the depth is reached or the duration is up
+    #[allow(private_bounds)]
     pub fn search(&mut self, timer: impl IntoTimer, max_depth: u8) -> SearchResult {
         timer.search(self, max_depth)
     }
@@ -175,5 +198,12 @@ mod tests {
         let duration = Duration::from_millis(200);
         let best_move = engine.search(duration, u8::MAX).best;
         assert!(best_move.is_some());
+    }
+
+    #[test]
+    fn engine_search_supports_both_duration_and_timer() {
+        let mut engine = Engine::default();
+        let _ = engine.search(&Infinite, 0);
+        let _ = engine.search(Duration::from_secs(3), 0);
     }
 }

@@ -33,27 +33,6 @@ pub trait MoveTimer {
     fn over(&self) -> bool;
 }
 
-/// Allows calling `Engine::search` with either a `MoveTimer` or a `Duration`
-pub trait IntoTimer {
-    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult;
-}
-
-impl<T: MoveTimer> IntoTimer for &T {
-    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult {
-        engine.search_with_timer(self, max_depth)
-    }
-}
-
-impl IntoTimer for Duration {
-    fn search(self, engine: &mut Engine, max_depth: u8) -> SearchResult {
-        if self == Duration::MAX {
-            engine.search_with_timer(&Infinite, max_depth)
-        } else {
-            engine.search_with_timer(&platform_timer!(self), max_depth)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,12 +43,5 @@ mod tests {
         let _: Infinite = platform_timer!(time::Duration::MAX);
         let _: Infinite = platform_timer!(std::time::Duration::MAX);
         let _: Infinite = platform_timer!(core::time::Duration::MAX);
-    }
-
-    #[test]
-    fn engine_search_supports_both_duration_and_timer() {
-        let mut engine = Engine::default();
-        let _ = engine.search(&Infinite, 0);
-        let _ = engine.search(Duration::from_secs(3), 0);
     }
 }
