@@ -41,6 +41,44 @@ impl Engine {
         result
     }
 
+    /// Same as `search` but you can use your own timer
+    pub fn search_with_timer_threaded<T: MoveTimer>(
+        &mut self,
+        timer: &T,
+        max_depth: u8,
+        offset: usize,
+    ) -> SearchResult {
+        let mut depth = 0;
+        let mut result = SearchResult::default();
+
+        loop {
+            let child = self.negamax_threaded(timer, depth, offset);
+            result.nodes += child.nodes;
+
+            if child.terminal == Terminal::Timer {
+                result.terminal = Terminal::Timer;
+                break;
+            }
+
+            result.depth = result.depth.max(child.depth);
+
+            if child.best.is_none() {
+                break;
+            }
+
+            result.best = child.best;
+            result.score = child.score;
+
+            if depth == max_depth {
+                break;
+            }
+
+            depth += 1;
+        }
+
+        result
+    }
+
     pub fn threaded_search<T: MoveTimer>(
         &mut self,
         timer: &T,
@@ -49,10 +87,10 @@ impl Engine {
     ) -> SearchResult {
         let remote = Remote::default();
         let handles = (1..threads)
-            .map(|_| {
+            .map(|n| {
                 let mut engine = self.clone();
                 let remote = remote.clone();
-                thread::spawn(move || engine.search_with_timer(&remote, max_depth))
+                thread::spawn(move || engine.search_with_timer_threaded(&remote, max_depth, n))
             })
             .collect::<Vec<_>>();
 

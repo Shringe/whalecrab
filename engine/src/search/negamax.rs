@@ -16,6 +16,7 @@ impl Engine {
         mut alpha: Score,
         mut beta: Score,
         color: ScoreColor,
+        offset: usize,
     ) -> SearchResult {
         if depth == 0 {
             return SearchResult::leaf(self.grade_position() * color, depth, Terminal::Depth);
@@ -80,8 +81,11 @@ impl Engine {
         'search: {
             macro_rules! evaluate {
                 ($m:expr) => {{
-                    let mut child =
-                        search_move!(self, &$m, nega(timer, depth - 1, -beta, -alpha, -color));
+                    let mut child = search_move!(
+                        self,
+                        &$m,
+                        nega(timer, depth - 1, -beta, -alpha, -color, offset)
+                    );
                     result.nodes += child.nodes;
 
                     if child.terminal == Terminal::Timer {
@@ -109,7 +113,10 @@ impl Engine {
                 evaluate!(m);
             }
 
-            for m in order_moves(self.game.legal_moves(), &existing) {
+            let moves = order_moves(self.game.legal_moves(), &existing);
+            let len = moves.len();
+            for i in offset..(offset + len) {
+                let m = moves[i % len];
                 evaluate!(m);
             }
         }
@@ -144,6 +151,23 @@ impl Engine {
             Score::MIN,
             Score::MAX,
             ScoreColor::from_color(self.game.turn),
+            0,
+        )
+    }
+
+    pub fn negamax_threaded<T: MoveTimer>(
+        &mut self,
+        timer: &T,
+        depth: u8,
+        offset: usize,
+    ) -> SearchResult {
+        self.nega(
+            timer,
+            depth + 1,
+            Score::MIN,
+            Score::MAX,
+            ScoreColor::from_color(self.game.turn),
+            offset,
         )
     }
 }
