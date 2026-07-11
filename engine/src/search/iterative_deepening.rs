@@ -1,10 +1,9 @@
-use std::{thread, time::Duration};
+use std::thread;
 
 use crate::{
     engine::Engine,
     move_result::{SearchResult, Terminal},
-    platform_timer,
-    timers::{MoveTimer, infinite::Infinite, remote::Remote},
+    timers::{IntoTimer, MoveTimer, remote::Remote},
 };
 
 impl Engine {
@@ -109,20 +108,16 @@ impl Engine {
     }
 
     /// Searches for the best move in the position until the depth is reached or the duration is up
-    pub fn search(&mut self, duration: Duration, max_depth: u8) -> SearchResult {
-        if duration == Duration::MAX {
-            self.search_with_timer(&Infinite, max_depth)
-        } else {
-            self.search_with_timer(&platform_timer!(duration), max_depth)
-        }
+    pub fn search(&mut self, timer: impl IntoTimer, max_depth: u8) -> SearchResult {
+        timer.search(self, max_depth)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
+    use std::time::{Duration, Instant};
 
-    use crate::timers::elapsed::Elapsed;
+    use crate::{platform_timer, timers::elapsed::Elapsed};
 
     use super::*;
 
