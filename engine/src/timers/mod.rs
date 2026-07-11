@@ -1,7 +1,3 @@
-use std::time::Duration;
-
-use crate::{engine::Engine, move_result::SearchResult, timers::infinite::Infinite};
-
 pub mod elapsed;
 pub mod infinite;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -35,7 +31,7 @@ pub trait MoveTimer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::timers::infinite::Infinite;
 
     #[test]
     fn platform_timer_optimizes_known_max_durations_to_infinite() {
