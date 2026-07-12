@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use criterion::{Criterion, Throughput};
-use whalecrab_engine::{engine::Engine, timers::elapsed::Elapsed};
+use whalecrab_engine::{engine::Engine, move_result::Terminal, timers::elapsed::Elapsed};
 mod common;
 
 fn format_header(title: &str) -> String {
@@ -27,7 +27,7 @@ fn bench(c: &mut Criterion) {
         engine.clear_persistant_cache();
         engine.set_threads(threads);
         println!();
-        for depth in [2, 4, 6] {
+        for depth in [2, 4, 6, 7] {
             let timer = Elapsed::now(duration);
             let result = engine.search(&timer, depth);
             group.throughput(Throughput::Elements(result.nodes));
@@ -42,6 +42,10 @@ fn bench(c: &mut Criterion) {
             println!("Termination:      {:?}", result.terminal);
             println!("{}", timer);
             println!("{}", format_header(""));
+
+            if result.terminal == Terminal::Timer {
+                break;
+            }
         }
     }
 
