@@ -45,8 +45,12 @@ impl Engine {
             tm.start_searching(SearchPacket { engine, max_depth });
         }
 
+        if offset != 0 && max_depth != 0 {
+            depth = ((depth as usize).wrapping_add(offset / 2) % max_depth as usize) as u8;
+        }
+
         loop {
-            let child = self.negamax_threaded(timer, depth, offset);
+            let child = self.negamax_with_offset(timer, depth, offset);
             result.nodes += child.nodes;
 
             if child.terminal == Terminal::Timer {

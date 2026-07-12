@@ -155,7 +155,8 @@ impl Engine {
         )
     }
 
-    pub fn negamax_threaded<T: MoveTimer>(
+    /// See `negamax`
+    pub fn negamax_with_offset<T: MoveTimer>(
         &mut self,
         timer: &T,
         depth: u8,
