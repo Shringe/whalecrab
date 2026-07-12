@@ -9,7 +9,7 @@ use std::{
 
 use whalecrab_lib::movegen::moves::Move;
 
-use crate::{engine::TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES, score::Score};
+use crate::{resources::Budget, score::Score};
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub(crate) struct TranspositionTableEntry {
@@ -99,7 +99,7 @@ pub(crate) struct TranspositionTable {
 
 impl Default for TranspositionTable {
     fn default() -> Self {
-        Self::new()
+        Self::from_size(Budget::default().memory)
     }
 }
 
@@ -113,20 +113,6 @@ impl TranspositionTable {
             #[cfg(debug_assertions)]
             prevented_collisions: std::cell::RefCell::new(0),
         }
-    }
-
-    pub(crate) fn new() -> Self {
-        let kilobytes = *TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES.get_or_init(|| {
-            (if cfg!(test) && cfg!(debug_assertions) {
-                64
-            } else if cfg!(test) {
-                256
-            } else {
-                512
-            }) * 1024
-        });
-
-        Self::from_size(kilobytes)
     }
 
     pub(crate) fn get(&self, hash: u64) -> Option<TranspositionTableEntry> {
@@ -152,6 +138,17 @@ impl TranspositionTable {
         for slot in self.entries.iter() {
             slot.write(None);
         }
+    }
+
+    pub(crate) fn resize(&mut self, memory: usize) {
+        let new = Self::from_size(memory);
+        for slot in self.entries.iter() {
+            if let Some((entry, hash)) = slot.read() {
+                new.insert(hash, entry);
+            }
+        }
+
+        *self = new;
     }
 }
 

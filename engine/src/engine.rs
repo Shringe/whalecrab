@@ -1,12 +1,8 @@
-use std::sync::OnceLock;
-
 use crate::{
     resources::{Budget, ThreadManager},
     transposition_table::TranspositionTable,
 };
 use whalecrab_lib::position::game::Game;
-
-pub static TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES: OnceLock<usize> = OnceLock::new();
 
 #[derive(Debug, PartialEq)]
 pub struct Engine {
@@ -37,7 +33,7 @@ impl Clone for Engine {
 
 impl Engine {
     pub fn new(game: Game, budget: Budget) -> Engine {
-        let transposition_table = TranspositionTable::from_size(budget.memory_budget_kilobytes);
+        let transposition_table = TranspositionTable::from_size(budget.memory);
         let mut engine = Engine {
             game,
             transposition_table,
@@ -45,7 +41,7 @@ impl Engine {
             thread_manager: Some(ThreadManager::default()),
         };
 
-        engine.set_threads(budget.thread_count);
+        engine.set_threads(budget.threads);
         engine
     }
 
@@ -71,15 +67,39 @@ impl Engine {
     }
 
     /// Sets the number of threads the engine can search with
-    pub fn set_threads(&mut self, num_threads: usize) {
-        self.budget.thread_count = num_threads;
+    pub fn set_threads(&mut self, threads: usize) {
+        self.budget.threads = threads;
         let Some(tm) = &mut self.thread_manager else {
             return;
         };
 
         tm.kill_workers();
         while tm.active_workers() > 0 {}
-        tm.spawn_workers(num_threads);
+        tm.spawn_workers(threads);
+    }
+
+    /// Gets the number of threads the engine can search with
+    pub fn threads(&self) -> usize {
+        self.budget.threads
+    }
+
+    /// Sets the amount of memory the engine allocates for its transposition table
+    pub fn set_memory(&mut self, memory: usize) {
+        self.budget.memory = memory;
+        let Some(tm) = &mut self.thread_manager else {
+            return;
+        };
+
+        tm.kill_workers();
+        tm.invalidate_packet();
+        while tm.active_workers() > 0 {}
+        self.transposition_table.resize(memory);
+        tm.spawn_workers(self.budget.threads);
+    }
+
+    /// Gets the amount of memory the engine allocates for its transposition table
+    pub fn memory(&self) -> usize {
+        self.budget.memory
     }
 }
 

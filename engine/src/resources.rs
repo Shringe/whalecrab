@@ -34,10 +34,10 @@ fn available_thread_count() -> NonZero<usize> {
 /// Defines the available resources the engine can use
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Budget {
-    /// Amount of memory to allocate for the transposition table
-    pub(crate) memory_budget_kilobytes: usize,
+    /// Amount of memory to allocate for the transposition table in kilobytes
+    pub memory: usize,
     /// Number of total threads to use for searching
-    pub(crate) thread_count: usize,
+    pub threads: usize,
 }
 
 impl Default for Budget {
@@ -47,11 +47,8 @@ impl Default for Budget {
 }
 
 impl Budget {
-    pub fn new(memory_budget_kilobytes: usize, thread_count: usize) -> Self {
-        Self {
-            memory_budget_kilobytes,
-            thread_count,
-        }
+    pub fn new(memory: usize, threads: usize) -> Self {
+        Self { memory, threads }
     }
 }
 
@@ -114,6 +111,11 @@ impl ThreadManager {
                 tm.worker();
             });
         }
+    }
+
+    /// Invalidates the search packet and its transposition table reference
+    pub fn invalidate_packet(&self) {
+        *self.search.lock().unwrap() = None;
     }
 
     /// Returns the amount of active workers
