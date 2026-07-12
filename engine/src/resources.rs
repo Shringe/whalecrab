@@ -67,7 +67,7 @@ pub(crate) struct ThreadManager {
     /// Coordinates threads
     remote: AnalogRemote,
     /// Information the main thread passes to extra threads so that they can start their search
-    search: Arc<Mutex<SearchPacket>>,
+    search: Arc<Mutex<Option<SearchPacket>>>,
     /// This increments on every clone. It acts as a unique thread ID that can be used for move
     /// ordering offsets.
     /// The main thread should be careful to not use this value as its offset, and
@@ -107,6 +107,7 @@ impl Clone for ThreadManager {
 impl ThreadManager {
     /// This will spawn 1 less workers than `num_threads`
     pub fn spawn_workers(&mut self, num_threads: usize) {
+        self.remote.write(Signal::Waiting);
         for _ in 1..num_threads {
             let tm = self.clone();
             thread::spawn(move || {
@@ -125,7 +126,7 @@ impl ThreadManager {
     }
 
     pub fn start_searching(&self, packet: SearchPacket) {
-        *self.search.lock().unwrap() = packet;
+        *self.search.lock().unwrap() = Some(packet);
         self.remote.write(Signal::Searching);
     }
 
@@ -147,10 +148,13 @@ impl ThreadManager {
                 Signal::Searching => {}
             }
 
-            let SearchPacket {
+            let Some(SearchPacket {
                 mut engine,
                 max_depth,
-            } = self.search.lock().unwrap().clone();
+            }) = self.search.lock().map(|p| p.clone()).ok().flatten()
+            else {
+                continue;
+            };
 
             engine.search_with_offset(&self.remote, max_depth, self.thread_number.get());
         }

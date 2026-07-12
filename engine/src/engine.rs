@@ -8,7 +8,7 @@ use whalecrab_lib::position::game::Game;
 
 pub static TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES: OnceLock<usize> = OnceLock::new();
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
@@ -16,6 +16,12 @@ pub struct Engine {
     budget: Budget,
     /// Only the main thread should have a thread manager
     pub(crate) thread_manager: Option<ThreadManager>,
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::from_game(Game::default())
+    }
 }
 
 impl Clone for Engine {

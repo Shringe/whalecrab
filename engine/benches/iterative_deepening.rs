@@ -21,23 +21,28 @@ fn bench(c: &mut Criterion) {
     let mut engine = Engine::default();
 
     let threads = std::thread::available_parallelism().unwrap().into();
-    // let threads = 1;
-
-    engine.set_threads(threads);
-
     let duration = Duration::from_secs(20);
-    for depth in [2, 4, 6, 8] {
-        let timer = Elapsed::now(duration);
-        let result = engine.search(&timer, depth);
-        group.throughput(Throughput::Elements(result.nodes));
 
-        println!("{}", format_header(&format!(" depth of {} ", depth)));
-        println!("Nodes searched:   {}", result.nodes);
-        println!("Depth reached:    {}", result.depth);
-        println!("Final score:      {}", result.score);
-        println!("Termination:      {:?}", result.terminal);
-        println!("{}", timer);
-        println!("{}", format_header(""));
+    for threads in [1, threads] {
+        engine.clear_persistant_cache();
+        engine.set_threads(threads);
+        println!();
+        for depth in [2, 4, 6] {
+            let timer = Elapsed::now(duration);
+            let result = engine.search(&timer, depth);
+            group.throughput(Throughput::Elements(result.nodes));
+
+            println!(
+                "{}",
+                format_header(&format!(" threads: {}; depth: {} ", threads, depth))
+            );
+            println!("Nodes searched:   {}", result.nodes);
+            println!("Depth reached:    {}", result.depth);
+            println!("Final score:      {}", result.score);
+            println!("Termination:      {:?}", result.terminal);
+            println!("{}", timer);
+            println!("{}", format_header(""));
+        }
     }
 
     group.finish();
