@@ -23,10 +23,12 @@ fn bench(c: &mut Criterion) {
     let threads = std::thread::available_parallelism().unwrap().into();
     // let threads = 1;
 
+    engine.set_threads(threads);
+
     let duration = Duration::from_secs(20);
     for depth in [2, 4, 6, 8] {
         let timer = Elapsed::now(duration);
-        let result = engine.threaded_search(&timer, depth, threads);
+        let result = engine.search(&timer, depth);
         group.throughput(Throughput::Elements(result.nodes));
 
         println!("{}", format_header(&format!(" depth of {} ", depth)));

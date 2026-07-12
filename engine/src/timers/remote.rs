@@ -10,6 +10,12 @@ use crate::timers::MoveTimer;
 #[derive(Debug, Default, Clone)]
 pub struct Remote(Arc<AtomicBool>);
 
+impl PartialEq for Remote {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.load(Ordering::Relaxed) == other.0.load(Ordering::Relaxed)
+    }
+}
+
 impl MoveTimer for Remote {
     #[inline(always)]
     fn over(&self) -> bool {
@@ -21,5 +27,10 @@ impl Remote {
     /// Stops the timer
     pub fn stop(&self) {
         self.0.store(true, Ordering::Relaxed);
+    }
+
+    /// Starts the timer
+    pub fn start(&self) {
+        self.0.store(false, Ordering::Relaxed);
     }
 }

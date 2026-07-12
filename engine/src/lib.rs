@@ -1,6 +1,7 @@
 pub mod engine;
 pub mod move_result;
 mod piece_eval;
+pub mod resources;
 pub mod score;
 pub mod scoring;
 pub mod search;

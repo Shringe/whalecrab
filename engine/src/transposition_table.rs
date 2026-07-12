@@ -104,7 +104,7 @@ impl Default for TranspositionTable {
 }
 
 impl TranspositionTable {
-    fn from_size(kilobytes: usize) -> Self {
+    pub fn from_size(kilobytes: usize) -> Self {
         let entry_size = mem::size_of::<AtomicEntry>();
         let count = (kilobytes * 1024 / entry_size).next_power_of_two();
         Self {

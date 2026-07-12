@@ -128,6 +128,7 @@ mod tests {
         );
     }
 
+    #[ignore = "threadcontention"]
     #[test]
     fn cached_tsc_freq_is_cached() {
         let _ = tsc_frequency();

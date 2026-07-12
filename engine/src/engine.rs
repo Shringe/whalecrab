@@ -1,23 +1,50 @@
 use std::sync::OnceLock;
 
-use crate::transposition_table::TranspositionTable;
+use crate::{
+    resources::{Budget, ThreadManager},
+    transposition_table::TranspositionTable,
+};
 use whalecrab_lib::position::game::Game;
 
 pub static TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES: OnceLock<usize> = OnceLock::new();
 
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Engine {
     /// Use self.with_new_game(game) instead of self.game = game if you want to replace this value
     pub game: Game,
     pub(crate) transposition_table: TranspositionTable,
+    budget: Budget,
+    /// Only the main thread should have a thread manager
+    pub(crate) thread_manager: Option<ThreadManager>,
+}
+
+impl Clone for Engine {
+    fn clone(&self) -> Self {
+        Self {
+            game: self.game.clone(),
+            transposition_table: self.transposition_table.clone(),
+            budget: self.budget,
+            thread_manager: None,
+        }
+    }
 }
 
 impl Engine {
-    pub fn from_game(game: Game) -> Engine {
-        Engine {
+    pub fn new(game: Game, budget: Budget) -> Engine {
+        let transposition_table = TranspositionTable::from_size(budget.memory_budget_kilobytes);
+        let mut engine = Engine {
             game,
-            transposition_table: TranspositionTable::default(),
-        }
+            transposition_table,
+            budget,
+            thread_manager: Some(ThreadManager::default()),
+        };
+
+        engine.set_threads(budget.thread_count);
+        engine
+    }
+
+    pub fn from_game(game: Game) -> Engine {
+        Engine::new(game, Budget::default())
     }
 
     /// Creates a position from fen and wraps the engine around it
@@ -35,6 +62,18 @@ impl Engine {
     /// testing and benchmarking purposes
     pub fn clear_persistant_cache(&mut self) {
         self.transposition_table.clear();
+    }
+
+    /// Sets the number of threads the engine can search with
+    pub fn set_threads(&mut self, num_threads: usize) {
+        self.budget.thread_count = num_threads;
+        let Some(tm) = &mut self.thread_manager else {
+            return;
+        };
+
+        tm.kill_workers();
+        while tm.active_workers() > 0 {}
+        tm.spawn_workers(num_threads);
     }
 }
 
