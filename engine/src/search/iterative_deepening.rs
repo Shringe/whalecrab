@@ -46,7 +46,7 @@ impl Engine {
         }
 
         if offset != 0 && max_depth != 0 {
-            depth = ((depth as usize).wrapping_add(offset / 2) % max_depth as usize) as u8;
+            depth = ((depth as usize).wrapping_add(offset / 4) % max_depth as usize) as u8;
         }
 
         loop {
