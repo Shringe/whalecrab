@@ -470,9 +470,13 @@ impl Move {
 
     /// Returns a move from a uci string
     pub fn from_uci(uci: &str, game: &Game) -> Result<Self, SquareParseError> {
+        // TODO: support promotion extensions
+        if uci.len() < 4 {
+            return Err(SquareParseError::EmptyInput);
+        }
         Ok(Move::infer(
-            Square::from_str(&uci[..2])?,
-            Square::from_str(&uci[2..])?,
+            Square::from_str(&uci[0..2])?,
+            Square::from_str(&uci[2..4])?,
             game,
         ))
     }
