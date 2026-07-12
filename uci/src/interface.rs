@@ -136,6 +136,16 @@ impl UciInterface {
                 uci_send!(
                     "option name BestmoveNotation type combo default UniversalChessInterface var UniversalChessInterface var StandardAlgebraicNotation"
                 );
+                uci_send!(
+                    "option name Threads type spin default {} min 1 max {}",
+                    self.engine.threads(),
+                    usize::MAX,
+                );
+                uci_send!(
+                    "option name Hash type spin default {} min 1 max {}",
+                    self.engine.memory() / 1024,
+                    usize::MAX / 1024,
+                );
                 uci_send!("uciok");
             }
 
@@ -163,6 +173,22 @@ impl UciInterface {
                 "bestmovenotation" => match value.parse::<BestmoveNotation>() {
                     Ok(notation) => self.bestmove_notation = notation,
                     Err(e) => log!("Failed to parse bestmove notation: {:?}", e),
+                },
+                "threads" => match value.parse::<usize>() {
+                    Ok(threads) => {
+                        log!("Setting threads to {}", threads);
+                        self.engine.set_threads(threads);
+                    }
+                    Err(e) => log!("Failed to parse threads: {:?}", e),
+                },
+                "hash" => match value.parse::<usize>() {
+                    Ok(0) => log!("Hash must be at least 1 MB; ignoring"),
+                    Ok(mb) => {
+                        let kb = mb.saturating_mul(1024);
+                        log!("Setting hash to {}MB ({}KB)", mb, kb);
+                        self.engine.set_memory(kb);
+                    }
+                    Err(e) => log!("Failed to parse hash: {:?}", e),
                 },
                 _ => {
                     log!("Unknown option: {}", name);
