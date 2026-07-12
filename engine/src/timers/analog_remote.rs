@@ -34,7 +34,7 @@ impl PartialEq for AnalogRemote {
 impl MoveTimer for AnalogRemote {
     #[inline(always)]
     fn over(&self) -> bool {
-        self.read() == Signal::Searching
+        self.read() != Signal::Searching
     }
 }
 
