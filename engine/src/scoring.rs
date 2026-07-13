@@ -4,10 +4,7 @@ use crate::{
     score::Score,
 };
 use whalecrab_lib::{
-    file::File,
-    movegen::pieces::piece::{PieceColor, PieceType},
-    position::game::State,
-    square::Square,
+    file::File, movegen::pieces::piece::PieceType, position::game::State, square::Square,
 };
 
 impl Engine {

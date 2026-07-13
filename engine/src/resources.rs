@@ -1,12 +1,10 @@
 use std::{
-    cell::Cell,
     num::NonZero,
     sync::{
         Arc, Mutex, OnceLock,
         atomic::{AtomicUsize, Ordering},
     },
-    thread,
-    time::Duration,
+    thread::{self, Thread},
 };
 
 use crate::{
@@ -65,13 +63,10 @@ pub(crate) struct ThreadManager {
     remote: AnalogRemote,
     /// Information the main thread passes to extra threads so that they can start their search
     search: Arc<Mutex<Option<SearchPacket>>>,
-    /// This increments on every clone. It acts as a unique thread ID that can be used for move
-    /// ordering offsets.
-    /// The main thread should be careful to not use this value as its offset, and
-    /// to use 0 instead.
-    thread_number: Cell<usize>,
     /// The number of spawned worker threads currently alive
     active_workers: Arc<AtomicUsize>,
+    /// A thread handle to all current workers
+    workers: Vec<Thread>,
 }
 
 impl Drop for ThreadManager {
@@ -83,20 +78,16 @@ impl Drop for ThreadManager {
 impl PartialEq for ThreadManager {
     fn eq(&self, other: &Self) -> bool {
         self.remote == other.remote
-            // && self.search == other.search
-            && self.thread_number == other.thread_number
     }
 }
 
 impl Clone for ThreadManager {
     fn clone(&self) -> Self {
-        self.thread_number.update(|n| n.wrapping_add(1));
-
         Self {
             remote: self.remote.clone(),
             search: self.search.clone(),
-            thread_number: self.thread_number.clone(),
             active_workers: self.active_workers.clone(),
+            workers: Vec::new(),
         }
     }
 }
@@ -105,11 +96,14 @@ impl ThreadManager {
     /// This will spawn 1 less workers than `num_threads`
     pub fn spawn_workers(&mut self, num_threads: usize) {
         self.remote.write(Signal::Waiting);
-        for _ in 1..num_threads {
+        let threads = num_threads.saturating_sub(1);
+        self.workers.reserve_exact(threads);
+        for offset in 0..threads {
             let tm = self.clone();
-            thread::spawn(move || {
-                tm.worker();
+            let handle = thread::spawn(move || {
+                tm.worker(offset);
             });
+            self.workers.push(handle.thread().clone());
         }
     }
 
@@ -123,27 +117,42 @@ impl ThreadManager {
         self.active_workers.load(Ordering::Relaxed)
     }
 
-    pub fn kill_workers(&self) {
+    pub fn kill_workers(&mut self) {
         self.remote.write(Signal::Terminate);
+        while let Some(w) = self.workers.pop() {
+            w.unpark();
+        }
+    }
+
+    /// Blocks the current thread until all workers are killed
+    pub fn block_until_workers_are_killed(&self) {
+        while self.active_workers() > 0 {}
+    }
+
+    /// Unparks worker threads, encouraging them to check the `remote`
+    fn notify_workers(&self) {
+        for w in &self.workers {
+            w.unpark();
+        }
     }
 
     pub fn start_searching(&self, packet: SearchPacket) {
         *self.search.lock().unwrap() = Some(packet);
         self.remote.write(Signal::Searching);
+        self.notify_workers();
     }
 
     pub fn stop_searching(&self) {
         self.remote.write(Signal::Waiting);
     }
 
-    fn worker(&self) {
+    fn worker(&self, offset: usize) {
         self.active_workers.fetch_add(1, Ordering::Relaxed);
-        let duration = Duration::from_millis(15 + self.thread_number.get() as u64);
 
         loop {
             match self.remote.read() {
                 Signal::Waiting => {
-                    thread::sleep(duration);
+                    thread::park();
                     continue;
                 }
                 Signal::Terminate => break,
@@ -158,7 +167,7 @@ impl ThreadManager {
                 continue;
             };
 
-            engine.search_with_offset(&self.remote, max_depth, self.thread_number.get());
+            engine.search_with_offset(&self.remote, max_depth, offset);
         }
 
         self.active_workers.fetch_sub(1, Ordering::Relaxed);

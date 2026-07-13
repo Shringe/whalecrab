@@ -1,10 +1,7 @@
 mod common;
 use criterion::Criterion;
-use whalecrab_engine::engine::TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES;
 
 fn bench(c: &mut Criterion) {
-    let _ = TRANSPOSITION_TABLE_MEMORY_BUDGET_IN_KILOBYTES.set(1);
-
     let mut engine = common::midgame();
     let mut dummy = engine.clone();
     c.bench_function("Scoring middle game with transposition table", |b| {

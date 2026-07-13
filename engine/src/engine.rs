@@ -74,7 +74,7 @@ impl Engine {
         };
 
         tm.kill_workers();
-        while tm.active_workers() > 0 {}
+        tm.block_until_workers_are_killed();
         tm.spawn_workers(threads);
     }
 
@@ -92,7 +92,7 @@ impl Engine {
 
         tm.kill_workers();
         tm.invalidate_packet();
-        while tm.active_workers() > 0 {}
+        tm.block_until_workers_are_killed();
         self.transposition_table.resize(memory);
         tm.spawn_workers(self.budget.threads);
     }
