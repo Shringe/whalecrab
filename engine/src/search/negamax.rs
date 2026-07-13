@@ -1,3 +1,5 @@
+use whalecrab_lib::position::game::State;
+
 use crate::{
     engine::Engine,
     move_result::{SearchResult, Terminal},
@@ -25,11 +27,44 @@ impl Engine {
         }
 
         let existing = self.transposition_table.get(self.game.hash);
-        if let Some(entry) = &existing
-            && entry.depth >= depth
-        {
-            match entry.node_type {
-                NodeType::Exact => {
+        if let Some(entry) = &existing {
+            if entry.depth >= depth {
+                match entry.node_type {
+                    NodeType::Exact => {
+                        return SearchResult {
+                            best: entry.best,
+                            terminal: Terminal::Depth,
+                            score: entry.score,
+                            depth,
+                            nodes: 1,
+                        };
+                    }
+                    NodeType::LowerBound => {
+                        if entry.score >= beta {
+                            return SearchResult {
+                                best: entry.best,
+                                terminal: Terminal::Depth,
+                                score: entry.score,
+                                depth,
+                                nodes: 1,
+                            };
+                        }
+                        alpha = alpha.max(entry.score);
+                    }
+                    NodeType::UpperBound => {
+                        if entry.score < alpha {
+                            return SearchResult {
+                                best: entry.best,
+                                terminal: Terminal::Depth,
+                                score: entry.score,
+                                depth,
+                                nodes: 1,
+                            };
+                        }
+                        beta = beta.min(entry.score);
+                    }
+                }
+                if alpha >= beta {
                     return SearchResult {
                         best: entry.best,
                         terminal: Terminal::Depth,
@@ -38,40 +73,9 @@ impl Engine {
                         nodes: 1,
                     };
                 }
-                NodeType::LowerBound => {
-                    if entry.score >= beta {
-                        return SearchResult {
-                            best: entry.best,
-                            terminal: Terminal::Depth,
-                            score: entry.score,
-                            depth,
-                            nodes: 1,
-                        };
-                    }
-                    alpha = alpha.max(entry.score);
-                }
-                NodeType::UpperBound => {
-                    if entry.score < alpha {
-                        return SearchResult {
-                            best: entry.best,
-                            terminal: Terminal::Depth,
-                            score: entry.score,
-                            depth,
-                            nodes: 1,
-                        };
-                    }
-                    beta = beta.min(entry.score);
-                }
             }
-            if alpha >= beta {
-                return SearchResult {
-                    best: entry.best,
-                    terminal: Terminal::Depth,
-                    score: entry.score,
-                    depth,
-                    nodes: 1,
-                };
-            }
+        } else if self.game.state != State::InProgress {
+            return SearchResult::leaf(self.grade_state(), depth, Terminal::Depth);
         }
 
         let original_alpha = alpha;
@@ -109,7 +113,8 @@ impl Engine {
                 }};
             }
 
-            if let Some(m) = existing.as_ref().and_then(|e| e.best) {
+            let best = existing.as_ref().and_then(|e| e.best);
+            if let Some(m) = best {
                 evaluate!(m);
             }
 
@@ -117,6 +122,9 @@ impl Engine {
             let len = moves.len();
             for i in offset..(offset + len) {
                 let m = moves[i % len];
+                if Some(m) == best {
+                    continue;
+                }
                 evaluate!(m);
             }
         }

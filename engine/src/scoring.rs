@@ -170,17 +170,11 @@ impl Engine {
     }
 
     /// This is meant to be called on states other than InProgress. InProgress will return 0.0
-    fn score_state(&self, for_color: PieceColor) -> Score {
+    pub fn grade_state(&self) -> Score {
+        // TODO. Timing out should result in a win for the opponent if the opponent has
+        // sufficent checkmating material
         match self.game.state {
-            State::Checkmate => match for_color {
-                PieceColor::White => Score::MAX,
-                PieceColor::Black => Score::MIN,
-            },
-            State::Stalemate => Score::default(),
-            // TODO. Timing out should result in a win for the opponent if the opponent has
-            // sufficent checkmating material
-            State::Timeout => Score::default(),
-            State::Repetition => Score::default(),
+            State::Checkmate => Score::MIN,
             _ => Score::default(),
         }
     }
@@ -188,7 +182,7 @@ impl Engine {
     /// Grades the position for white
     pub fn grade_position(&mut self) -> Score {
         if self.game.state != State::InProgress {
-            return self.score_state(PieceColor::White);
+            return self.grade_state();
         }
 
         let white_material = self.score_white_material();
