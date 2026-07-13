@@ -22,60 +22,47 @@ impl Engine {
     ) -> SearchResult {
         if depth == 0 {
             return SearchResult::leaf(self.grade_position() * color, depth, Terminal::Depth);
+        } else if self.game.state != State::InProgress {
+            return SearchResult::leaf(self.grade_state(), depth, Terminal::Depth);
         } else if timer.over() {
             return SearchResult::leaf(self.grade_position() * color, depth, Terminal::Timer);
         }
 
+        macro_rules! hit {
+            ($entry:expr) => {{
+                return SearchResult {
+                    best: $entry.best,
+                    terminal: Terminal::Depth,
+                    score: $entry.score,
+                    depth,
+                    nodes: 1,
+                };
+            }};
+        }
+
         let existing = self.transposition_table.get(self.game.hash);
-        if let Some(entry) = &existing {
-            if entry.depth >= depth {
-                match entry.node_type {
-                    NodeType::Exact => {
-                        return SearchResult {
-                            best: entry.best,
-                            terminal: Terminal::Depth,
-                            score: entry.score,
-                            depth,
-                            nodes: 1,
-                        };
+        if let Some(entry) = &existing
+            && entry.depth >= depth
+        {
+            match entry.node_type {
+                NodeType::Exact => hit!(entry),
+                NodeType::LowerBound => {
+                    if entry.score >= beta {
+                        hit!(entry);
                     }
-                    NodeType::LowerBound => {
-                        if entry.score >= beta {
-                            return SearchResult {
-                                best: entry.best,
-                                terminal: Terminal::Depth,
-                                score: entry.score,
-                                depth,
-                                nodes: 1,
-                            };
-                        }
-                        alpha = alpha.max(entry.score);
-                    }
-                    NodeType::UpperBound => {
-                        if entry.score < alpha {
-                            return SearchResult {
-                                best: entry.best,
-                                terminal: Terminal::Depth,
-                                score: entry.score,
-                                depth,
-                                nodes: 1,
-                            };
-                        }
-                        beta = beta.min(entry.score);
-                    }
+                    alpha = alpha.max(entry.score);
                 }
-                if alpha >= beta {
-                    return SearchResult {
-                        best: entry.best,
-                        terminal: Terminal::Depth,
-                        score: entry.score,
-                        depth,
-                        nodes: 1,
-                    };
+
+                NodeType::UpperBound => {
+                    if entry.score < alpha {
+                        hit!(entry);
+                    }
+                    beta = beta.min(entry.score);
                 }
             }
-        } else if self.game.state != State::InProgress {
-            return SearchResult::leaf(self.grade_state(), depth, Terminal::Depth);
+            if alpha >= beta {
+                hit!(entry);
+            }
         }
 
         let original_alpha = alpha;
