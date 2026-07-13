@@ -3,7 +3,7 @@ members = ["lib", "demos", "uci", "tui", "engine", "essex", "panic_logger", "mag
 resolver = "2"
 
 [workspace.package]
-version = "1.5.9"
+version = "1.6.0"
 edition = "2024"
 
 # This is the most performant set of flags I have found
