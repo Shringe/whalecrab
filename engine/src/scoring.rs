@@ -179,12 +179,8 @@ impl Engine {
         }
     }
 
-    /// Grades the position for white
+    /// Grades the position for white. This does not consider the game `state`.
     pub fn grade_position(&mut self) -> Score {
-        if self.game.state != State::InProgress {
-            return self.grade_state();
-        }
-
         let white_material = self.score_white_material();
         let black_material = self.score_black_material();
         let ratio = self.midgame_to_lategame_ratio(white_material + black_material);
